@@ -34,9 +34,9 @@ def get_mw(file):
 
 # Utilizes the ProteinAnalysis object to get a sequence of amino acids and finds the number of amino acids
 # @return: the number of amino acids from fasta file given by user
-def get_individual_mw(file, record_id):
-    protein_seq = parse_protein(file)
-    protein = protein_seq.get(record_id)
+def get_individual_mw(parsed_protein, record_id):
+    # protein_seq = parse_protein(file)
+    protein = parsed_protein.get(record_id)
     individual_mw = ProteinAnalysis(protein[1]).molecular_weight()
     return individual_mw
 
@@ -159,5 +159,5 @@ class Protein:
     # The distance is determined as the scaled difference between the current and starting y-coordinates.
     # @return: Calculated distance traveled by the protein.
     def set_distance(self, parsed_protein, record_id, scale_factor):
-        self.distance = self.get_individual_mw(parsed_protein, record_id) * scale_factor
+        self.distance = get_individual_mw(parsed_protein, record_id) * scale_factor
         return self.distance

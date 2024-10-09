@@ -5,6 +5,7 @@ import unittest
 from backend.Electro1D.Acrylamide import *
 from backend.Electro1D.Protein import *
 from backend.Electro1D.Constants import *
+from backend.Electro1D.Parameters import *
 
 # TODO MISSING MULTIPLE GUI METHOD TESTS
 class TestBioClasses(unittest.TestCase):
