@@ -485,7 +485,8 @@ const OneDE = () => {
 
       try {
         // Assuming "http://127.0.0.1:8000/1DElectrophoresis/ProteinInfo/File" is your endpoint
-        const response = await fetch("http://127.0.0.1:8000/1DElectrophoresis/ProteinInfo/File", {
+        const response = await fetch('http://34.56.114.201:8000/1DElectrophoresis/ProteinInfo/File', {
+        //const response = await fetch("http://127.0.0.1:8000/1DElectrophoresis/ProteinInfo/File", {
           method: "POST",
           body: formData,
         });
@@ -531,7 +532,8 @@ const OneDE = () => {
     // API call to upload files
     try {
       // Assuming "http://127.0.0.1:8000/1DElectrophoresis/ProteinInfo/File" is your endpoint
-      const response = await fetch('http://127.0.0.1:8000/1DElectrophoresis/BatchFileProtein/Batch', {
+      //const response = await fetch('http://127.0.0.1:8000/1DElectrophoresis/BatchFileProtein/Batch', {
+      const response = await fetch('http://34.56.114.201:8000/1DElectrophoresis/BatchFileProtein/Batch', {
         method: 'POST',
         body: formData,
       });
