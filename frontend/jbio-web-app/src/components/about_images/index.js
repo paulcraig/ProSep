@@ -1,0 +1,10 @@
+export { default as zach } from './Zach-Van-Horn.png';
+export { default as shreyes } from './Shreyes-Gadwalkar.jpg';
+export { default as paul } from './PaulPhoto.jpg';
+export { default as beck } from './Beck_Anderson.png';
+export { default as chase } from './Chase_Amador.png';
+export { default as amr } from './Amr_Mualla.png';
+export { default as landon } from './Landon_Heatly.png';
+export { default as mack } from './Mack_Leonard.png';
+export { default as mark } from './Mark_Elliot_Zuckerberg.jpg';
+export { default as placeholder } from './placeholder.png';

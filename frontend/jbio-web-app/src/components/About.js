@@ -1,10 +1,4 @@
-import paul from './about_images/PaulPhoto.jpg';
-import beck from "./about_images/Beck_Anderson.png";
-import chase from "./about_images/Chase_Amador.png";
-import amr from "./about_images/Amr_Mualla.png";
-import landon from "./about_images/Landon_Heatly.png";
-import mack from './about_images/Mack_Leonard.png';
-import placeholder from './about_images/placeholder.png';
+import * as profiles from './about_images';
 import './About.css';
 
 function About() {
@@ -39,35 +33,73 @@ function About() {
             <h2 className="section-header" id="current-developers" data-testId = 'currDevs-header'>Current Developers</h2>
             <div className="grid-container">
                 <div className="grid-item">
-                    <img className="profile-icon" src={landon} alt="Landon Heatly-pic"/>
+                    <img className="profile-icon" src={profiles.zach} alt="Zach Van Horn-pic"/>
+                    <figcaption className="profile-title">Zachary Van Horn</figcaption>
+                    <p>
+                        Project Leader
+                    </p>
+                </div>
+                <div className="grid-item">
+                    <img className="profile-icon" src={profiles.placeholder} alt="Luke Smith-pic"/>
+                    <figcaption className="profile-title">Luke Knofczynski</figcaption>
+                    <p>
+                        Technical Lead
+                    </p>
+                </div>
+                <div className="grid-item">
+                    <img className="profile-icon" src={profiles.shreyes} alt="Shreyes Gadwalkar-pic"/>
+                    <figcaption className="profile-title">Shreyes Gadwalkar</figcaption>
+                    <p>
+                        Head of Communications
+                    </p>
+                </div>
+                <div className="grid-item">
+                    <img className="profile-icon" src={profiles.placeholder} alt="Aditya Vikram-pic"/>
+                    <figcaption className="profile-title">Aditya Vikram</figcaption>
+                    <p>
+                        Scrum Master
+                    </p>
+                </div>
+                <div className="grid-item">
+                    <img className="profile-icon" src={profiles.placeholder} alt="Jacob Fay-pic"/>
+                    <figcaption className="profile-title">Jacob Fay</figcaption>
+                    <p>
+                        Testing Lead
+                    </p>
+                </div>
+            </div>
+            <h2 className="section-header" id="2024-developers">2024 Developers</h2>
+            <div className="grid-container">
+                <div className="grid-item">
+                    <img className="profile-icon" src={profiles.landon} alt="Landon Heatly-pic"/>
                     <figcaption className="profile-title">Landon Heatly</figcaption>
                     <p>
                         Project Leader
                     </p>
                 </div>
                 <div className="grid-item">
-                    <img className="profile-icon" src={amr} alt="Amr Mualla-pic"/>
+                    <img className="profile-icon" src={profiles.amr} alt="Amr Mualla-pic"/>
                     <figcaption className="profile-title">Amr Mualla</figcaption>
                     <p>
                         Technical Lead
                     </p>
                 </div>
                 <div className="grid-item">
-                    <img className="profile-icon" src={beck} alt="Beck Anderson-pic"/>
+                    <img className="profile-icon" src={profiles.beck} alt="Beck Anderson-pic"/>
                     <figcaption className="profile-title">Beck Anderson</figcaption>
                     <p>
                         Head of Communications
                     </p>
                 </div>
                 <div className="grid-item">
-                    <img className="profile-icon" src={mack} alt="Mack Leonard-pic"/>
+                    <img className="profile-icon" src={profiles.mack} alt="Mack Leonard-pic"/>
                     <figcaption className="profile-title">Mack Leonard</figcaption>
                     <p>
                         Scrum Master
                     </p>
                 </div>
                 <div className="grid-item">
-                    <img className="profile-icon" src={chase} alt="Chase Amador-pic"/>
+                    <img className="profile-icon" src={profiles.chase} alt="Chase Amador-pic"/>
                     <figcaption className="profile-title">Chase Amador</figcaption>
                     <p>
                         Testing Lead
@@ -82,7 +114,7 @@ function About() {
                         justifyContent: 'center',
                         alignItems: 'center'
                     }}>
-                        <img className="profile-icon" src={paul} alt="Paul Craig-pic"/>
+                        <img className="profile-icon" src={profiles.paul} alt="Paul Craig-pic"/>
                         <figcaption className="profile-title">Paul Craig</figcaption>
                     </div>
                     <p style={{marginLeft: "auto"}}>
@@ -97,7 +129,7 @@ function About() {
             <h2 className="section-header" id="historic-developers" data-testId = 'historicDevs-header'></h2>
             <div className="historic-grid">
                 <div className="historic-grid-item">
-                    <img className="historic-icon" src={placeholder} alt="profile-icon"/>
+                    <img className="historic-icon" src={profiles.placeholder} alt="profile-icon"/>
                     <figcaption className="historic-title">Place Holder</figcaption>
                     <p>
                         Bio here...
