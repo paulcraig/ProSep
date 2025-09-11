@@ -29,7 +29,7 @@ function About() {
                     <li>Over 200 audience members: $500</li>
                     <li>Publish online: $100000000</li>
                 </ul>
-                <p>Piracy is not a victimless crime</p>
+                <p title="Except for most of the time">Piracy is not a victimless crime</p>
             <h2 className="section-header" id="current-developers" data-testId = 'currDevs-header'>Current Developers</h2>
             <div className="grid-container">
                 <div className="grid-item">
