@@ -111,33 +111,23 @@
   }
 }
 
-.navbar{
-  display: grid;
-  justify-content: center;
+.navbar {
+  height: 75px;
+  display: flex;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1rem 0;
-  background: #292b31;
-  padding-top: 2rem;
-
-  grid-template-columns: 2fr 2fr 2fr 2fr 2fr 2fr;
-  grid-auto-flow: row dense;
-  grid-gap: 0.5rem;
-  color: #1462e3;
+  justify-content: space-evenly;
+  overflow: hidden;
 }
 
-.navbar a{
-  text-decoration: none;;
+.navbar a {
+  flex: 1 1 auto;
+  text-align: center;
 }
 
-.navbar a:hover .navbar-header{
+.navbar a:hover .navbar-header {
   color: rgb(101, 101, 185);
 }
 
-.navbar-header{
-  font-size: 1.2rem;
-  color: #1462e3;
-  text-align: justify;
-  margin: 0%;
+.navbar-header {
+  margin: 0;
 }
