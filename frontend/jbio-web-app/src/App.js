@@ -1,9 +1,6 @@
-import React, { useState } from 'react';
 import { useLocalStorage } from 'usehooks-ts'
-import * as ReactDOM from "react-dom/client";
 import Sidebar from './components/Sidebar.js';
 import Router from './Router.js';
-import { DarkToggle } from './components/DarkToggle.js';
 import './App.css';
 
 
@@ -16,7 +13,7 @@ function App() {
         <div className="app-container" data-theme={isDark ? "dark" : "light"}>
             <Sidebar isOpen={isSidebarOpen} toggle={() => setIsSidebarOpen(!isSidebarOpen)} isDark={isDark} />
             <Router isOpen={isSidebarOpen} />
-            <DarkToggle isChecked={isDark} handleChange={() => setIsDark(!isDark)} />
+            {/* <DarkToggle isChecked={isDark} handleChange={() => setIsDark(!isDark)} /> */} {/* Potentially add darkmode back when fixed */}
         </div>
     );
 }
