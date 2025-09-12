@@ -110,3 +110,34 @@
     padding: 0 20px;
   }
 }
+
+.navbar{
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 0;
+  background: #292b31;
+  padding-top: 2rem;
+
+  grid-template-columns: 2fr 2fr 2fr 2fr 2fr 2fr;
+  grid-auto-flow: row dense;
+  grid-gap: 0.5rem;
+  color: #1462e3;
+}
+
+.navbar a{
+  text-decoration: none;;
+}
+
+.navbar a:hover .navbar-header{
+  color: rgb(101, 101, 185);
+}
+
+.navbar-header{
+  font-size: 1.2rem;
+  color: #1462e3;
+  text-align: justify;
+  margin: 0%;
+}
