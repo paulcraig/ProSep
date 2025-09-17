@@ -1,3 +1,8 @@
+.profile-wrapper {
+  display: inline-block;
+  transform-origin: top center;
+}
+
 .profile-card {
   background: var(--sub-background);
   border: 4px solid var(--accent);
