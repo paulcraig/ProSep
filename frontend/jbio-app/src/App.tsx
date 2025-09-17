@@ -1,4 +1,6 @@
 import logo from './assets/basil-logo.png';
+
+import About from './pages/About';
 import Placeholder from './pages/Placeholder';
 import Dashboard from './components/Dashboard';
 
@@ -10,9 +12,9 @@ import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 
 function App() {
   const pages = [
-    { id: 1, icon: <HomeIcon />, component: <Placeholder text='Page 1' />, label: 'Project Information' },
-    { id: 2, icon: <ShowChartIcon />, component: <Placeholder text='Page 2' />, label: '1D Electrophoresis' },
-    { id: 3, icon: <BubbleChartIcon />, component: <Placeholder text='Page 3' />, label: '2D Electrophoresis' },
+    { id: 1, icon: <HomeIcon />, component: <About />, label: 'Project Information' },
+    { id: 2, icon: <ShowChartIcon />, component: <Placeholder text='WIP ZVH' />, label: '1D Electrophoresis' },
+    { id: 3, icon: <BubbleChartIcon />, component: <Placeholder text='WIP Team' />, label: '2D Electrophoresis' },
     { id: 4, icon: <GitHubIcon />, link: 'https://github.com/paulcraig/ProSep', label: 'GitHub Repository' },
   ];
 

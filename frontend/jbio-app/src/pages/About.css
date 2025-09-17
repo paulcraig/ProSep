@@ -1,0 +1,51 @@
+.about-page {
+  background: var(--background);
+  color: var(--text);
+
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  gap: 2.5rem;
+}
+
+/* Intro: project + sponsor */
+.about-intro {
+  display: grid;
+  align-items: start;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+.about-text p {
+  color: var(--sub-text);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.about-text ul {
+  margin-left: 1.25rem;
+  line-height: 1.6;
+}
+
+.about-sponsor {
+  display: flex;
+}
+
+.sponsor-block {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  margin-left: auto;
+  margin-right: 40px;
+  width: max-content;
+}
+
+/* Headings */
+.section-header {
+  color: var(--accent);
+  text-align: left;
+}
+
+/* Developers */
+/* TODO, dude screw css, I hate this. */
