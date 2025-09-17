@@ -1,8 +1,9 @@
 import logo from './assets/basil-logo.png';
 
-import About from './pages/About';
-import Placeholder from './pages/Placeholder';
 import Dashboard from './components/Dashboard';
+import Placeholder from './pages/Placeholder';
+import About from './pages/About';
+import OneDE from './pages/legacy/1DElectrophoresis.js'
 
 import GitHubIcon from '@mui/icons-material/GitHub';
 import HomeIcon from '@mui/icons-material/HomeRounded';
@@ -13,7 +14,7 @@ import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 function App() {
   const pages = [
     { id: 1, icon: <HomeIcon />, component: <About />, label: 'Project Information' },
-    { id: 2, icon: <ShowChartIcon />, component: <Placeholder text='WIP ZVH' />, label: '1D Electrophoresis' },
+    { id: 2, icon: <ShowChartIcon />, component: <OneDE />, label: '1D Electrophoresis' },
     { id: 3, icon: <BubbleChartIcon />, component: <Placeholder text='WIP Team' />, label: '2D Electrophoresis' },
     { id: 4, icon: <GitHubIcon />, link: 'https://github.com/paulcraig/ProSep', label: 'GitHub Repository' },
   ];
