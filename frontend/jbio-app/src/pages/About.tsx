@@ -63,8 +63,14 @@ const historicDevs: Person[] = [
 const About: React.FC = () => {
   return (
     <div className="about-page">
-      {/* Project + Sponsor */}
+      {/* Sponsor + Project */}
       <div className="about-intro">
+        <aside className="about-sponsor">
+            <div className="sponsor-block">
+                <h2 className="section-header">Project Sponsor</h2>
+                <Profile {...sponsor} size='large' />
+            </div>
+        </aside>
         <section className="about-text">
           <h2 className="section-header">Project Purpose</h2>
           <p>
@@ -74,6 +80,7 @@ const About: React.FC = () => {
             Spectrometry, chemical drawing, and an upcoming simulation of
             peptide separation by Reversed Phase Liquid Chromatography (RPLC).
           </p>
+          <br></br>
           <p>
             Originally built in Java in 1997, JBF has since been converted into
             a modern web application with a JavaScript front-end and Python
@@ -90,21 +97,15 @@ const About: React.FC = () => {
                 <strong> Unauthorized use or distribution</strong> constitutes <strong>piracy</strong> and may result in legal action.
             </p>
         </section>
-        <aside className="about-sponsor">
-            <div className="sponsor-block">
-                <h2 className="section-header">Project Sponsor</h2>
-                <Profile {...sponsor} scale={1.0} />
-            </div>
-        </aside>
       </div>
-      <section className="dev-section">
-        <h2 className="section-header">Software Team (WIP ZVH - CSS Hurts)</h2>
+      <section className='dev-team'>
+        <h2 className="section-header">Development Team</h2>
         <div className="dev-grid">
           {currentDevs.map((dev) => (
-            <Profile key={dev.name} scale={0.75} about='⚡Active Developer' {...dev} />
+            <Profile key={dev.name} size='small' about='⚡Active Developer' {...dev} />
           ))}
           {historicDevs.map((dev) => (
-            <Profile key={dev.name} scale={0.75} about='↩️ Previous Contributor' {...dev} />
+            <Profile key={dev.name} size='small' about='↩️ Previous Contributor' {...dev} />
           ))}
         </div>
       </section>

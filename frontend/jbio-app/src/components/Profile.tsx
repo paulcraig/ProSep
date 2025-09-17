@@ -14,7 +14,7 @@ type ProfileProps = {
   email?: string;
   phone?: string;
   location?: string;
-  scale?: number;
+  size?: 'small' | 'medium' | 'large';
 };
 
 
@@ -41,12 +41,12 @@ class Profile extends Component<ProfileProps, ProfileState> {
   };
 
   render() {
-    const { photo, name, title, about, email, phone, location, scale = 1 } = this.props;
+    const { photo, name, title, about, email, phone, location, size = 'medium' } = this.props;
     const { copied, imageError, hovered } = this.state;
 
     return (
-      <div className='profile-wrapper' style={{ transform: `scale(${scale})` }}>
-        <div className='profile-card'>
+      <div className='profile-wrapper'>
+        <div className={`profile-card ${size}`}>
           <div className='profile-photo'>
             {imageError || !photo ? (
               <div className='photo-placeholder'>?</div>
