@@ -79,7 +79,7 @@
   flex-grow: 1;
   overflow: visible;
   text-align: center;
-  white-space: normal;
+  white-space: pre-line;
 
   margin-top: 1rem;
   font-size: 0.9rem;

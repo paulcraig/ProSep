@@ -34,3 +34,13 @@ code {
   --accent: #4f6edb;
   --highlight: #9ba3c343;
 }
+
+/* Links */
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
