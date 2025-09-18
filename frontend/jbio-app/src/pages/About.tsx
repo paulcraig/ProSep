@@ -50,9 +50,9 @@ const currentDevs: Person[] = [
   coach,
   { photo: profiles.zach_vh,    name: 'Zachary Van Horn',   title: 'Project Leader',            email: 'zjv4576@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
   { photo: profiles.shreyes_g,  name: 'Shreyes Gadwalkar',  title: 'Head of Communications',    email: 'ssg9922@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
-  { photo: profiles.mark_z,     name: 'Luke Knofczynski',   title: 'Technical Lead',            email: 'ldk7811@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
-  { photo: profiles.mark_z,     name: 'Aditya Vikram',      title: 'Scrum Master',              email: 'av9242@rit.edu',    phone: 'None',  location: 'Rochester, NY' },
-  { photo: profiles.mark_z,     name: 'Jacob Fay',          title: 'Testing Lead',              email: 'jpf5643@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
+  { photo: profiles.luke_k,     name: 'Luke Knofczynski',   title: 'Technical Lead',            email: 'ldk7811@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
+  { photo: profiles.aditya_v,   name: 'Aditya Vikram',      title: 'Scrum Master',              email: 'av9242@rit.edu',    phone: 'None',  location: 'Rochester, NY' },
+  { photo: profiles.jacob_f,    name: 'Jacob Fay',          title: 'Testing Lead',              email: 'jpf5643@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
 ];
 
 
