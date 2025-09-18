@@ -1,0 +1,12 @@
+export { default as amr_m } from './Amr_Mualla.png';
+export { default as beck_a } from './Beck_Anderson.png';
+export { default as chase_a } from './Chase_Amador.png';
+export { default as landon_h } from './Landon_Heatly.png';
+export { default as mack_l } from './Mack_Leonard.png';
+export { default as mark_z } from './Mark_Elliot_Zuckerberg.jpg';
+export { default as paul_c } from './Paul_Craig.jpg';
+export { default as shreyes_g } from './Shreyes-Gadwalkar.jpg';
+export { default as zach_vh } from './Zach_Van_Horn.jpeg';
+export { default as jacob_f } from './Jacob_Fay.jpg';
+export { default as aditya_v } from './Aditya_Vikram.jpg';
+export { default as luke_k } from './Luke_Knofczynski.jpg';
