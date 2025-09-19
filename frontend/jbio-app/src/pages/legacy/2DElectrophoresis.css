@@ -1,114 +1,253 @@
-#startButton {
-    background-color: var(--accent);
-    color: var(--text);
-}
+/* Extracted styles from 2DElectrophoresis.js
+     Converted inline styles into classes. Keep dynamic inline styles in JSX
+     for runtime-driven properties (mouse position, dynamic widths, colors, opacity).
+*/
 
-#stopButton {
-    background-color: var(--sub-background);
-    color: var(--text);
-}
-
-#secondDimensionButton {
-    background-color: #3b82f6;
-    color: var(--text);
-    position: absolute;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.control-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.control-section h3 {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 600;
-}
-
-select {
-    padding: 0.5rem;
+/* Button base style (from buttonStyle) */
+.twoDE-button {
+    background-color: #1a1a1a;
+    border: 1px solid #3a3a3a;
+    color: white;
+    padding: 8px 16px;
     border-radius: 4px;
-    border: 1px solid var(--sub-text);
-    background-color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    width: 140px;
+    margin-bottom: 8px;
 }
 
-.protein-list {
-    margin-top: 1rem;
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid var(--accent);
-    border-radius: 4px;
-    padding: 0.5rem;
+.twoDE-button:hover {
+    background-color: #2a2a2a;
+    border-color: #4a4a4a;
 }
 
-.protein-item {
+.twoDE-button.icon {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem;
+    justify-content: center;
+    gap: 4px;
+}
+
+/* Input style (from inputStyle) */
+.twoDE-input {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: white;
+    width: 50px;
+    padding: 4px;
     border-radius: 4px;
-}
-
-.protein-color {
-    width: 1rem;
-    height: 1rem;
-    border-radius: 2px;
-}
-
-.visualization {
-    position: relative;
-}
-
-#gelCanvas {
-    background: var(--background);
-    border: 1px solid red;
-    border-radius: 4px;
-}
-
-.hidden {
-    display: none;
-}
-
-.simulatorBoxTwoDE {
-    width: 90%;
-}
-
-canvas{
-    width: 100%;
-}
-
-.sim-container{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.TwoDEinstructions ol, .TwoDEinstructions li, .TwoDEinstructions ul {
-    text-align: left;
-}
-
-.centerText {
+    font-size: 14px;
     text-align: center;
 }
 
-.TwoDEinstructions {
-    margin: auto;
-    display: block;
-    width: fit-content;
-    padding-right: 2%;
+/* Range slider base */
+.twoDE-range {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    outline: none;
+    transition: opacity 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #555;
+}
+
+/* Canvas and container styles */
+.twoDE-canvas-wrapper {
+    position: relative;
+}
+
+.twoDE-canvas {
+    border: 1px solid #444;
+    border-radius: 4px;
+    width: 800px;
+    height: 600px;
+}
+
+/* Protein list panel */
+#protein-list.twoDE-panel {
+    padding: 16px;
+    background-color: #282828;
+    border-radius: 4px;
+    width: 250px;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease-in-out;
+    overflow: hidden;
+    position: relative;
+}
+
+.twoDE-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px;
+    height: 100%;
+    cursor: ew-resize;
+    background: rgba(255,255,255,0.1);
+}
+
+.twoDE-protein-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+    margin-top: 8px;
+}
+
+.twoDE-protein-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.twoDE-protein-item.selected {
+    background-color: #3a3a3a;
+}
+
+.twoDE-protein-color {
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    border-radius: 50%;
+}
+
+.twoDE-protein-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+    flex: 1;
+}
+
+/* Drag overlay */
+.twoDE-drag-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    border-radius: 4px;
+}
+
+.twoDE-drag-box {
+    padding: 20px;
+    border: 2px dashed #666;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* Protein info card */
+#protein-info-card.twoDE-card {
+    position: fixed;
+    background-color: #282828;
+    border: 1px solid #444;
+    color: white;
+    padding: 12px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    min-width: 200px;
+    pointer-events: auto;
+}
+
+.twoDE-card h4 {
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.twoDE-card .meta {
+    font-size: 14px;
+    display: grid;
+    gap: 4px;
+}
+
+.twoDE-card a {
+    color: #63B3ED;
+    text-decoration: none;
+}
+
+.twoDE-card .muted {
+    color: #A0AEC0;
+}
+
+.twoDE-card .sequence-preview {
+    color: #A0AEC0;
+    font-family: monospace;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+/* Circular progress container */
+.twoDE-progress {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.twoDE-progress .percent {
+    position: absolute;
+    font-size: 12px;
+}
+
+/* Controls layout helpers */
+.twoDE-controls-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.twoDE-controls-col {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background-color:  var(--sub-background);
+    color: white;
+}
+
+.control-group {
+    margin-bottom: 20px;
+    padding: 0 20px;
+    max-width: 800px;
+    align-self: center;
+}
+
+.twoDE-control-label {
+    font-size: 14px;
+    width: 120px;
+}
+
+.twoDE-acrylic-desc {
+    min-width: 140px;
+    font-size: 12px;
 }
 
 @media screen and (max-width: 1000px) {
-    #protein-list{
+    #protein-list.twoDE-panel {
         flex-direction: row !important;
         width: auto !important;
         height: 10% !important;
     }
-    div:has(#protein-list){
+    div:has(#protein-list) {
         flex-direction: column;
     }
 }
