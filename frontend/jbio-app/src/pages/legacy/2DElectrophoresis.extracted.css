@@ -225,6 +225,7 @@
   flex-direction: column;
   padding: 16px;
   color: white;
+  background-color: var(--background) !important;
 }
 
 .twoDE-controls-col .control-group {

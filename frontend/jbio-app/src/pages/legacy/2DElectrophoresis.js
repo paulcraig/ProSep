@@ -712,7 +712,7 @@ const TwoDE = () => {
     <div>
       <div className='simulatorBoxTwoDE'>
 
-        <div className="twoDE-controls-col" style={{backgroundColor: 'var(--background)'}}>
+        <div className="twoDE-controls-col" >
           <div className="twoDE-controls-row">
             {/* First dimension button */}
             <button
