@@ -31,6 +31,7 @@ const TwoDE = () => {
   // State for PPS1-111: Collapsible protein list
   const [isProteinListCollapsed, setIsProteinListCollapsed] = useState(false);
 
+
   // Constants
   const MIN_PH = phRange.min;
   const MAX_PH = phRange.max;

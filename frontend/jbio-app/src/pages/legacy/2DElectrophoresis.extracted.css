@@ -262,3 +262,8 @@
 .twoDE-controls-col{
     background-color:#292b31;
 }
+
+/*this should switch based on theme */
+.control-group{
+ color: var(--text);
+}
