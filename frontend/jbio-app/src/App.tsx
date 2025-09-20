@@ -2,7 +2,7 @@ import logo from './assets/basil-logo.png';
 import Dashboard from './components/Dashboard';
 import About from './pages/About';
 
-import OneDE from './pages/legacy/1DElectrophoresis.js'
+import OneDE from './pages/1DElectrophoresis'
 import TwoDE from './pages/legacy/2DElectrophoresis.js'
 
 import GitHubIcon from '@mui/icons-material/GitHub';

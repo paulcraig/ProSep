@@ -1,0 +1,51 @@
+.gel-wrapper {
+  padding: 2rem 4rem;
+  display: inline-block;
+  margin: 2rem;
+}
+
+.gel-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gel-svg {
+  display: block;
+  overflow: visible;
+}
+
+.gel-fill {
+  fill: var(--sub-background);
+  stroke: none;
+}
+
+.gel-border {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  stroke-width: 0.25rem;
+}
+
+.label {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  color: var(--text);
+  text-align: center;
+}
+
+.noselect {
+  -webkit-user-select: none; /* Safari */
+  user-select: none;
+}
+
+.axis text {
+  font-size: 14px;
+  user-select: none;
+}
+
+.axis line {
+  shape-rendering: crispEdges;
+}
