@@ -1,11 +1,32 @@
 import React, { useState } from 'react'
 import './1DElectrophoresis.css'
 
-import { Select, MenuItem } from "@mui/material"
+
+import { Select, MenuItem, Button, Chip, Stack } from "@mui/material"
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import InsertChartIcon from '@mui/icons-material/InsertChart';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import ClearAllIcon from '@mui/icons-material/ClearAll';
+
 
 import blackWire from '../assets/electrophoresis/blackwire.png'
 import redWire from '../assets/electrophoresis/redwire.png'
 
+
+const proteinColors: Record<string, string> = {
+  "B-Galactosidase": "#4dd0e1",
+  "Phosphorylase B": "#dce775",
+  "Serum Albumin": "#4fc3f7",
+  "Ovalbumin": "#f06292",
+  "Carbonic Anhydrase": "#aed581",
+  "Trypsin Inhibitor": "#5c6bc0",
+  "Lysozyme": "#81c784",
+  "Aprotinin": "#e57373",
+}
+
+
+const proteins = Object.keys(proteinColors)
 
 interface ElectrophoresisProps {
   ticks?: number
@@ -28,11 +49,12 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
   const [lastY, setwellWastY] = useState<number | null>(null)
   
   const [wellsCount, setWellsCount] = useState(wells)
+  const [selectedProteins, setSelectedProteins] = useState<string[]>(() => proteins)
   const [voltageAmt, setVoltageAmt] = useState([50, 100, 150, 200].includes(voltage) ? voltage : 50)
   const [acrylamidePct, setAcrylamidePct] = useState([7.5, 10, 12, 15].includes(acrylamide) ? acrylamide : 7.5)
 
   const minTickH = 20
-  const totalH = 750
+  const totalH = 700
   const slabW = 525
   const wellH = 45
   const wireH = 25
@@ -45,6 +67,11 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
   const wellW = slabW / units
 
   let lastTickY = -Infinity
+
+
+  const toggleProtein = (protein: string) => {
+    setSelectedProteins(prev => prev.includes(protein) ? prev.filter(p => p !== protein) : [...prev, protein])
+  }
 
 
   const addWell = (e: React.MouseEvent) => {
@@ -272,11 +299,48 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
 
   return (
     <div className='gel-wrapper'>
+      {/* Toolbar */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '0.5rem',
+          paddingLeft: '3.75rem',
+          paddingBottom: '1rem',
+          fontSize: '14px',
+          height: '32px',
+          width: slabW
+        }}
+      >
+        {[
+          { label: 'Start', icon: <PlayArrowIcon /> },
+          { label: 'Stop', icon: <StopIcon /> },
+          { label: 'Plot', icon: <InsertChartIcon /> },
+          { label: 'Reset', icon: <RestartAltIcon /> },
+          { label: 'Clear', icon: <ClearAllIcon /> },
+        ].map(btn => (
+          <Button
+            key={btn.label}
+            variant="contained"
+            startIcon={btn.icon}
+            sx={{
+              backgroundColor: 'var(--highlight)',
+              textTransform: 'none',
+              color: 'var(--text)',
+              '&:hover': { backgroundColor: 'var(--accent)' }
+            }}
+          >
+            {btn.label}
+          </Button>
+        ))}
+      </div>
+
+      {/* Simulation */}
       <div className='gel-container'>
         <svg
-          width={slabW + 160}
-          height={totalH + 40}
-          viewBox={`-60 0 ${slabW + 160} ${totalH + 40}`}
+          width={slabW * 1.4}
+          height={totalH}
+          viewBox={`-60 0 ${slabW * 1.4} ${totalH}`}
           className='gel-svg'
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
@@ -386,6 +450,32 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
             <title>Add well</title>
           </g>
         </svg>
+      </div>
+
+      {/* Proteins */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: '0.5rem',
+        width: slabW,
+        paddingLeft: '3.75rem'
+      }}>
+        {proteins.map(protein => {
+          const isSelected = selectedProteins.includes(protein)
+          return (
+            <Chip
+              key={protein}
+              label={protein}
+              onClick={() => toggleProtein(protein)}
+              sx={{
+                backgroundColor: isSelected ? proteinColors[protein] : 'var(--highlight)',
+                color: 'var(--text)',
+                fontWeight: 'bold'
+              }}
+            />
+          )
+        })}
       </div>
     </div>
   )

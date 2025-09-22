@@ -1,5 +1,4 @@
 .gel-wrapper {
-  padding: 2rem 4rem;
   display: inline-block;
   margin: 2rem;
 }
@@ -30,7 +29,6 @@
 }
 
 .label {
-  margin-top: 1rem;
   font-size: 1.1rem;
   color: var(--text);
   text-align: center;
@@ -61,3 +59,8 @@
   font-weight: bold;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+
+/* .gel-wrapper, .gel-container, .toolbar, .chips {
+  border: 1px solid red;
+} */
+ 
