@@ -25,6 +25,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
   const [isDragging, setIsDragging] = useState(false)
   const [lastY, setwellWastY] = useState<number | null>(null)
 
+  const minTickH = 20
   const totalH = 750
   const slabW = 525
   const wellH = 45
@@ -36,6 +37,9 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
   const slabH = totalH - wellH - buffH
   const units = 2 * wells + 1
   const wellW = slabW / units
+
+  let lastTickY = -Infinity
+
 
   const buildWells = () => {
     let fill = `M0,${wellH}`
@@ -58,9 +62,9 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
     const sides = `M0,${wellH} V${wellH + slabH} H${slabW} V${wellH}`
     return { fill, top, sides }
   }
-
   const { fill: pathFill, top: pathTop, sides: pathSides } = buildWells()
 
+  
   const valueToY = (v: number) => {
     const norm = v / ticks
     const a = anchor
@@ -73,6 +77,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
     }
     return wellH + wellH + mapped * (slabH - wellH)
   }
+
 
   const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
     e.preventDefault()
@@ -95,10 +100,12 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
     setAnchor(newAnchor)
   }
 
+
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
     setIsDragging(true)
     setwellWastY(e.clientY)
   }
+
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!isDragging || lastY === null) return
@@ -112,18 +119,17 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
     setAnchor(a => Math.max(0, Math.min(1, a - normShift)))
   }
 
+  
   const handleMouseUp = () => {
     setIsDragging(false)
     setwellWastY(null)
   }
 
-  const MIN_wellWABEwellW_SPACING = 20
-  let lastTickY = -Infinity
 
   const axisTicks = Array.from({ length: ticks + 1 }).map((_, i) => {
     const y = valueToY(i)
     const dist = y - lastTickY
-    let opacity = Math.pow(Math.max(0, Math.min(1, dist / MIN_wellWABEwellW_SPACING)), 2)
+    let opacity = Math.pow(Math.max(0, Math.min(1, dist / minTickH)), 2)
 
     if (i === 0 || i === ticks) {
       opacity = 1
@@ -135,7 +141,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
     if (i !== ticks) {
       const yN = valueToY(ticks)
       const distToN = yN - y
-      const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / MIN_wellWABEwellW_SPACING)), 2)
+      const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / minTickH)), 2)
 
       opacity = Math.min(opacity, fadeNearN)
     }
@@ -166,10 +172,10 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
           [1, 2].map(j => {
             const subY = valueToY(i + j / 3)
             const subDist = subY - y
-            const subOpacity = Math.pow(Math.max(0, Math.min(1, subDist / (MIN_wellWABEwellW_SPACING / 2))), 2)
+            const subOpacity = Math.pow(Math.max(0, Math.min(1, subDist / (minTickH / 2))), 2)
             const yN = valueToY(ticks)
             const distToN = yN - subY
-            const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / (MIN_wellWABEwellW_SPACING / 2))), 2)
+            const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / (minTickH / 2))), 2)
             return (
               <g key={`sub-${i}-${j}`} opacity={subOpacity * fadeNearN}>
                 <line x1={0} y1={subY} x2={slabW} y2={subY} stroke='var(--sub-text)' strokeWidth='0.05rem' />
@@ -181,18 +187,20 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
     )
   })
 
+
   const renderDots = () => {
     const pct = Math.min(15, Math.max(7.5, acrylamide))
     const poreSize = 40 / Math.sqrt(pct)
-    const r = poreSize * 0.2
-    const dotsPerwellW = Math.max(2, Math.round((wellW * pct) / 120))
-    const spacingX = wellW / dotsPerwellW
+
+    const dotsPerWell = Math.max(2, Math.round((wellW * pct) / 120))
+    const spacingX = wellW / dotsPerWell
+
     const opacity = Math.max(0, 0.25 * (1 - (zoom - 1)))
-    const subdivisionsPerTick = 3
+    const subsPerTick = 3
 
     const bandDots = Array.from({ length: ticks }).flatMap((_, i) =>
-      Array.from({ length: subdivisionsPerTick }).flatMap((__, sub) => {
-        const y = valueToY(i + (sub + 0.5) / subdivisionsPerTick)
+      Array.from({ length: subsPerTick }).flatMap((__, sub) => {
+        const y = valueToY(i + (sub + 0.5) / subsPerTick)
         const cols = Math.floor(slabW / spacingX)
 
         return Array.from({ length: cols }).map((__, j) => (
@@ -200,7 +208,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
             key={`band-dot-${i}-${sub}-${j}`}
             cx={j * spacingX + spacingX / 2}
             cy={y}
-            r={r}
+            r={poreSize * 0.2}
             fill='var(--sub-text)'
             opacity={opacity}
           />
@@ -211,7 +219,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
     const y0 = valueToY(0)
     const y1 = valueToY(1)
 
-    const rowPadPx = Math.max(1, (y1 - y0) / subdivisionsPerTick)
+    const rowPadPx = Math.max(1, (y1 - y0) / subsPerTick)
     const totalPx = y0 - wellH
 
     const rows = Math.max(2, Math.floor(totalPx / rowPadPx))
@@ -227,7 +235,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
           key={`well-dot-${rIdx}-${j}`}
           cx={j * spacingX + spacingX / 2}
           cy={y}
-          r={r}
+          r={poreSize * 0.2}
           fill='var(--sub-text)'
           opacity={opacity}
         />
@@ -236,6 +244,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
 
     return [...wellDots, ...bandDots]
   }
+
 
   return (
     <div className='gel-wrapper'>
