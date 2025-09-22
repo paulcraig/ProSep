@@ -49,3 +49,15 @@
 .axis line {
   shape-rendering: crispEdges;
 }
+
+.well-btn {
+  background: var(--accent);
+  color: var(--text);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
