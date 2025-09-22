@@ -96,8 +96,14 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
     const newAnchor = Math.max(0, Math.min(1, frac))
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9
 
-    setZoom(z => Math.min(10, Math.max(1, z * zoomFactor)))
-    setAnchor(newAnchor)
+    setZoom(z => {
+      const newZoom = Math.min(5, Math.max(1, z * zoomFactor))
+
+      if (newZoom === z) return z
+
+      setAnchor(newAnchor)
+      return newZoom
+    })
   }
 
 
