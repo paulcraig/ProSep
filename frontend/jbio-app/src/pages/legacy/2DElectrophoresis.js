@@ -9,6 +9,8 @@ const API_BASE_URL = 'http://129.21.34.127:5000/api';
 const TwoDE = () => {
   // A bunch of frontend states to control the UI
   const canvasRef = useRef(null);
+
+  
   const animationFrameRef = useRef(null);
   const [dots, setDots] = useState([]);
   const [hoveredDot, setHoveredDot] = useState(null);

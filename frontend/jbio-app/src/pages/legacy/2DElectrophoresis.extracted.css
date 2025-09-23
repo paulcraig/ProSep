@@ -246,19 +246,6 @@
   font-size: 12px;
 }
 
-/* Media responsiveness hints (mirrors original file's media query) */
-@media screen and (max-width: 1000px) {
-  #protein-list.twoDE-panel {
-    flex-direction: row !important;
-    width: auto !important;
-    height: 10% !important;
-  }
-  div:has(#protein-list) {
-    flex-direction: column;
-  }
-}
-
-
 .twoDE-controls-col{
     background-color:#292b31;
 }
