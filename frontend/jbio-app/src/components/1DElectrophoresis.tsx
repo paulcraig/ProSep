@@ -126,7 +126,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
 
   const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
     e.preventDefault()
-    const container = e.currentTarget.closest('.gel-container')
+    const container = e.currentTarget.querySelector('.acrylamide-slab');
 
     if (!container || !container.contains(e.target as Node)) return
 
@@ -259,7 +259,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
             key={`band-dot-${i}-${sub}-${j}`}
             cx={j * spacingX + spacingX / 2}
             cy={y}
-            r={poreSize * 0.2}
+            r={poreSize * 0.25}
             fill='var(--sub-text)'
             opacity={opacity}
           />
@@ -286,7 +286,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
           key={`well-dot-${rIdx}-${j}`}
           cx={j * spacingX + spacingX / 2}
           cy={y}
-          r={poreSize * 0.2}
+          r={poreSize * 0.25}
           fill='var(--sub-text)'
           opacity={opacity}
         />
@@ -428,13 +428,15 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
           </foreignObject>
           <image href={redWire} x={slabW + wireO} y={anodeT + wellH - wireH / 2} height={wireH} width={wireW} preserveAspectRatio='xMidYMid meet' />
 
-          <path d={pathFill} fill='var(--sub-background)' />
-          <defs><clipPath id='gel-clip'><path d={pathFill} /></clipPath></defs>
+          <g className="acrylamide-slab">
+            <path d={pathFill} fill='var(--sub-background)' />
+            <defs><clipPath id='gel-clip'><path d={pathFill} /></clipPath></defs>
 
-          <g opacity='0.6' clipPath='url(#gel-clip)'>{renderDots()}</g>
-          <g className='axis'>{axisTicks}</g>
-          <path d={pathSides} className='gel-border' />
-          <path d={pathTop} className='gel-border' />
+            <g opacity='0.6' clipPath='url(#gel-clip)'>{renderDots()}</g>
+            <g className='axis'>{axisTicks}</g>
+            <path d={pathSides} className='gel-border' />
+            <path d={pathTop} className='gel-border' />
+          </g>
 
         <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${wellW/2},${wellH*1.5})`} onClick={removeWell}>
           <circle r={12} />
