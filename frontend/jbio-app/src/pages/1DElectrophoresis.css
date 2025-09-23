@@ -48,19 +48,15 @@
   shape-rendering: crispEdges;
 }
 
-.well-btn {
-  background: var(--accent);
-  color: var(--text);
-  border: none;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-  font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+.well-btn circle {
+  fill: var(--highlight);
+  transition: fill 0.15s ease-in-out;
+}
+
+.well-btn:hover circle {
+  fill: var(--accent);
 }
 
 /* .gel-wrapper, .gel-container, .toolbar, .chips {
   border: 1px solid red;
 } */
- 

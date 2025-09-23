@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import './1DElectrophoresis.css'
 
 
-import { Select, MenuItem, Button, Chip, Stack } from "@mui/material"
+import { Select, MenuItem, Button, Chip, Stack } from '@mui/material'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import InsertChartIcon from '@mui/icons-material/InsertChart';
@@ -15,14 +15,14 @@ import redWire from '../assets/electrophoresis/redwire.png'
 
 
 const proteinColors: Record<string, string> = {
-  "B-Galactosidase": "#4dd0e1",
-  "Phosphorylase B": "#dce775",
-  "Serum Albumin": "#4fc3f7",
-  "Ovalbumin": "#f06292",
-  "Carbonic Anhydrase": "#aed581",
-  "Trypsin Inhibitor": "#5c6bc0",
-  "Lysozyme": "#81c784",
-  "Aprotinin": "#e57373",
+  'B-Galactosidase':    '#4dd0e1',
+  'Phosphorylase B':    '#d3e24aff',
+  'Serum Albumin':      '#3d98c1ff',
+  'Ovalbumin':          '#f06292',
+  'Carbonic Anhydrase': '#b8de7cff',
+  'Trypsin Inhibitor':  '#5c6bc0',
+  'Lysozyme':           '#81c784',
+  'Aprotinin':          '#e57373',
 }
 
 
@@ -38,7 +38,7 @@ interface ElectrophoresisProps {
 
 const OneDE: React.FC<ElectrophoresisProps> = ({
   ticks = 6,
-  wells = 2,
+  wells = 3,
   voltage = 50,
   acrylamide = 7.5,
 }) => {
@@ -49,13 +49,13 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
   const [lastY, setwellWastY] = useState<number | null>(null)
   
   const [wellsCount, setWellsCount] = useState(wells)
+  const [voltageAmt, setVoltageAmt] = useState(voltage)
+  const [acrylamidePct, setAcrylamidePct] = useState(acrylamide)
   const [selectedProteins, setSelectedProteins] = useState<string[]>(() => proteins)
-  const [voltageAmt, setVoltageAmt] = useState([50, 100, 150, 200].includes(voltage) ? voltage : 50)
-  const [acrylamidePct, setAcrylamidePct] = useState([7.5, 10, 12, 15].includes(acrylamide) ? acrylamide : 7.5)
 
   const minTickH = 20
   const totalH = 700
-  const slabW = 525
+  const slabW = 575
   const wellH = 45
   const wireH = 25
   const wireW = 75
@@ -81,7 +81,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
 
   const removeWell = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setWellsCount(w => Math.max(1, w - 1))
+    setWellsCount(w => Math.max(2, w - 1))
   }
 
 
@@ -211,7 +211,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
         <text
           x={-30}
           y={y + 6}
-          fontSize='14'
+          fontSize='14px'
           fontFamily='sans-serif'
           fill='var(--text)'
           textAnchor='end'
@@ -308,7 +308,6 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
           paddingLeft: '3.75rem',
           paddingBottom: '1rem',
           fontSize: '14px',
-          height: '32px',
           width: slabW
         }}
       >
@@ -321,7 +320,7 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
         ].map(btn => (
           <Button
             key={btn.label}
-            variant="contained"
+            variant='contained'
             startIcon={btn.icon}
             sx={{
               backgroundColor: 'var(--highlight)',
@@ -393,15 +392,15 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
               height={28}
             >
               <Select
-                variant="standard"
+                variant='standard'
                 value={voltageAmt}
                 onChange={(e) => setVoltageAmt(Number(e.target.value))}
                 sx={{
-                  fontWeight: "bold",
-                  fontSize: "14px",
-                  color: "var(--text)",
-                  "& .MuiSelect-icon": { color: "var(--text)" },
-                  paddingLeft: "1.75rem"
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  color: 'var(--text)',
+                  '& .MuiSelect-icon': { color: 'var(--text)' },
+                  paddingLeft: '1.75rem'
                 }}
               >
                 {[50, 100, 150, 200].map(v => ( <MenuItem key={v} value={v}>{v}V</MenuItem> ))}
@@ -414,14 +413,14 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
           <rect x={-20} y={anodeT} width={slabW + 40} height={wellH * 2} fill='var(--highlight)' stroke='var(--accent)' strokeWidth='0.25rem' ry={5} rx={5} />
           <foreignObject x={0} y={anodeT + wellH - 12} width={160} height={24}>
             <Select
-              variant="standard"
+              variant='standard'
               value={acrylamidePct}
               onChange={(e) => setAcrylamidePct(Number(e.target.value))}
               sx={{
-                fontWeight: "bold",
-                fontSize: "14px",
-                color: "var(--sub-text)",
-                "& .MuiSelect-icon": { color: "var(--sub-text)" },
+                fontWeight: 'bold',
+                fontSize: '14px',
+                color: 'var(--sub-text)',
+                '& .MuiSelect-icon': { color: 'var(--sub-text)' },
               }}
             >
               {[7.5,10,12,15].map(a => ( <MenuItem key={a} value={a}>Acrylamide {a}%</MenuItem> ))}
@@ -437,18 +436,18 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
           <path d={pathSides} className='gel-border' />
           <path d={pathTop} className='gel-border' />
 
-          <g style={{ cursor: 'pointer' }} transform={`translate(${wellW / 2}, ${wellH * 1.5})`} onClick={removeWell}>
-            <circle r={12} fill="var(--highlight)" />
-            <line x1={-4} y1={0} x2={4} y2={0} stroke="var(--text)" strokeWidth={2} strokeLinecap="round" />
-            <title>Remove well</title>
-          </g>
+        <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${wellW/2},${wellH*1.5})`} onClick={removeWell}>
+          <circle r={12} />
+          <line x1={-4} y1={0} x2={4} y2={0} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
+          <title>Remove well</title>
+        </g>
 
-          <g style={{ cursor: 'pointer' }} transform={`translate(${slabW - wellW / 2}, ${wellH * 1.5})`} onClick={addWell}>
-            <circle r={12} fill="var(--highlight)" />
-            <line x1={-4} y1={0} x2={4} y2={0} stroke="var(--text)" strokeWidth={2} strokeLinecap="round" />
-            <line x1={0} y1={-4} x2={0} y2={4} stroke="var(--text)" strokeWidth={2} strokeLinecap="round" />
-            <title>Add well</title>
-          </g>
+        <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${slabW-wellW/2},${wellH*1.5})`} onClick={addWell}>
+          <circle r={12} />
+          <line x1={-4} y1={0} x2={4} y2={0} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
+          <line x1={0} y1={-4} x2={0} y2={4} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
+          <title>Add well</title>
+        </g>
         </svg>
       </div>
 
