@@ -1,17 +1,16 @@
 import React, { useState } from 'react'
-import './1DElectrophoresis.css'
-
-
-import { Select, MenuItem, Button, Chip, Stack } from '@mui/material'
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import StopIcon from '@mui/icons-material/Stop';
-import InsertChartIcon from '@mui/icons-material/InsertChart';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import ClearAllIcon from '@mui/icons-material/ClearAll';
-
+import './1DESimulation.css'
 
 import blackWire from '../assets/electrophoresis/blackwire.png'
 import redWire from '../assets/electrophoresis/redwire.png'
+
+import { Select, MenuItem, Button, Chip } from '@mui/material'
+
+import StopIcon from '@mui/icons-material/Stop';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import InsertChartIcon from '@mui/icons-material/InsertChart';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import ClearAllIcon from '@mui/icons-material/ClearAll';
 
 
 const proteinColors: Record<string, string> = {
@@ -36,7 +35,7 @@ interface ElectrophoresisProps {
 }
 
 
-const OneDE: React.FC<ElectrophoresisProps> = ({
+const OneDESim: React.FC<ElectrophoresisProps> = ({
   ticks = 6,
   wells = 3,
   voltage = 50,
@@ -482,4 +481,4 @@ const OneDE: React.FC<ElectrophoresisProps> = ({
   )
 }
 
-export default OneDE
+export default OneDESim

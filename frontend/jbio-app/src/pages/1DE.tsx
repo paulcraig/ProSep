@@ -1,6 +1,6 @@
-import OneDE from '../components/1DElectrophoresis';
+import OneDESim from '../components/1DESimulation';
 
-function OneDEPage() {
+function OneDE() {
   return (
     <div
       style={{
@@ -12,7 +12,7 @@ function OneDEPage() {
       }}
     >
       <div style={{ flex: '1 1 400px', minWidth: '800px', maxWidth: '850px' }}>
-        <OneDE />
+        <OneDESim />
       </div>
       <div
         style={{
@@ -55,4 +55,4 @@ function OneDEPage() {
   );
 }
 
-export default OneDEPage;
+export default OneDE;
