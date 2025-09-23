@@ -44,3 +44,7 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+li {
+  color: var(--sub-text);
+}
