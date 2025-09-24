@@ -129,7 +129,7 @@ const OneDE = () => {
   const [isAtStartingPoint, setIsAtStartingPoint] = useState(true);
   const [blueDyeReachedBottom, setBlueDyeReachedBottom] = useState(false);
   const [proteinStandards, setProteinStandards] = useState(initialProteinStandards);
-  const [wellResponses, setWellResponses] = useState({0: initialProteinStandards});
+  const [wellResponses, setWellResponses] = useState({0: initialProteinStandards}); // TODO LOOK INTO HOW THE HELL THEY USE WELLS AND PROTEINS...
   const [files, setFiles] = useState({});
   const [showChart, setShowChart] = useState(false);
   const allProteins = [

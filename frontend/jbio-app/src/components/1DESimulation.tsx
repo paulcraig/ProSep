@@ -13,19 +13,16 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 
 
-const proteinColors: Record<string, string> = {
-  'B-Galactosidase':    '#4dd0e1',
-  'Phosphorylase B':    '#d3e24aff',
-  'Serum Albumin':      '#3d98c1ff',
-  'Ovalbumin':          '#f06292',
-  'Carbonic Anhydrase': '#b8de7cff',
-  'Trypsin Inhibitor':  '#5c6bc0',
-  'Lysozyme':           '#81c784',
-  'Aprotinin':          '#e57373',
-}
-
-
-const proteins = Object.keys(proteinColors)
+const standards = [
+  { name: "B-Galactosidase", molecularWeight: 116250, migrationDistance: 0, color: "#4dd0e1", id_num: "6X1Q", id_str: "pdb" },
+  { name: "Phosphorylase B", molecularWeight: 97400, migrationDistance: 0, color: "#d3e24aff", id_num: "3LQ8", id_str: "pdb" },
+  { name: "Serum Albumin", molecularWeight: 66200, migrationDistance: 0, color: "#3d98c1ff", id_num: "1AO6", id_str: "pdb" },
+  { name: "Ovalbumin", molecularWeight: 45000, migrationDistance: 0, color: "#f06292", id_num: "1OVA", id_str: "pdb" },
+  { name: "Carbonic Anhydrase", molecularWeight: 29000, migrationDistance: 0, color: "#b8de7cff", id_num: "1CA2", id_str: "pdb" },
+  { name: "Trypsin Inhibitor", molecularWeight: 20100, migrationDistance: 0, color: "#5c6bc0", id_num: "2PTC", id_str: "pdb" },
+  { name: "Lysozyme", molecularWeight: 14400, migrationDistance: 0, color: "#81c784", id_num: "6LYZ", id_str: "pdb" },
+  { name: "Aprotinin", molecularWeight: 6500, migrationDistance: 0, color: "#e57373", id_num: "1AAP", id_str: "pdb" }
+];
 
 interface ElectrophoresisProps {
   ticks?: number
@@ -41,16 +38,18 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   voltage = 50,
   acrylamide = 7.5,
 }) => {
+  const [wellsCount, setWellsCount] = useState(wells)
+  const [voltageAmt, setVoltageAmt] = useState(voltage)
+  const [acrylamidePct, setAcrylamidePct] = useState(acrylamide)
 
   const [zoom, setZoom] = useState(1)
   const [anchor, setAnchor] = useState(0.5)
   const [isDragging, setIsDragging] = useState(false)
   const [lastY, setwellWastY] = useState<number | null>(null)
-  
-  const [wellsCount, setWellsCount] = useState(wells)
-  const [voltageAmt, setVoltageAmt] = useState(voltage)
-  const [acrylamidePct, setAcrylamidePct] = useState(acrylamide)
-  const [selectedProteins, setSelectedProteins] = useState<string[]>(() => proteins)
+
+  const [isRunning, setIsRunning] = useState(false)
+  const [showChart, setShowChart] = useState(false)
+  const [selectedStandards, setSelectedStandards] = useState<typeof standards[number][]>(standards)
 
   const minTickH = 20
   const totalH = 700
@@ -68,8 +67,40 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   let lastTickY = -Infinity
 
 
-  const toggleProtein = (protein: string) => {
-    setSelectedProteins(prev => prev.includes(protein) ? prev.filter(p => p !== protein) : [...prev, protein])
+  const toggleProtein = (protein: typeof standards[number]) => {
+    setSelectedStandards(prev =>
+      prev.some(p => p.id_num === protein.id_num)
+        ? prev.filter(p => p.id_num !== protein.id_num)
+        : [...prev, protein]
+    )
+  }
+
+  
+  const handleStart = () => {
+    setIsRunning(true)
+    // TODO
+  }
+
+
+  const handleStop = () => {
+    setIsRunning(false)
+    // TODO
+  }
+
+
+  const handlePlot = () => setShowChart(prev => !prev)
+
+
+  const handleReset = () => {
+    setIsRunning(false)
+    // TODO
+  }
+
+
+  const handleClear = () => {
+    setIsRunning(false)
+    setSelectedStandards(standards) // reselect all standards
+    // TODO
   }
 
 
@@ -77,6 +108,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     e.stopPropagation()
     setWellsCount(w => Math.min(6, w + 1))
   }
+
 
   const removeWell = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -311,14 +343,16 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         }}
       >
         {[
-          { label: 'Start', icon: <PlayArrowIcon /> },
-          { label: 'Stop', icon: <StopIcon /> },
-          { label: 'Plot', icon: <InsertChartIcon /> },
-          { label: 'Reset', icon: <RestartAltIcon /> },
-          { label: 'Clear', icon: <ClearAllIcon /> },
+          { label: 'Start', icon: <PlayArrowIcon />, onClick: handleStart, disabled: isRunning },
+          { label: 'Stop',  icon: <StopIcon />,      onClick: handleStop,  disabled: !isRunning },
+          { label: 'Plot',  icon: <InsertChartIcon />, onClick: handlePlot },
+          { label: 'Reset', icon: <RestartAltIcon />,  onClick: handleReset },
+          { label: 'Clear', icon: <ClearAllIcon />,    onClick: handleClear },
         ].map(btn => (
           <Button
             key={btn.label}
+            onClick={btn.onClick}
+            disabled={btn.disabled}
             variant='contained'
             startIcon={btn.icon}
             sx={{
@@ -437,18 +471,44 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             <path d={pathTop} className='gel-border' />
           </g>
 
-        <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${wellW/2},${wellH*1.5})`} onClick={removeWell}>
-          <circle r={12} />
-          <line x1={-4} y1={0} x2={4} y2={0} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
-          <title>Remove well</title>
-        </g>
+          <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${wellW/2},${wellH*1.5})`} onClick={removeWell}>
+            <circle r={12} />
+            <line x1={-4} y1={0} x2={4} y2={0} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
+            <title>Remove well</title>
+          </g>
 
-        <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${slabW-wellW/2},${wellH*1.5})`} onClick={addWell}>
-          <circle r={12} />
-          <line x1={-4} y1={0} x2={4} y2={0} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
-          <line x1={0} y1={-4} x2={0} y2={4} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
-          <title>Add well</title>
-        </g>
+          <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${slabW-wellW/2},${wellH*1.5})`} onClick={addWell}>
+            <circle r={12} />
+            <line x1={-4} y1={0} x2={4} y2={0} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
+            <line x1={0} y1={-4} x2={0} y2={4} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
+            <title>Add well</title>
+          </g>
+
+          <g className="standards-well">
+            {selectedStandards.map((protein, i) => {
+              const bandW = wellW * 0.8
+              const bandH = wellH * 0.3
+              const x = wellW + ((wellW - bandW) / 2)
+              const y = wellH + ((wellH + bandH) / 2) - (bandW / 12)
+
+              return (
+                <rect
+                  key={protein.id_num}
+                  x={x}
+                  y={y}
+                  width={bandW}
+                  height={bandH}
+                  fill={protein.color}
+                  stroke="black"
+                  strokeWidth={0.5}
+                  rx={3}
+                  ry={3}
+                >
+                  <title>{protein.name}</title>
+                </rect>
+              )
+            })}
+          </g>
         </svg>
       </div>
 
@@ -461,15 +521,15 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         width: slabW,
         paddingLeft: '3.75rem'
       }}>
-        {proteins.map(protein => {
-          const isSelected = selectedProteins.includes(protein)
+        {standards.map(protein => {
+          const isSelected = selectedStandards.some(p => p.id_num === protein.id_num)
           return (
             <Chip
-              key={protein}
-              label={protein}
+              key={protein.id_num}
+              label={protein.name}
               onClick={() => toggleProtein(protein)}
               sx={{
-                backgroundColor: isSelected ? proteinColors[protein] : 'var(--highlight)',
+                backgroundColor: isSelected ? protein.color : 'var(--highlight)',
                 color: 'var(--text)',
                 fontWeight: 'bold'
               }}
