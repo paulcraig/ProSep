@@ -47,9 +47,19 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const [isDragging, setIsDragging] = useState(false)
   const [lastY, setwellWastY] = useState<number | null>(null)
 
+  const [hasStarted, setHasStarted] = useState(false)
   const [isRunning, setIsRunning] = useState(false)
   const [showChart, setShowChart] = useState(false)
+
+  const timerRef = React.useRef<number | null>(null)
   const [selectedStandards, setSelectedStandards] = useState<typeof standards[number][]>(standards)
+  const [positions, setPositions] = useState<Record<number, Record<string, number>>>(() =>
+    Object.fromEntries(
+      Array.from({ length: wellsCount }).map((_, wi) => [
+        wi, Object.fromEntries(standards.map(p => [p.id_num, 0]))
+      ])
+    )
+  )
 
   const minTickH = 20
   const totalH = 700
@@ -63,6 +73,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const slabH = totalH - wellH - buffH
   const units = 2 * wellsCount + 1
   const wellW = slabW / units
+  const bandW = wellW * 0.8
+  const bandH = wellH * 0.2
 
   let lastTickY = -Infinity
 
@@ -75,16 +87,60 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     )
   }
 
-  
-  const handleStart = () => {
-    setIsRunning(true)
-    // TODO
+
+  const getFormula = (pct: number) => {
+    const a = -0.55 - 0.01 * pct
+    const b = 2.9 + 0.05 * pct
+    return (logMW: number) => a * logMW + b
   }
 
 
   const handleStop = () => {
     setIsRunning(false)
-    // TODO
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+  }
+
+  
+  const handleToggleRun = () => {
+    if (isRunning) {
+      handleStop()
+    } else {
+      setIsRunning(true)
+      setHasStarted(true)
+
+      timerRef.current = window.setInterval(() => {
+        setPositions(prev => {
+          const updated: typeof prev = { ...prev }
+
+          for (const [wi, wellProteins] of Object.entries(prev)) {
+            const idx = Number(wi)
+            updated[idx] = { ...wellProteins }
+
+            for (const protein of selectedStandards) {
+              const current = wellProteins[protein.id_num]
+              const maxDist = slabH + wellH / 2
+
+              // Target migration distance (Rf × gel height)
+              const logMW = Math.log10(protein.molecularWeight)
+              const rf = getFormula(acrylamidePct)(logMW)
+              const target = Math.min(rf * maxDist, maxDist)
+
+              // Speed proportional to voltage
+              const baseDur = 10
+              const duration = baseDur * (50 / voltageAmt)
+              const step = (target - current) / (duration * 50)
+
+              updated[idx][protein.id_num] = Math.min(current + step, target)
+            }
+          }
+          return updated
+        })
+      }, 10) // ~100 fps
+    }
   }
 
 
@@ -92,15 +148,20 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
 
   const handleReset = () => {
-    setIsRunning(false)
-    // TODO
+    handleStop()
+    setHasStarted(false)
+
+    setPositions(Object.fromEntries(
+      Array.from({ length: wellsCount }).map((_, wi) => [
+        wi,
+        Object.fromEntries(standards.map(p => [p.id_num, 0]))
+      ])
+    ))
   }
 
-
   const handleClear = () => {
-    setIsRunning(false)
-    setSelectedStandards(standards) // reselect all standards
-    // TODO
+    setSelectedStandards(standards)
+    handleReset()
   }
 
 
@@ -343,27 +404,29 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         }}
       >
         {[
-          { label: 'Start', icon: <PlayArrowIcon />, onClick: handleStart, disabled: isRunning },
-          { label: 'Stop',  icon: <StopIcon />,      onClick: handleStop,  disabled: !isRunning },
-          { label: 'Plot',  icon: <InsertChartIcon />, onClick: handlePlot },
-          { label: 'Reset', icon: <RestartAltIcon />,  onClick: handleReset },
-          { label: 'Clear', icon: <ClearAllIcon />,    onClick: handleClear },
-        ].map(btn => (
-          <Button
-            key={btn.label}
-            onClick={btn.onClick}
-            disabled={btn.disabled}
-            variant='contained'
-            startIcon={btn.icon}
-            sx={{
-              backgroundColor: 'var(--highlight)',
-              textTransform: 'none',
-              color: 'var(--text)',
-              '&:hover': { backgroundColor: 'var(--accent)' }
-            }}
-          >
-            {btn.label}
-          </Button>
+            { 
+              label: isRunning ? 'Pause' : hasStarted ? 'Resume' : 'Start',
+              icon: isRunning ? <StopIcon /> : <PlayArrowIcon />,
+              onClick: handleToggleRun
+            },
+            { label: 'Plot',  icon: <InsertChartIcon />, onClick: handlePlot },
+            { label: 'Reset', icon: <RestartAltIcon />,  onClick: handleReset },
+            { label: 'Clear', icon: <ClearAllIcon />,    onClick: handleClear },
+          ].map(btn => (
+            <Button
+              key={btn.label}
+              onClick={btn.onClick}
+              variant='contained'
+              startIcon={btn.icon}
+              sx={{
+                '&:hover': { backgroundColor: 'var(--accent)' },
+                backgroundColor: 'var(--highlight)',
+                textTransform: 'none',
+                color: 'var(--text)'
+              }}
+            >
+              {btn.label}
+            </Button>
         ))}
       </div>
 
@@ -486,16 +549,11 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
           <g className="standards-well">
             {selectedStandards.map((protein, i) => {
-              const bandW = wellW * 0.8
-              const bandH = wellH * 0.3
-              const x = wellW + ((wellW - bandW) / 2)
-              const y = wellH + ((wellH + bandH) / 2) - (bandW / 12)
-
               return (
                 <rect
                   key={protein.id_num}
-                  x={x}
-                  y={y}
+                  x={wellW + ((wellW - bandW) / 2)}
+                  y={wellH + ((wellH + bandH) / 2) + (positions[0]?.[protein.id_num] ?? 0)}
                   width={bandW}
                   height={bandH}
                   fill={protein.color}
