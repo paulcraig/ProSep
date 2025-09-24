@@ -7,8 +7,8 @@ import TwoDE from './pages/legacy/2DElectrophoresis.js'
 
 import GitHubIcon from '@mui/icons-material/GitHub';
 import HomeIcon from '@mui/icons-material/HomeRounded';
-import { ReactComponent as OneDEIcon } from './assets/1DE.svg';
-import { ReactComponent as TwoDEIcon } from './assets/2DE.svg';
+import { ReactComponent as OneDEIcon } from './assets/electrophoresis/1DE.svg';
+import { ReactComponent as TwoDEIcon } from './assets/electrophoresis/2DE.svg';
 
 
 

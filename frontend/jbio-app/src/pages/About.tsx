@@ -48,20 +48,26 @@ const coach: Person = {
 
 const currentDevs: Person[] = [
   coach,
-  { photo: profiles.zach_vh,    name: 'Zachary Van Horn',   title: 'Project Leader',            email: 'zjv4576@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
-  { photo: profiles.shreyes_g,  name: 'Shreyes Gadwalkar',  title: 'Head of Communications',    email: 'ssg9922@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
-  { photo: profiles.luke_k,     name: 'Luke Knofczynski',   title: 'Technical Lead',            email: 'ldk7811@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
-  { photo: profiles.aditya_v,   name: 'Aditya Vikram',      title: 'Scrum Master',              email: 'av9242@rit.edu',    phone: 'None',  location: 'Rochester, NY' },
-  { photo: profiles.jacob_f,    name: 'Jacob Fay',          title: 'Testing Lead',              email: 'jpf5643@rit.edu',   phone: 'None',  location: 'Rochester, NY' },
+  { photo: profiles.zach_vh,    name: 'Zachary Van Horn',   title: 'Project Leader',         email: 'zjv4576@rit.edu',   phone: 'None',           location: 'Rochester, NY' },
+  { photo: profiles.shreyes_g,  name: 'Shreyes Gadwalkar',  title: 'Head of Communications', email: 'ssg9922@rit.edu',   phone: 'None',           location: 'Rochester, NY' },
+  { photo: profiles.luke_k,     name: 'Luke Knofczynski',   title: 'Technical Lead',         email: 'ldk7811@rit.edu',   phone: 'None',           location: 'Rochester, NY' },
+  { photo: profiles.aditya_v,   name: 'Aditya Vikram',      title: 'Scrum Master',           email: 'av9242@rit.edu',    phone: 'None',           location: 'Rochester, NY' },
+  { photo: profiles.jacob_f,    name: 'Jacob Fay',          title: 'Testing Lead',           email: 'jpf5643@rit.edu',   phone: 'None',           location: 'Rochester, NY' },
 ];
 
 
 const historicDevs: Person[] = [
-  { photo: profiles.landon_h,   name: 'Landon Heatly',  title: 'Project Leader',            email: 'lbh1442@rit.edu',   phone: '(203) 832-9841',    location: 'Rochester, NY' },
-  { photo: profiles.amr_m,      name: 'Amr Mualla',     title: 'Technical Lead',            email: 'am3576@rit.edu',    phone: '(347) 631-7359',    location: 'Rochester, NY' },
-  { photo: profiles.beck_a,     name: 'Beck Anderson',  title: 'Head of Communications',    email: 'bea1935@rit.edu',   phone: '(716) 640-2894',    location: 'Rochester, NY' },
-  { photo: profiles.mack_l,     name: 'Mack Leonard',   title: 'Scrum Master',              email: 'mml2034@rit.edu',   phone: '(203) 731-9620',    location: 'Rochester, NY' },
-  { photo: profiles.chase_a,    name: 'Chase Amador',   title: 'Testing Lead',              email: 'cma6320@rit.edu',   phone: '(203) 725-4442',    location: 'Rochester, NY' },
+  { photo: profiles.toula_e,    name: 'Toula Elwell',       title: 'Project Leader',         email: 'tae9467@rit.edu',   phone: 'None',           location: 'Rochester, NY' },
+  { photo: profiles.jackson_m,  name: 'Jackson Murphy',     title: 'Head of Communications', email: 'jmm5915@rit.edu',   phone: 'None',           location: 'Rochester, NY' },
+  { photo: profiles.castor_g,   name: 'Castor Grey',        title: 'Technical Lead',         email: 'lcb7105@rit.edu',   phone: 'None',           location: 'Rochester, NY' },
+  { photo: profiles.cameron_m,  name: 'Cameron Miele',      title: 'Scrum Master',           email: 'clm1886@rit.edu',   phone: 'None',           location: 'Rochester, NY' },
+  { photo: profiles.bryson_v,   name: 'Bryson VerDow',      title: 'Testing Lead',           email: 'bjv7412@rit.edu',   phone: 'None',           location: 'Rochester, NY' },
+
+  { photo: profiles.landon_h,   name: 'Landon Heatly',      title: 'Project Leader',         email: 'lbh1442@rit.edu',   phone: '(203) 832-9841', location: 'Rochester, NY' },
+  { photo: profiles.beck_a,     name: 'Beck Anderson',      title: 'Head of Communications', email: 'bea1935@rit.edu',   phone: '(716) 640-2894', location: 'Rochester, NY' },
+  { photo: profiles.amr_m,      name: 'Amr Mualla',         title: 'Technical Lead',         email: 'am3576@rit.edu',    phone: '(347) 631-7359', location: 'Rochester, NY' },
+  { photo: profiles.mack_l,     name: 'Mack Leonard',       title: 'Scrum Master',           email: 'mml2034@rit.edu',   phone: '(203) 731-9620', location: 'Rochester, NY' },
+  { photo: profiles.chase_a,    name: 'Chase Amador',       title: 'Testing Lead',           email: 'cma6320@rit.edu',   phone: '(203) 725-4442', location: 'Rochester, NY' },
 ];
 
 
