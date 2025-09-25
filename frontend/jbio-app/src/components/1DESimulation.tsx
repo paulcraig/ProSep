@@ -5,24 +5,27 @@ import blackWire from '../assets/electrophoresis/blackwire.png'
 import redWire from '../assets/electrophoresis/redwire.png'
 
 import { Select, MenuItem, Button, Chip } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 
 import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import InsertChartIcon from '@mui/icons-material/InsertChart';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
+import CloseIcon from '@mui/icons-material/Close'
 
 
 const standards = [
-  { name: "B-Galactosidase", molecularWeight: 116250, migrationDistance: 0, color: "#4dd0e1", id_num: "6X1Q", id_str: "pdb" },
-  { name: "Phosphorylase B", molecularWeight: 97400, migrationDistance: 0, color: "#d3e24aff", id_num: "3LQ8", id_str: "pdb" },
-  { name: "Serum Albumin", molecularWeight: 66200, migrationDistance: 0, color: "#3d98c1ff", id_num: "1AO6", id_str: "pdb" },
-  { name: "Ovalbumin", molecularWeight: 45000, migrationDistance: 0, color: "#f06292", id_num: "1OVA", id_str: "pdb" },
-  { name: "Carbonic Anhydrase", molecularWeight: 29000, migrationDistance: 0, color: "#b8de7cff", id_num: "1CA2", id_str: "pdb" },
-  { name: "Trypsin Inhibitor", molecularWeight: 20100, migrationDistance: 0, color: "#5c6bc0", id_num: "2PTC", id_str: "pdb" },
-  { name: "Lysozyme", molecularWeight: 14400, migrationDistance: 0, color: "#81c784", id_num: "6LYZ", id_str: "pdb" },
-  { name: "Aprotinin", molecularWeight: 6500, migrationDistance: 0, color: "#e57373", id_num: "1AAP", id_str: "pdb" }
+  { name: 'B-Galactosidase', molecularWeight: 116250, migrationDistance: 0, color: '#4dd0e1', id_num: '6X1Q', id_str: 'pdb' },
+  { name: 'Phosphorylase B', molecularWeight: 97400, migrationDistance: 0, color: '#d3e24aff', id_num: '3LQ8', id_str: 'pdb' },
+  { name: 'Serum Albumin', molecularWeight: 66200, migrationDistance: 0, color: '#3d98c1ff', id_num: '1AO6', id_str: 'pdb' },
+  { name: 'Ovalbumin', molecularWeight: 45000, migrationDistance: 0, color: '#f06292', id_num: '1OVA', id_str: 'pdb' },
+  { name: 'Carbonic Anhydrase', molecularWeight: 29000, migrationDistance: 0, color: '#b8de7cff', id_num: '1CA2', id_str: 'pdb' },
+  { name: 'Trypsin Inhibitor', molecularWeight: 20100, migrationDistance: 0, color: '#5c6bc0', id_num: '2PTC', id_str: 'pdb' },
+  { name: 'Lysozyme', molecularWeight: 14400, migrationDistance: 0, color: '#81c784', id_num: '6LYZ', id_str: 'pdb' },
+  { name: 'Aprotinin', molecularWeight: 6500, migrationDistance: 0, color: '#e57373', id_num: '1AAP', id_str: 'pdb' }
 ];
+
 
 interface ElectrophoresisProps {
   ticks?: number
@@ -38,45 +41,57 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   voltage = 50,
   acrylamide = 7.5,
 }) => {
-  const [wellsCount, setWellsCount] = useState(wells)
-  const [voltageAmt, setVoltageAmt] = useState(voltage)
-  const [acrylamidePct, setAcrylamidePct] = useState(acrylamide)
 
-  const [zoom, setZoom] = useState(1)
-  const [anchor, setAnchor] = useState(0.5)
-  const [isDragging, setIsDragging] = useState(false)
-  const [lastY, setwellWastY] = useState<number | null>(null)
+  const [wellsCount, setWellsCount] = useState(wells);
+  const [voltageAmt, setVoltageAmt] = useState(voltage);
+  const [acrylamidePct, setAcrylamidePct] = useState(acrylamide);
 
-  const [hasStarted, setHasStarted] = useState(false)
-  const [isRunning, setIsRunning] = useState(false)
-  const [showChart, setShowChart] = useState(false)
+  const [zoom, setZoom] = useState(1);
+  const [anchor, setAnchor] = useState(0.5);
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastY, setwellWastY] = useState<number | null>(null);
+  const rafRef = React.useRef<number | null>(null);
 
-  const timerRef = React.useRef<number | null>(null)
-  const [selectedStandards, setSelectedStandards] = useState<typeof standards[number][]>(standards)
+  const [showChart, setShowChart] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const timerRef = React.useRef<number | null>(null);
+
+  const [selectedStandards, setSelectedStandards] = useState<typeof standards[number][]>(standards);
   const [positions, setPositions] = useState<Record<number, Record<string, number>>>(() =>
     Object.fromEntries(
       Array.from({ length: wellsCount }).map((_, wi) => [
-        wi, Object.fromEntries(standards.map(p => [p.id_num, 0]))
+        wi, wi === 0 ? Object.fromEntries(standards.map(p => [p.id_num, 0])) : {}
       ])
     )
-  )
+  );
 
-  const minTickH = 20
-  const totalH = 700
-  const slabW = 575
-  const wellH = 45
-  const wireH = 25
-  const wireW = 75
-  const wireO = 10
-  const buffH = 0.15 * totalH
-  const anodeT = totalH - buffH
-  const slabH = totalH - wellH - buffH
-  const units = 2 * wellsCount + 1
-  const wellW = slabW / units
-  const bandW = wellW * 0.8
-  const bandH = wellH * 0.2
 
-  let lastTickY = -Infinity
+  const minTickH = 20;
+  const totalH = 700;
+  const slabW = 575;
+  const wellH = 45;
+  const wireH = 25;
+  const wireW = 75;
+  const wireO = 10;
+  const buffH = 0.15 * totalH;
+  const anodeT = totalH - buffH;
+  const slabH = totalH - wellH - buffH;
+  const units = 2 * wellsCount + 1;
+  const wellW = slabW / units;
+  const bandW = wellW * 0.8;
+  const bandH = wellH * 0.2;
+
+
+  function stripHexAlpha(hex: string) {
+    if (/^#([0-9a-f]{8})$/i.test(hex)) return '#' + hex.slice(1, 7);
+
+    if (/^#([0-9a-f]{4})$/i.test(hex)) {
+      const r = hex[1], g = hex[2], b = hex[3];
+      return '#' + r + r + g + g + b + b;
+    }
+    return hex;
+  }
 
 
   const toggleProtein = (protein: typeof standards[number]) => {
@@ -84,267 +99,417 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       prev.some(p => p.id_num === protein.id_num)
         ? prev.filter(p => p.id_num !== protein.id_num)
         : [...prev, protein]
-    )
+    );
   }
 
 
-  const getFormula = (pct: number) => {
-    const a = -0.55 - 0.01 * pct
-    const b = 2.9 + 0.05 * pct
-    return (logMW: number) => a * logMW + b
-  }
+  const getRelativeMobility = (pct: number, MW: number) => {
+    // Ferguson-like relation: μ = μ0 * exp( - Kr * %T ):
+    const logMW = Math.log10(MW);
+
+    const mu0 = 0.95 - 0.18 * logMW;                        // tune 0.95 and 0.18 to taste
+    const Kr_base = 0.005 + 0.015 * logMW;                  // per %T; tune 0.005/0.015
+    const sieving = 1 / (1 + Math.exp(-(pct - 10) / 2.5));  // ~0 at 7.5%, ~1 by 15%
+
+    const mu = mu0 * Math.exp(-(Kr_base * sieving) * pct);
+    return Math.max(0, Math.min(1, mu));
+  };
+
+
+  const GoogleScatterModal: React.FC<{
+    open: boolean;
+    onClose: () => void;
+    positions: Record<number, Record<string, number>>;
+    selectedStandards: typeof standards;
+    ticks: number;
+
+  }> = ({ open, onClose, positions, selectedStandards, ticks }) => {
+
+    const divRef = React.useRef<HTMLDivElement>(null);
+    const [ready, setReady] = React.useState(false);
+
+    React.useEffect(() => {
+      const g = (window as any).google;
+      if (g?.visualization) {
+        setReady(true);
+        return;
+      }
+      const existing = document.querySelector<HTMLScriptElement>(
+        "script[src='https://www.gstatic.com/charts/loader.js']"
+      );
+      const ensureLoaded = () => {
+        (window as any).google.charts.load('current', { packages: ['corechart'] });
+        (window as any).google.charts.setOnLoadCallback(() => setReady(true));
+      };
+
+      if (existing) {
+        existing.addEventListener('load', ensureLoaded, { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://www.gstatic.com/charts/loader.js';
+      script.onload = ensureLoaded;
+      script.onerror = () => console.error('Failed to load Google Charts.');
+      document.head.appendChild(script);
+    }, []);
+
+    // Build rows
+    const buildRows = React.useCallback(() => {
+      type Row = [number, number, string, string];
+      const rows: Row[] = [];
+
+      for (const [wi, wellProteins] of Object.entries(positions)) {
+        for (const protein of selectedStandards) {
+          const v = wellProteins[protein.id_num];
+          if (v === undefined || v <= 0) continue;
+
+          const rf = Number(v) / ticks;
+          const logMW = Number(Math.log10(protein.molecularWeight).toFixed(2));
+          const tip = `
+            <div style='padding:10px; line-height:1.5; min-width:150px;
+                        font-family:Arial, sans-serif; font-size:14px;'>
+              <strong>${protein.name}</strong><br/>
+              Well: ${wi}<br/>
+              Relative Migration: ${rf.toFixed(3)}<br/>
+              Log Molecular Weight: ${logMW.toFixed(2)}<br/>
+              Molecular Weight: ${protein.molecularWeight.toLocaleString()}
+            </div>
+          `;
+          rows.push([
+            rf,
+            logMW,
+            `point { fill-color: ${stripHexAlpha(protein.color)}; }`,
+            tip,
+          ]);
+        }
+      }
+      rows.sort((a, b) => a[0] - b[0]);
+      return rows;
+    }, [positions, selectedStandards, ticks]);
+
+    React.useEffect(() => {
+      if (!open || !ready || !divRef.current) return;
+
+      const g = (window as any).google;
+      const data = new g.visualization.DataTable();
+      data.addColumn('number', 'Relative Migration');
+      data.addColumn('number', 'Log Molecular Weight');
+      data.addColumn({ type: 'string', role: 'style' });
+      data.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });
+
+      const rows = buildRows();
+      data.addRows(rows);
+
+      const options = {
+        legend: 'none',
+        tooltip: { isHtml: true },
+        pointSize: 7,
+        hAxis: { title: 'Relative Migration', minValue: 0, maxValue: 1 },
+        vAxis: { title: 'Log Molecular Weight', minValue: 0, maxValue: 6 },
+        chartArea: { left: 80, top: 50, width: '80%', height: '70%' },
+        trendlines: {
+          0: {
+            type: 'linear',
+            color: 'gray',
+            lineWidth: 2,
+            opacity: 0.3,
+            showR2: true,
+            visibleInLegend: true,
+          },
+        },
+      } as google.visualization.ScatterChartOptions;
+
+      const chart = new g.visualization.ScatterChart(divRef.current);
+      chart.draw(data, options);
+
+      const onResize = () => chart.draw(data, options);
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, [open, ready, buildRows]);
+
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth='lg' fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Log MW vs. Relative Migration
+          <IconButton onClick={onClose}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <div ref={divRef} style={{ width: '100%', height: 420 }} />
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+
+  const handlePlot = () => {
+    handleStop();
+    setShowChart(true);
+  };
 
 
   const handleStop = () => {
-    setIsRunning(false)
+    setIsRunning(false);
 
     if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
   }
 
   
   const handleToggleRun = () => {
     if (isRunning) {
-      handleStop()
+      handleStop();
     } else {
-      setIsRunning(true)
-      setHasStarted(true)
+      setIsRunning(true);
+      setHasStarted(true);
 
       timerRef.current = window.setInterval(() => {
         setPositions(prev => {
           const updated: typeof prev = { ...prev }
 
           for (const [wi, wellProteins] of Object.entries(prev)) {
-            const idx = Number(wi)
+            const idx = Number(wi);
             updated[idx] = { ...wellProteins }
 
             for (const protein of selectedStandards) {
-              const current = wellProteins[protein.id_num]
-              const maxDist = slabH + wellH / 2
+              const rf = getRelativeMobility(acrylamidePct, protein.molecularWeight);
+              const target = Math.min(rf * ticks * ticks, ticks);
+              const current = wellProteins[protein.id_num];
 
-              // Target migration distance (Rf × gel height)
-              const logMW = Math.log10(protein.molecularWeight)
-              const rf = getFormula(acrylamidePct)(logMW)
-              const target = Math.min(rf * maxDist, maxDist)
+              const baseDur = 10;
+              const duration = baseDur * (50 / voltageAmt);
+              const step = (target - current) / (duration * 50);
 
-              // Speed proportional to voltage
-              const baseDur = 10
-              const duration = baseDur * (50 / voltageAmt)
-              const step = (target - current) / (duration * 50)
-
-              updated[idx][protein.id_num] = Math.min(current + step, target)
+              updated[idx][protein.id_num] = Math.min(current + step, target);
             }
           }
-          return updated
+          return updated;
         })
       }, 10) // ~100 fps
     }
   }
-
-
-  const handlePlot = () => setShowChart(prev => !prev)
-
+  
 
   const handleReset = () => {
-    handleStop()
-    setHasStarted(false)
+    handleStop();
+    setHasStarted(false);
 
-    setPositions(Object.fromEntries(
-      Array.from({ length: wellsCount }).map((_, wi) => [
-        wi,
-        Object.fromEntries(standards.map(p => [p.id_num, 0]))
-      ])
-    ))
+    setPositions(prev => {
+      const next: typeof prev = { ...prev }
+      next[0] = Object.fromEntries(standards.map(p => [p.id_num, 0]));
+
+      for (let wi = 1; wi < wellsCount; wi++) {
+        next[wi] = {};
+      }
+      return next;
+    })
   }
 
+
   const handleClear = () => {
-    setSelectedStandards(standards)
-    handleReset()
+    setSelectedStandards(standards);
+    handleReset();
   }
 
 
   const addWell = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setWellsCount(w => Math.min(6, w + 1))
+    e.stopPropagation();
+    setWellsCount(w => Math.min(6, w + 1));
   }
 
 
   const removeWell = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setWellsCount(w => Math.max(2, w - 1))
+    e.stopPropagation();
+    setWellsCount(w => Math.max(2, w - 1));
   }
 
 
   const buildWells = () => {
-    let fill = `M0,${wellH}`
-    let x = 0
+    let fill = `M0,${wellH}`;
+    let x = 0;
 
     for (let i = 0; i < wellsCount; i++) {
-      fill += ` H${x + wellW} V${wellH + wellH} H${x + 2 * wellW} V${wellH}`
-      x += 2 * wellW
+      fill += ` H${x + wellW} V${wellH + wellH} H${x + 2 * wellW} V${wellH}`;
+      x += 2 * wellW;
     }
 
-    fill += ` H${x + wellW} V${wellH + slabH} H0 Z`
-    let top = `M0,${wellH} H${wellW}`
+    fill += ` H${x + wellW} V${wellH + slabH} H0 Z`;
+    let top = `M0,${wellH} H${wellW}`;
 
     for (let i = 0; i < wellsCount; i++) {
-      const rightX = (2 * i + 2) * wellW
-      const nextT = (2 * i + 3) * wellW
-      top += ` V${wellH + wellH} H${rightX} V${wellH} H${nextT}`
+      const rightX = (2 * i + 2) * wellW;
+      const nextT = (2 * i + 3) * wellW;
+      top += ` V${wellH + wellH} H${rightX} V${wellH} H${nextT}`;
     }
 
-    const sides = `M0,${wellH} V${wellH + slabH} H${slabW} V${wellH}`
-    return { fill, top, sides }
+    const sides = `M0,${wellH} V${wellH + slabH} H${slabW} V${wellH}`;
+    return { fill, top, sides };
   }
   
-  const { fill: pathFill, top: pathTop, sides: pathSides } = buildWells()
+  const { fill: pathFill, top: pathTop, sides: pathSides } = buildWells();
 
   
   const valueToY = (v: number) => {
-    const norm = v / ticks
-    const a = anchor
-    let mapped
+    const norm = v / ticks;
+    const a = anchor;
+    let mapped;
 
     if (norm <= a) {
-      mapped = a * Math.pow(norm / Math.max(a, 1e-9), zoom)
+      mapped = a * Math.pow(norm / Math.max(a, 1e-9), zoom);
     } else {
-      mapped = 1 - (1 - a) * Math.pow((1 - norm) / Math.max(1 - a, 1e-9), zoom)
+      mapped = 1 - (1 - a) * Math.pow((1 - norm) / Math.max(1 - a, 1e-9), zoom);
     }
-    return wellH + wellH + mapped * (slabH - wellH)
+    return (wellH * 2) + (mapped * (slabH - wellH));
   }
 
 
   const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
-    e.preventDefault()
-    const container = e.currentTarget.querySelector('.acrylamide-slab');
+    e.preventDefault();
+    if (rafRef.current) return;
 
-    if (!container || !container.contains(e.target as Node)) return
+    // Cache values:
+    const currentTarget = e.currentTarget as SVGSVGElement;
+    const eventTarget = e.target as Node;
+    const clientY = e.clientY;
+    const deltaY = e.deltaY;
 
-    const rect = e.currentTarget.getBoundingClientRect()
-    const mouseY = e.clientY - rect.top
-    const slabTop = wellH + wellH
-    const slabBottom = anodeT
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
 
-    if (mouseY < slabTop || mouseY > slabBottom) return
+      const container = currentTarget.querySelector('.acrylamide-slab');
+      if (!container || !container.contains(eventTarget)) return;
 
-    const frac = (mouseY - slabTop) / (slabH - wellH)
-    const newAnchor = Math.max(0, Math.min(1, frac))
-    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9
+      const rect = currentTarget.getBoundingClientRect();
+      const mouseY = clientY - rect.top;
+      const slabTop = wellH + wellH;
+      const slabBottom = anodeT;
 
-    setZoom(z => {
-      const newZoom = Math.min(5, Math.max(1, z * zoomFactor))
+      if (mouseY < slabTop || mouseY > slabBottom) return;
 
-      if (newZoom === z) return z
-      if (newZoom > z) setAnchor(newAnchor)
-        
-      return newZoom
+      const frac = (mouseY - slabTop) / (slabH - wellH);
+      const newAnchor = Math.max(0, Math.min(1, frac));
+      const zoomFactor = deltaY < 0 ? 1.1 : 0.9;
+
+      setZoom(z => {
+        const newZoom = Math.min(5, Math.max(1, z * zoomFactor));
+        if (newZoom === z) return z;
+        if (newZoom > z) setAnchor(newAnchor);
+        return newZoom;
+      });
     })
   }
 
 
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
-    setIsDragging(true)
-    setwellWastY(e.clientY)
+    setIsDragging(true);
+    setwellWastY(e.clientY);
   }
 
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!isDragging || lastY === null) return
+    if (!isDragging || lastY === null) return;
+    if (rafRef.current) return;
 
-    const dy = e.clientY - lastY
+    // Cache values:
+    const clientY = e.clientY;
 
-    setwellWastY(e.clientY)
-
-    const normShift = dy / (slabH - wellH)
-
-    setAnchor(a => Math.max(0, Math.min(1, a - normShift)))
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const dy = clientY - lastY;
+      const normShift = dy / (slabH - wellH);
+      setwellWastY(clientY);
+      setAnchor(a => Math.max(0, Math.min(1, a - normShift)));
+    })
   }
 
   
   const handleMouseUp = () => {
-    setIsDragging(false)
-    setwellWastY(null)
+    setIsDragging(false);
+    setwellWastY(null);
   }
 
 
-  const axisTicks = Array.from({ length: ticks + 1 }).map((_, i) => {
-    const y = valueToY(i)
-    const dist = y - lastTickY
-    let opacity = Math.pow(Math.max(0, Math.min(1, dist / minTickH)), 2)
+  const axisTicks = React.useMemo(() => {
+    let lastTickY = -Infinity;
 
-    if (i === 0 || i === ticks) {
-      opacity = 1
-      lastTickY = y
-    } else if (opacity > 0.05) {
-      lastTickY = y
-    }
+    return Array.from({ length: ticks + 1 }).map((_, i) => {
+      const y = valueToY(i);
+      const dist = y - lastTickY;
+      let opacity = Math.pow(Math.max(0, Math.min(1, dist / minTickH)), 2);
 
-    if (i !== ticks) {
-      const yN = valueToY(ticks)
-      const distToN = yN - y
-      const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / minTickH)), 2)
+      if (i === 0 || i === ticks) {
+        opacity = 1;
+        lastTickY = y;
+      } else if (opacity > 0.05) {
+        lastTickY = y;
+      }
 
-      opacity = Math.min(opacity, fadeNearN)
-    }
+      if (i !== ticks) {
+        const yN = valueToY(ticks);
+        const distToN = yN - y;
+        const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / minTickH)), 2);
+        opacity = Math.min(opacity, fadeNearN);
+      }
 
-    return (
-      <g key={`axis-${i}`} opacity={opacity}>
-        <line
-          x1={0}
-          y1={y}
-          x2={slabW}
-          y2={y}
-          stroke={(i === 0 || i === ticks) ? 'var(--sub-text)' : 'var(--text)'}
-          strokeWidth={i === 0 || i === ticks ? '0.05rem' : '0.125rem'}
-        />
-        <line x1={-20} y1={y} x2={0} y2={y} stroke='var(--accent)' strokeWidth='0.125rem' />
-        <text
-          x={-30}
-          y={y + 6}
-          fontSize='14px'
-          fontFamily='sans-serif'
-          fill='var(--text)'
-          textAnchor='end'
-          fontWeight='bold'
-        >
-          {i}
-        </text>
-        {i < ticks &&
-          [1, 2].map(j => {
-            const subY = valueToY(i + j / 3)
-            const subDist = subY - y
-            const subOpacity = Math.pow(Math.max(0, Math.min(1, subDist / (minTickH / 2))), 2)
-            const yN = valueToY(ticks)
-            const distToN = yN - subY
-            const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / (minTickH / 2))), 2)
-            return (
-              <g key={`sub-${i}-${j}`} opacity={subOpacity * fadeNearN}>
-                <line x1={0} y1={subY} x2={slabW} y2={subY} stroke='var(--sub-text)' strokeWidth='0.05rem' />
-                <line x1={-12} y1={subY} x2={0} y2={subY} stroke='var(--accent)' strokeWidth='0.05rem' />
-              </g>
-            )
-          })}
-      </g>
-    )
-  })
+      return (
+        <g key={`axis-${i}`} opacity={opacity}>
+          <line
+            x1={0}
+            y1={y}
+            x2={slabW}
+            y2={y}
+            stroke={(i === 0 || i === ticks) ? 'var(--sub-text)' : 'var(--text)'}
+            strokeWidth={i === 0 || i === ticks ? '0.05rem' : '0.125rem'}
+          />
+          <line x1={-20} y1={y} x2={0} y2={y} stroke='var(--accent)' strokeWidth='0.125rem' />
+          <text
+            x={-30}
+            y={y + 6}
+            fontSize='14px'
+            fontFamily='sans-serif'
+            fill='var(--text)'
+            textAnchor='end'
+            fontWeight='bold'
+          >
+            {i}
+          </text>
+          {i < ticks &&
+            [1, 2].map(j => {
+              const subY = valueToY(i + j / 3)
+              const subDist = subY - y
+              const subOpacity = Math.pow(Math.max(0, Math.min(1, subDist / (minTickH / 2))), 2)
+              const yN = valueToY(ticks)
+              const distToN = yN - subY
+              const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / (minTickH / 2))), 2)
+              return (
+                <g key={`sub-${i}-${j}`} opacity={subOpacity * fadeNearN}>
+                  <line x1={0} y1={subY} x2={slabW} y2={subY} stroke='var(--sub-text)' strokeWidth='0.05rem' />
+                  <line x1={-12} y1={subY} x2={0} y2={subY} stroke='var(--accent)' strokeWidth='0.05rem' />
+                </g>
+              )
+            })}
+        </g>
+      )
+    })
+  }, [ticks, zoom, anchor]);
 
 
-  const renderDots = () => {
-    const pct = Math.min(15, Math.max(7.5, acrylamidePct))
-    const poreSize = 40 / Math.sqrt(pct)
+  const dots = React.useMemo(() => {
+    const pct = Math.min(15, Math.max(7.5, acrylamidePct));
+    const poreSize = 40 / Math.sqrt(pct);
 
-    const dotsPerWell = Math.max(2, Math.round((wellW * pct) / 120))
-    const spacingX = wellW / dotsPerWell
+    const dotsPerWell = Math.max(2, Math.round((wellW * pct) / 120));
+    const spacingX = wellW / dotsPerWell;
 
-    const opacity = Math.max(0, 0.25 * (1 - (zoom - 1)))
-    const subsPerTick = 3
+    const opacity = Math.max(0, 0.25 * (1 - (zoom - 1)));
+    const subsPerTick = 3;
 
     const bandDots = Array.from({ length: ticks }).flatMap((_, i) =>
       Array.from({ length: subsPerTick }).flatMap((__, sub) => {
-        const y = valueToY(i + (sub + 0.5) / subsPerTick)
-        const cols = Math.floor(slabW / spacingX)
+        const y = valueToY(i + (sub + 0.5) / subsPerTick);
+        const cols = Math.floor(slabW / spacingX);
 
         return Array.from({ length: cols }).map((__, j) => (
           <circle
@@ -355,23 +520,23 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             fill='var(--sub-text)'
             opacity={opacity}
           />
-        ))
+        ));
       })
-    )
+    );
 
-    const y0 = valueToY(0)
-    const y1 = valueToY(1)
+    const y0 = valueToY(0);
+    const y1 = valueToY(1);
 
-    const rowPadPx = Math.max(1, (y1 - y0) / subsPerTick)
-    const totalPx = y0 - wellH
+    const rowPadPx = Math.max(1, (y1 - y0) / subsPerTick);
+    const totalPx = y0 - wellH;
 
-    const rows = Math.max(2, Math.floor(totalPx / rowPadPx))
-    const cols = Math.floor(slabW / spacingX) + 1
+    const rows = Math.max(2, Math.floor(totalPx / rowPadPx));
+    const cols = Math.floor(slabW / spacingX) + 1;
 
     const wellDots = Array.from({ length: rows }).flatMap((_, rIdx) => {
-      const y = (y0 - totalPx) + (rIdx + 0.75) * rowPadPx
+      const y = (y0 - totalPx) + (rIdx + 0.75) * rowPadPx;
 
-      if (y > y0) return []
+      if (y > y0) return [];
 
       return Array.from({ length: cols }).map((__, j) => (
         <circle
@@ -385,9 +550,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       ))
     })
 
-    return [...wellDots, ...bandDots]
-  }
-
+    return [...wellDots, ...bandDots];
+  }, [acrylamidePct, ticks, zoom, anchor]);
+  
 
   return (
     <div className='gel-wrapper'>
@@ -524,11 +689,11 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           </foreignObject>
           <image href={redWire} x={slabW + wireO} y={anodeT + wellH - wireH / 2} height={wireH} width={wireW} preserveAspectRatio='xMidYMid meet' />
 
-          <g className="acrylamide-slab">
+          <g className='acrylamide-slab'>
             <path d={pathFill} fill='var(--sub-background)' />
             <defs><clipPath id='gel-clip'><path d={pathFill} /></clipPath></defs>
 
-            <g opacity='0.6' clipPath='url(#gel-clip)'>{renderDots()}</g>
+            <g opacity='0.6' clipPath='url(#gel-clip)'>{dots}</g>
             <g className='axis'>{axisTicks}</g>
             <path d={pathSides} className='gel-border' />
             <path d={pathTop} className='gel-border' />
@@ -547,22 +712,21 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             <title>Add well</title>
           </g>
 
-          <g className="standards-well">
+          <g className='standards-well'>
             {selectedStandards.map((protein, i) => {
               return (
                 <rect
                   key={protein.id_num}
                   x={wellW + ((wellW - bandW) / 2)}
-                  y={wellH + ((wellH + bandH) / 2) + (positions[0]?.[protein.id_num] ?? 0)}
-                  width={bandW}
+                  y={valueToY(positions[0]?.[protein.id_num] ?? 0) - (bandH * 1.5)}                  width={bandW}
                   height={bandH}
                   fill={protein.color}
-                  stroke="black"
+                  stroke='var(--background)'
                   strokeWidth={0.5}
                   rx={3}
                   ry={3}
                 >
-                  <title>{protein.name}</title>
+                  <title>{protein.name + ' [Rf = ' + (positions[0]?.[protein.id_num] ?? 0).toFixed(2) + ']'}</title>
                 </rect>
               )
             })}
@@ -595,8 +759,17 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           )
         })}
       </div>
+
+      {/* Chart */}
+      <GoogleScatterModal
+        open={showChart}
+        onClose={() => setShowChart(false)}
+        positions={positions}
+        selectedStandards={selectedStandards}
+        ticks={ticks}
+      />
     </div>
   )
 }
 
-export default OneDESim
+export default OneDESim;
