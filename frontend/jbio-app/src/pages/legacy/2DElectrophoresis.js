@@ -1,4 +1,4 @@
-import './2DElectrophoresis.css';
+import './2DElectrophoresis.extracted.css';
 
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
@@ -9,6 +9,8 @@ const API_BASE_URL = 'http://129.21.34.127:5000/api';
 const TwoDE = () => {
   // A bunch of frontend states to control the UI
   const canvasRef = useRef(null);
+
+  
   const animationFrameRef = useRef(null);
   const [dots, setDots] = useState([]);
   const [hoveredDot, setHoveredDot] = useState(null);
@@ -30,6 +32,7 @@ const TwoDE = () => {
 
   // State for PPS1-111: Collapsible protein list
   const [isProteinListCollapsed, setIsProteinListCollapsed] = useState(false);
+
 
   // Constants
   const MIN_PH = phRange.min;
@@ -67,35 +70,35 @@ const TwoDE = () => {
 
     // Call the backend API
     axios.post(`${API_BASE_URL}/simulate-ief`, data)
-        .then(response => {
-          // Get the simulation results
-          const simulationResults = response.data;
-          const totalSteps = simulationResults.length;
+      .then(response => {
+        // Get the simulation results
+        const simulationResults = response.data;
+        const totalSteps = simulationResults.length;
 
-          // Play the animation using the pre-calculated positions
-          let currentStep = 0;
-          const animationInterval = setInterval(() => {
-            if (currentStep >= totalSteps) {
-              clearInterval(animationInterval);
-              setSimulationState('ief-complete');
-              return;
-            }
+        // Play the animation using the pre-calculated positions
+        let currentStep = 0;
+        const animationInterval = setInterval(() => {
+          if (currentStep >= totalSteps) {
+            clearInterval(animationInterval);
+            setSimulationState('ief-complete');
+            return;
+          }
 
-            // Update progress
-            const progress = currentStep / (totalSteps - 1);
-            setSimulationProgress(progress);
+          // Update progress
+          const progress = currentStep / (totalSteps - 1);
+          setSimulationProgress(progress);
 
-            // Update dots with the pre-calculated positions for this step
-            setDots(simulationResults[currentStep]);
+          // Update dots with the pre-calculated positions for this step
+          setDots(simulationResults[currentStep]);
 
-            // Move to next step
-            currentStep++;
-          }, 20); // Adjust timing for smoother animation
-        })
-        .catch(error => {
-          console.error('Error in IEF simulation:', error);
-          setSimulationState('ready');
-        });
+          // Move to next step
+          currentStep++;
+        }, 20); // Adjust timing for smoother animation
+      })
+      .catch(error => {
+        console.error('Error in IEF simulation:', error);
+        setSimulationState('ready');
+      });
   };
 
   // Function to start running the SDS (second dimension), sets simulation 
@@ -130,31 +133,31 @@ const TwoDE = () => {
 
     // Call the backend API
     axios.post(`${API_BASE_URL}/simulate-sds`, data)
-        .then(response => {
-          // Get the simulation results
-          const simulationResults = response.data;
-          const totalSteps = simulationResults.length;
+      .then(response => {
+        // Get the simulation results
+        const simulationResults = response.data;
+        const totalSteps = simulationResults.length;
 
-          // Play the animation using the pre-calculated positions
-          let currentStep = 0;
-          const animationInterval = setInterval(() => {
-            if (currentStep >= totalSteps) {
-              clearInterval(animationInterval);
-              setSimulationState('complete');
-              return;
-            }
+        // Play the animation using the pre-calculated positions
+        let currentStep = 0;
+        const animationInterval = setInterval(() => {
+          if (currentStep >= totalSteps) {
+            clearInterval(animationInterval);
+            setSimulationState('complete');
+            return;
+          }
 
-            // Update dots with the pre-calculated positions for this step
-            setDots(simulationResults[currentStep]);
+          // Update dots with the pre-calculated positions for this step
+          setDots(simulationResults[currentStep]);
 
-            // Move to next step
-            currentStep++;
-          }, 20); // Adjust timing for smoother animation
-        })
-        .catch(error => {
-          console.error('Error in SDS simulation:', error);
-          setSimulationState('ief-complete'); // Return to previous state
-        });
+          // Move to next step
+          currentStep++;
+        }, 20); // Adjust timing for smoother animation
+      })
+      .catch(error => {
+        console.error('Error in SDS simulation:', error);
+        setSimulationState('ief-complete'); // Return to previous state
+      });
   };
 
   // Clean up animation frame on unmount
@@ -303,9 +306,9 @@ const TwoDE = () => {
 
     // Only close the popup if clicking outside the canvas, info card, and protein list
     if (selectedDot &&
-        !canvas.contains(event.target) &&
-        (!infoCard || !infoCard.contains(event.target)) &&
-        (!proteinList || !proteinList.contains(event.target))) {
+      !canvas.contains(event.target) &&
+      (!infoCard || !infoCard.contains(event.target)) &&
+      (!proteinList || !proteinList.contains(event.target))) {
       setSelectedDot(null);
     }
   };
@@ -574,20 +577,20 @@ const TwoDE = () => {
             // Draw vertical bands in IEF
             const bandHeight = 40; // Fixed height for bands
             ctx.fillRect(
-                dot.x - dot.bandWidth / 2,
-                dot.y - bandHeight / 2,
-                dot.bandWidth,
-                bandHeight
+              dot.x - dot.bandWidth / 2,
+              dot.y - bandHeight / 2,
+              dot.bandWidth,
+              bandHeight
             );
 
             if (isHighlighted || isHovered) {
               ctx.strokeStyle = '#FFFFFF';
               ctx.lineWidth = isHighlighted ? 2 : 1;
               ctx.strokeRect(
-                  dot.x - dot.bandWidth / 2,
-                  dot.y - bandHeight / 2,
-                  dot.bandWidth,
-                  bandHeight
+                dot.x - dot.bandWidth / 2,
+                dot.y - bandHeight / 2,
+                dot.bandWidth,
+                bandHeight
               );
 
               // Additional highlight for selected protein
@@ -595,10 +598,10 @@ const TwoDE = () => {
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(
-                    dot.x - dot.bandWidth / 2 - 3,
-                    dot.y - bandHeight / 2 - 3,
-                    dot.bandWidth + 6,
-                    bandHeight + 6
+                  dot.x - dot.bandWidth / 2 - 3,
+                  dot.y - bandHeight / 2 - 3,
+                  dot.bandWidth + 6,
+                  bandHeight + 6
                 );
               }
             }
@@ -631,19 +634,7 @@ const TwoDE = () => {
     draw();
   }, [dots, hoveredDot, selectedDot, simulationState, simulationProgress, phRange, yAxisMode, acrylamidePercentage]);
 
-  // Stylization for a button in the simulation
-  const buttonStyle = {
-    backgroundColor: '#1a1a1a',
-    border: '1px solid #3a3a3a',
-    color: 'white',
-    padding: '8px 16px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    transition: 'all 0.2s',
-    width: '140px',
-    marginBottom: '8px'
-  };
+
 
   // Function to handle hovering over a button, which causes it to change 
   // background and border colors, making it look like it is clickable
@@ -659,33 +650,6 @@ const TwoDE = () => {
     e.target.style.borderColor = '#3a3a3a';
   };
 
-  // Stylization for a slider in the simulation
-  const sliderStyle = {
-    width: '100%',
-    height: '8px',
-    borderRadius: '4px',
-    outline: 'none',
-    opacity: simulationState === 'ready' ? '0.7' : '0.3', // Dim when disabled
-    transition: 'opacity 0.2s',
-    WebkitAppearance: 'none',
-    backgroundColor: '#555',
-    cursor: simulationState === 'ready' ? 'pointer' : 'not-allowed' // Change cursor when disabled
-  };
-
-  // Stylization for a "input" (which is a field to enter a value in, 
-  // i.e. acrylamide % and pH numbers) in the simulation
-  const inputStyle = {
-    background: '#2a2a2a',
-    border: '1px solid #444',
-    color: 'white',
-    width: '50px',
-    padding: '4px',
-    borderRadius: '4px',
-    fontSize: '14px',
-    textAlign: 'center',
-    opacity: simulationState === 'ready' ? '1' : '0.5' // Dim when disabled
-  };
-
   // Circular progress indicator component
   const CircularProgress = ({ progress }) => {
     const radius = 20;
@@ -693,56 +657,56 @@ const TwoDE = () => {
     const strokeDashoffset = circumference * (1 - progress / 100);
 
     return (
-        <div style={{ position: 'relative', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="50" height="50" viewBox="0 0 50 50">
-            <circle
-                cx="25"
-                cy="25"
-                r={radius}
-                stroke="#333"
-                strokeWidth="4"
-                fill="none"
-            />
-            <circle
-                cx="25"
-                cy="25"
-                r={radius}
-                stroke="#4CAF50"
-                strokeWidth="4"
-                fill="none"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                transform="rotate(-90 25 25)"
-            />
-          </svg>
-          <div style={{ position: 'absolute', fontSize: '12px' }}>
-            {Math.round(progress)}%
-          </div>
+      <div style={{ position: 'relative', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="50" height="50" viewBox="0 0 50 50">
+          <circle
+            cx="25"
+            cy="25"
+            r={radius}
+            stroke="#333"
+            strokeWidth="4"
+            fill="none"
+          />
+          <circle
+            cx="25"
+            cy="25"
+            r={radius}
+            stroke="#4CAF50"
+            strokeWidth="4"
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            transform="rotate(-90 25 25)"
+          />
+        </svg>
+        <div style={{ position: 'absolute', fontSize: '12px' }}>
+          {Math.round(progress)}%
         </div>
+      </div>
     );
   };
 
   // Component for collapsible protein list header
   const ProteinListHeader = ({ isCollapsed, onToggle, count }) => {
     return (
-        <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '8px 0',
-              cursor: 'pointer',
-              userSelect: 'none'
-            }}
-            onClick={onToggle}
-        >
-          <h3 style={{ fontSize: '16px', margin: 0 }}>Proteins ({count})</h3>
-          <div style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </div>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '8px 0',
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
+        onClick={onToggle}
+      >
+        <h3 style={{ fontSize: '16px', margin: 0 }}>Proteins ({count})</h3>
+        <div style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
         </div>
+      </div>
     );
   };
 
@@ -750,203 +714,182 @@ const TwoDE = () => {
   return (
     <div>
       <div className='simulatorBoxTwoDE'>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '16px',
-          backgroundColor: '#1a1a1a',
-          color: 'white',
-        }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '8px',
-          }}>
+
+        <div className="twoDE-controls-col" >
+          <div className="twoDE-controls-row">
             {/* First dimension button */}
             <button
-                style={{
-                  ...buttonStyle,
-                  opacity: simulationState === 'ief-running' ? 0.5 : 1,
-                  cursor: simulationState === 'ready' ? 'pointer' : 'not-allowed'
-                }}
-                onClick={startIEF}
-                disabled={simulationState !== 'ready'}
-                onMouseOver={buttonHoverEffect}
-                onMouseOut={buttonLeaveEffect}
+              className="twoDE-button"
+              style={{
+                opacity: simulationState === 'ief-running' ? 0.5 : 1,
+                cursor: simulationState === 'ready' ? 'pointer' : 'not-allowed'
+              }}
+              onClick={startIEF}
+              disabled={simulationState !== 'ready'}
+              onMouseOver={buttonHoverEffect}
+              onMouseOut={buttonLeaveEffect}
             >
               First Dimension
             </button>
             {/* Second dimension button */}
             <button
-                style={{
-                  ...buttonStyle,
-                  opacity: simulationState !== 'ief-complete' ? 0.5 : 1,
-                  cursor: simulationState === 'ief-complete' ? 'pointer' : 'not-allowed'
-                }}
-                onClick={startSDS}
-                disabled={simulationState !== 'ief-complete'}
-                onMouseOver={buttonHoverEffect}
-                onMouseOut={buttonLeaveEffect}
+              className="twoDE-button"
+              style={{
+                opacity: simulationState !== 'ief-complete' ? 0.5 : 1,
+                cursor: simulationState === 'ief-complete' ? 'pointer' : 'not-allowed'
+              }}
+              onClick={startSDS}
+              disabled={simulationState !== 'ief-complete'}
+              onMouseOver={buttonHoverEffect}
+              onMouseOut={buttonLeaveEffect}
             >
               Second Dimension
             </button>
             {/* Reset button */}
             <button
-                style={{
-                  ...buttonStyle,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px'
-                }}
-                onClick={resetPositions}
-                onMouseOver={buttonHoverEffect}
-                onMouseOut={buttonLeaveEffect}
+              className="twoDE-button icon"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px'
+              }}
+              onClick={resetPositions}
+              onMouseOver={buttonHoverEffect}
+              onMouseOut={buttonLeaveEffect}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M2.5 12a9.5 9.5 0 1 1 9.5 9.5 9.5 9.5 0 0 1-9.5-9.5m9.5-9.5v9.5l5-4.5"/>
+                <path d="M2.5 12a9.5 9.5 0 1 1 9.5 9.5 9.5 9.5 0 0 1-9.5-9.5m9.5-9.5v9.5l5-4.5" />
               </svg>
               Reset
             </button>
             {/* Label for Upload FASTA button */}
             <label
-                style={{
-                  ...buttonStyle,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px',
-                  cursor: 'pointer'
-                }}
-                onMouseOver={buttonHoverEffect}
-                onMouseOut={buttonLeaveEffect}
+              className="twoDE-button icon"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }}
+              onMouseOver={buttonHoverEffect}
+              onMouseOut={buttonLeaveEffect}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
               Upload FASTA
               <input
-                  type="file"
-                  accept=".fasta,.fa"
-                  multiple
-                  onChange={handleFileInputChange}
-                  style={{ display: 'none' }}
+                type="file"
+                accept=".fasta,.fa"
+                multiple
+                onChange={handleFileInputChange}
+                style={{ display: 'none' }}
               />
             </label>
             {/* Upload FASTA button */}
             <button
-                style={{
-                  ...buttonStyle,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px'
-                }}
-                onClick={toggleYAxisMode}
-                onMouseOver={buttonHoverEffect}
-                onMouseOut={buttonLeaveEffect}
+              className="twoDE-button icon"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px'
+              }}
+              onClick={toggleYAxisMode}
+              onMouseOver={buttonHoverEffect}
+              onMouseOut={buttonLeaveEffect}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M8 3v18M3 8h10M3 16h10M16 3v18M16 8h5M16 16h5"/>
+                <path d="M8 3v18M3 8h10M3 16h10M16 3v18M16 8h5M16 16h5" />
               </svg>
               {yAxisMode === 'mw' ? 'Show Distance' : 'Show MW'}
             </button>
           </div>
 
           {/* pH Range Slider, disabled during simulation */}
-          <div style={{ marginBottom: '20px', padding: '0 20px', maxWidth: '800px', alignSelf: 'center' }}>
+          <div className="control-group">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <label style={{
-                fontSize: '14px',
-                width: '120px',
-                opacity: simulationState === 'ready' ? 1 : 0.5 // Dim when disabled
-              }}>pH Range:</label>
+              <label className="twoDE-control-label" style={{ opacity: simulationState === 'ready' ? 1 : 0.5 }}>pH Range:</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
                 <input
-                    type="number"
-                    min="0"
-                    max="14"
-                    step="0.1"
-                    value={phRange.min}
-                    onChange={(e) => handlePhRangeChange('min', e.target.value)}
-                    style={inputStyle}
-                    disabled={simulationState !== 'ready'} // Disable during simulation
+                  type="number"
+                  min="0"
+                  max="14"
+                  step="0.1"
+                  value={phRange.min}
+                  onChange={(e) => handlePhRangeChange('min', e.target.value)}
+                  className="twoDE-input"
+                  disabled={simulationState !== 'ready'} // Disable during simulation
                 />
                 <input
-                    type="range"
-                    id="ph-min-slider"
-                    min="0"
-                    max="14"
-                    step="0.1"
-                    value={phRange.min}
-                    onChange={handlePhSliderChange}
-                    style={sliderStyle}
-                    disabled={simulationState !== 'ready'} // Disable during simulation
+                  type="range"
+                  id="ph-min-slider"
+                  min="0"
+                  max="14"
+                  step="0.1"
+                  value={phRange.min}
+                  onChange={handlePhSliderChange}
+                  className="twoDE-range"
+                  disabled={simulationState !== 'ready'} // Disable during simulation
                 />
                 <input
-                    type="range"
-                    id="ph-max-slider"
-                    min="0"
-                    max="14"
-                    step="0.1"
-                    value={phRange.max}
-                    onChange={handlePhSliderChange}
-                    style={sliderStyle}
-                    disabled={simulationState !== 'ready'} // Disable during simulation
+                  type="range"
+                  id="ph-max-slider"
+                  min="0"
+                  max="14"
+                  step="0.1"
+                  value={phRange.max}
+                  onChange={handlePhSliderChange}
+                  className="twoDE-range"
+                  disabled={simulationState !== 'ready'} // Disable during simulation
                 />
                 <input
-                    type="number"
-                    min="0"
-                    max="14"
-                    step="0.1"
-                    value={phRange.max}
-                    onChange={(e) => handlePhRangeChange('max', e.target.value)}
-                    style={inputStyle}
-                    disabled={simulationState !== 'ready'} // Disable during simulation
+                  type="number"
+                  min="0"
+                  max="14"
+                  step="0.1"
+                  value={phRange.max}
+                  onChange={(e) => handlePhRangeChange('max', e.target.value)}
+                  className="twoDE-input"
+                  disabled={simulationState !== 'ready'} // Disable during simulation
                 />
               </div>
             </div>
           </div>
 
           {/* Acrylamide Percentage Slider */}
-          <div style={{ marginBottom: '20px', padding: '0 20px', maxWidth: '800px', alignSelf: 'center' }}>
+          <div className="control-group">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <label style={{
-                fontSize: '14px',
-                width: '120px',
-                opacity: simulationState === 'ready' ? 1 : 0.5 // Dim when disabled
-              }}>Acrylamide %:</label>
+              <label className="twoDE-control-label" style={{ opacity: simulationState === 'ready' ? 1 : 0.5 }}>Acrylamide %:</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
                 <input
-                    type="number"
-                    min="5"
-                    max="20"
-                    step="0.5"
-                    value={acrylamidePercentage}
-                    onChange={(e) => setAcrylamidePercentage(parseFloat(e.target.value))}
-                    style={inputStyle}
-                    disabled={simulationState !== 'ready'} // Disable during simulation
+                  type="number"
+                  min="5"
+                  max="20"
+                  step="0.5"
+                  value={acrylamidePercentage}
+                  onChange={(e) => setAcrylamidePercentage(parseFloat(e.target.value))}
+                  className="twoDE-input"
+                  disabled={simulationState !== 'ready'} // Disable during simulation
                 />
                 <input
-                    type="range"
-                    min="5"
-                    max="20"
-                    step="0.5"
-                    value={acrylamidePercentage}
-                    onChange={handleAcrylamideChange}
-                    style={sliderStyle}
-                    disabled={simulationState !== 'ready'} // Disable during simulation
+                  type="range"
+                  min="5"
+                  max="20"
+                  step="0.5"
+                  value={acrylamidePercentage}
+                  onChange={handleAcrylamideChange}
+                  className="twoDE-range"
+                  disabled={simulationState !== 'ready'} // Disable during simulation
                 />
-                <div style={{
-                  minWidth: '140px',
-                  fontSize: '12px',
-                  opacity: simulationState === 'ready' ? 0.8 : 0.4 // Dim when disabled
-                }}>
+                <div className="twoDE-acrylic-desc" style={{ opacity: simulationState === 'ready' ? 0.8 : 0.4 }}>
                   {acrylamidePercentage < 7 ? 'Resolves large proteins' :
-                      acrylamidePercentage < 12 ? 'Medium range separation' :
-                          'Resolves small proteins'}
+                    acrylamidePercentage < 12 ? 'Medium range separation' :
+                      'Resolves small proteins'}
                 </div>
               </div>
             </div>
@@ -962,234 +905,143 @@ const TwoDE = () => {
           }}>
             {/* Protein list panel with resizable feature */}
             <div
-                id="protein-list"
-                style={{
-                  padding: '16px',
-                  backgroundColor: '#282828',
-                  borderRadius: '4px',
-                  width: isProteinListCollapsed ? '80px' : '250px',
-                  height: '600px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'width 0.3s ease-in-out',
-                  overflow: 'hidden',
-                  position: 'relative'
-                }}
+              id="protein-list"
+              className="twoDE-panel"
+              style={{
+                width: isProteinListCollapsed ? '80px' : '250px',
+                height: '600px'
+              }}
             >
               <ProteinListHeader
-                  isCollapsed={isProteinListCollapsed}
-                  onToggle={toggleProteinList}
-                  count={dots.length}
+                isCollapsed={isProteinListCollapsed}
+                onToggle={toggleProteinList}
+                count={dots.length}
               />
 
               {/* Resizable handle */}
-              <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '5px',
-                    height: '100%',
-                    cursor: 'ew-resize',
-                    background: 'rgba(255,255,255,0.1)',
-                  }}
-                  onMouseDown={(e) => {
-                    const startWidth = e.currentTarget.parentElement.offsetWidth;
-                    const startX = e.clientX;
+              <div className="twoDE-resize-handle"
+                onMouseDown={(e) => {
+                  const startWidth = e.currentTarget.parentElement.offsetWidth;
+                  const startX = e.clientX;
 
-                    const onMouseMove = (moveEvent) => {
-                      if (isProteinListCollapsed) return;
-                      const newWidth = Math.max(150, startWidth + moveEvent.clientX - startX);
-                      e.currentTarget.parentElement.style.width = `${newWidth}px`;
-                    };
+                  const onMouseMove = (moveEvent) => {
+                    if (isProteinListCollapsed) return;
+                    const newWidth = Math.max(150, startWidth + moveEvent.clientX - startX);
+                    e.currentTarget.parentElement.style.width = `${newWidth}px`;
+                  };
 
-                    const onMouseUp = () => {
-                      document.removeEventListener('mousemove', onMouseMove);
-                      document.removeEventListener('mouseup', onMouseUp);
-                    };
+                  const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                  };
 
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                  }}
+                  document.addEventListener('mousemove', onMouseMove);
+                  document.addEventListener('mouseup', onMouseUp);
+                }}
               />
 
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                overflowY: 'auto',
-                flex: 1,
-                marginTop: '8px',
-                opacity: isProteinListCollapsed ? 0 : 1,
-                transition: 'opacity 0.2s',
-                transitionDelay: isProteinListCollapsed ? '0s' : '0.1s'
-              }}>
+              <div className="twoDE-protein-list" style={{ opacity: isProteinListCollapsed ? 0 : 1, transition: 'opacity 0.2s', transitionDelay: isProteinListCollapsed ? '0s' : '0.1s' }}>
                 {!isProteinListCollapsed && dots.map(dot => (
-                    <div
-                        key={dot.name}
-                        onClick={() => handleProteinClick(dot)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          minHeight: '24px',
-                          padding: '4px',
-                          cursor: 'pointer',
-                          backgroundColor: selectedDot?.name === dot.name ? '#3a3a3a' : 'transparent',
-                          borderRadius: '4px',
-                          transition: 'background-color 0.2s'
-                        }}>
-                      <div style={{
-                        width: '12px',
-                        height: '12px',
-                        minWidth: '12px',
-                        backgroundColor: dot.color,
-                        borderRadius: '50%'
-                      }}/>
-                      <span style={{
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        fontSize: '14px',
-                        flex: 1
-                      }}>{dot.name}</span>
-                    </div>
+                  <div
+                    key={dot.name}
+                    onClick={() => handleProteinClick(dot)}
+                    className={"twoDE-protein-item" + (selectedDot?.name === dot.name ? ' selected' : '')}
+                    style={{ backgroundColor: selectedDot?.name === dot.name ? '#3a3a3a' : 'transparent' }}
+                  >
+                    <div className="twoDE-protein-color" style={{ backgroundColor: dot.color }} />
+                    <span className="twoDE-protein-name">{dot.name}</span>
+                  </div>
                 ))}
               </div>
 
               {/* Upload Progress Indicator */}
               {isUploading && (
-                  <div style={{
-                    marginTop: '16px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
-                    <div style={{ marginBottom: '8px', fontSize: '14px' }}>Uploading FASTA...</div>
-                    <CircularProgress progress={uploadProgress} />
-                  </div>
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ marginBottom: '8px', fontSize: '14px' }}>Uploading FASTA...</div>
+                  <div className="twoDE-progress"><CircularProgress progress={uploadProgress} /></div>
+                </div>
               )}
             </div>
 
-            <div
-                style={{ position: 'relative' }}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
+            <div className="twoDE-canvas-wrapper"
+              style={{ position: 'relative' }}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
               {isDragging && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    borderRadius: '4px'
-                  }}>
-                    <div style={{
-                      padding: '20px',
-                      border: '2px dashed #666',
-                      borderRadius: '8px',
-                      textAlign: 'center'
-                    }}>
-                      Drop FASTA files here
-                    </div>
-                  </div>
+                <div className="twoDE-drag-overlay">
+                  <div className="twoDE-drag-box">Drop FASTA files here</div>
+                </div>
               )}
 
               {/* The actual graph part of the simulation, including the popups for protein informatiopn */}
               <canvas
-                  ref={canvasRef}
-                  width={800}
-                  height={600}
-                  style={{
-                    border: '1px solid #444',
-                    borderRadius: '4px'
-                  }}
-                  onMouseMove={handleCanvasMouseMove}
-                  onMouseLeave={handleCanvasMouseLeave}
-                  onClick={handleCanvasClick}
+                ref={canvasRef}
+                width={800}
+                height={600}
+                className="twoDE-canvas"
+                onMouseMove={handleCanvasMouseMove}
+                onMouseLeave={handleCanvasMouseLeave}
+                onClick={handleCanvasClick}
               />
 
               {/* Protein information popup - show for both canvas clicks and list clicks */}
               {(hoveredDot || selectedDot) && (
-                  <div
-                      id="protein-info-card"
-                      style={{
-                        position: 'fixed',
-                        left: mousePos.x + 10,
-                        top: mousePos.y + 10,
-                        backgroundColor: '#282828',
-                        border: '1px solid #444',
-                        color: 'white',
-                        padding: '12px',
-                        borderRadius: '4px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                        zIndex: 1000,
-                        minWidth: '200px',
-                        pointerEvents: 'auto' // Always enable interaction
-                      }}
-                  >
-                    <h4 style={{ marginBottom: '8px', fontSize: '16px' }}>{(selectedDot || hoveredDot).fullName}</h4>
-                    <div style={{ fontSize: '14px', display: 'grid', gap: '4px' }}>
-                      <div>Source: {(selectedDot || hoveredDot).organism}</div>
-                      {/* Updated UniProt links with proper functionality (PPS1-110) */}
-                      <div>
-                        UniProt: <a
-                          href={`https://www.uniprot.org/uniprotkb/${(selectedDot || hoveredDot).uniprotId !== 'N/A' ? (selectedDot || hoveredDot).uniprotId : (selectedDot || hoveredDot).name.replace(/\s+/g, '_')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#63B3ED', textDecoration: 'none' }}
+                <div
+                  id="protein-info-card"
+                  className="twoDE-card"
+                  style={{
+                    left: mousePos.x + 10,
+                    top: mousePos.y + 10
+                  }}
+                >
+                  <h4>{(selectedDot || hoveredDot).fullName}</h4>
+                  <div className="meta">
+                    <div>Source: {(selectedDot || hoveredDot).organism}</div>
+                    <div>
+                      UniProt: <a
+                        href={`https://www.uniprot.org/uniprotkb/${(selectedDot || hoveredDot).uniprotId !== 'N/A' ? (selectedDot || hoveredDot).uniprotId : (selectedDot || hoveredDot).name.replace(/\s+/g, '_')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                       >
                         {(selectedDot || hoveredDot).uniprotId !== 'N/A' ? (selectedDot || hoveredDot).uniprotId : (selectedDot || hoveredDot).name}
                       </a>
-                      </div>
-                      {(selectedDot || hoveredDot).pdbId !== 'N/A' && (
-                          <div>
-                            PDB: <a
-                              href={`https://www.rcsb.org/structure/${(selectedDot || hoveredDot).pdbId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ color: '#63B3ED', textDecoration: 'none' }}
-                          >
-                            {(selectedDot || hoveredDot).pdbId}
-                          </a>
-                          </div>
-                      )}
-                      <div>MW: {(selectedDot || hoveredDot).mw.toLocaleString()} Da</div>
-                      <div>pH: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
-                      <div style={{ marginTop: '4px' }}>
-                        <div style={{ fontWeight: 500 }}>Function:</div>
-                        <div style={{ color: '#A0AEC0' }}>{(selectedDot || hoveredDot).function}</div>
-                      </div>
-                      {(selectedDot || hoveredDot).sequence && (
-                          <div style={{ marginTop: '4px' }}>
-                            <div style={{ fontWeight: 500 }}>Sequence Preview:</div>
-                            <div style={{
-                              color: '#A0AEC0',
-                              fontFamily: 'monospace',
-                              fontSize: '12px',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              maxWidth: '300px'
-                            }}>
-                              {(selectedDot || hoveredDot).sequence.substring(0, 50)}...
-                            </div>
-                          </div>
-                      )}
                     </div>
+                    {(selectedDot || hoveredDot).pdbId !== 'N/A' && (
+                      <div>
+                        PDB: <a
+                          href={`https://www.rcsb.org/structure/${(selectedDot || hoveredDot).pdbId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {(selectedDot || hoveredDot).pdbId}
+                        </a>
+                      </div>
+                    )}
+                    <div>MW: {(selectedDot || hoveredDot).mw.toLocaleString()} Da</div>
+                    <div>pH: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
+                    <div style={{ marginTop: '4px' }}>
+                      <div style={{ fontWeight: 500 }}>Function:</div>
+                      <div className="muted">{(selectedDot || hoveredDot).function}</div>
+                    </div>
+                    {(selectedDot || hoveredDot).sequence && (
+                      <div style={{ marginTop: '4px' }}>
+                        <div style={{ fontWeight: 500 }}>Sequence Preview:</div>
+                        <div className="sequence-preview">
+                          {(selectedDot || hoveredDot).sequence.substring(0, 50)}...
+                        </div>
+                      </div>
+                    )}
                   </div>
+                </div>
               )}
             </div>
           </div>
         </div>
+
+
       </div>
     </div>
   );
