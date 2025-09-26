@@ -67,13 +67,15 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     )
   );
 
-  const minTickH = 20;
   const totalH = 700;
   const slabW = 575;
   const wellH = 45;
   const wireH = 25;
   const wireW = 75;
   const wireO = 10;
+
+  const minTickH = 20;
+  const subTicks = 3;
 
   const buffH = totalH * 0.15;
   const anodeT = totalH - buffH;
@@ -86,7 +88,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
 
   const getRelativeMobility = (pct: number, MW: number) => {
-    // Ferguson-like relation: u = u0 * exp( -Kr * %T ):
+    // Ferguson relation: u = u0 * exp( -Kr * %T ):
 
     const logMW = Math.log10(MW);
     const mu0 = 0.95 - 0.18 * logMW;
@@ -461,7 +463,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           </text>
           {i < ticks &&
             [1, 2].map(j => {
-              const subY = valueToY(i + j / 3)
+              const subY = valueToY(i + j / subTicks)
               const subOpacity = Math.pow(Math.max(0, Math.min(1, (subY - y) / (minTickH / 2))), 2)
               const fadeNearN = Math.pow(Math.max(0, Math.min(1, valueToY(ticks) - subY / (minTickH / 2))), 2)
 
@@ -489,7 +491,6 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const dots = React.useMemo(() => {
     const pct = Math.min(15, Math.max(7.5, acrylamidePct));
     const poreSize = 40 / Math.sqrt(pct);
-    const subTicks = 3;
 
     const spacingX = wellW / (Math.max(2, Math.round((wellW * pct) / 120)));
     const opacity = Math.max(0, 0.25 * (1 - (zoom - 1)));
@@ -564,7 +565,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             { label: 'Plot',  icon: <InsertChartIcon />, onClick: onPlot },
             { label: 'Reset', icon: <RestartAltIcon />,  onClick: onReset },
             { label: 'Clear', icon: <ClearAllIcon />,    onClick: onClear }
-          ].map(btn => (
+          ]
+          .map(btn => (
             <Button
               key={btn.label}
               onClick={btn.onClick}
