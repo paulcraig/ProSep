@@ -16,14 +16,14 @@ import CloseIcon from '@mui/icons-material/Close'
 
 
 const standards = [
-  { name: 'B-Galactosidase', molecularWeight: 116250, migrationDistance: 0, color: '#4dd0e1', id_num: '6X1Q', id_str: 'pdb' },
-  { name: 'Phosphorylase B', molecularWeight: 97400, migrationDistance: 0, color: '#d3e24aff', id_num: '3LQ8', id_str: 'pdb' },
-  { name: 'Serum Albumin', molecularWeight: 66200, migrationDistance: 0, color: '#3d98c1ff', id_num: '1AO6', id_str: 'pdb' },
-  { name: 'Ovalbumin', molecularWeight: 45000, migrationDistance: 0, color: '#f06292', id_num: '1OVA', id_str: 'pdb' },
-  { name: 'Carbonic Anhydrase', molecularWeight: 29000, migrationDistance: 0, color: '#b8de7cff', id_num: '1CA2', id_str: 'pdb' },
-  { name: 'Trypsin Inhibitor', molecularWeight: 20100, migrationDistance: 0, color: '#5c6bc0', id_num: '2PTC', id_str: 'pdb' },
-  { name: 'Lysozyme', molecularWeight: 14400, migrationDistance: 0, color: '#81c784', id_num: '6LYZ', id_str: 'pdb' },
-  { name: 'Aprotinin', molecularWeight: 6500, migrationDistance: 0, color: '#e57373', id_num: '1AAP', id_str: 'pdb' }
+  { name: 'B-Galactosidase',    molecularWeight: 116250,  migrationDistance: 0, color: '#4dd0e1',   id_num: '6X1Q', id_str: 'pdb' },
+  { name: 'Phosphorylase B',    molecularWeight: 97400,   migrationDistance: 0, color: '#d3e24aff', id_num: '3LQ8', id_str: 'pdb' },
+  { name: 'Serum Albumin',      molecularWeight: 66200,   migrationDistance: 0, color: '#3d98c1ff', id_num: '1AO6', id_str: 'pdb' },
+  { name: 'Ovalbumin',          molecularWeight: 45000,   migrationDistance: 0, color: '#f06292',   id_num: '1OVA', id_str: 'pdb' },
+  { name: 'Carbonic Anhydrase', molecularWeight: 29000,   migrationDistance: 0, color: '#b8de7cff', id_num: '1CA2', id_str: 'pdb' },
+  { name: 'Trypsin Inhibitor',  molecularWeight: 20100,   migrationDistance: 0, color: '#5c6bc0',   id_num: '2PTC', id_str: 'pdb' },
+  { name: 'Lysozyme',           molecularWeight: 14400,   migrationDistance: 0, color: '#81c784',   id_num: '6LYZ', id_str: 'pdb' },
+  { name: 'Aprotinin',          molecularWeight: 6500,    migrationDistance: 0, color: '#e57373',   id_num: '1AAP', id_str: 'pdb' }
 ];
 
 
@@ -38,7 +38,7 @@ interface ElectrophoresisProps {
 const OneDESim: React.FC<ElectrophoresisProps> = ({
   ticks = 6,
   wells = 3,
-  voltage = 50,
+  voltage = 100,
   acrylamide = 7.5,
 }) => {
 
@@ -52,10 +52,11 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const [lastY, setwellWastY] = useState<number | null>(null);
   const rafRef = React.useRef<number | null>(null);
 
-  const [showChart, setShowChart] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const timerRef = React.useRef<number | null>(null);
+
+  const [showChart, setShowChart] = useState(false);
 
   const [selectedStandards, setSelectedStandards] = useState<typeof standards[number][]>(standards);
   const [positions, setPositions] = useState<Record<number, Record<string, number>>>(() =>
@@ -66,7 +67,6 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     )
   );
 
-
   const minTickH = 20;
   const totalH = 700;
   const slabW = 575;
@@ -74,46 +74,42 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const wireH = 25;
   const wireW = 75;
   const wireO = 10;
-  const buffH = 0.15 * totalH;
+
+  const buffH = totalH * 0.15;
   const anodeT = totalH - buffH;
+
   const slabH = totalH - wellH - buffH;
-  const units = 2 * wellsCount + 1;
-  const wellW = slabW / units;
+  const wellW = slabW / (2 * wellsCount + 1);
+
   const bandW = wellW * 0.8;
   const bandH = wellH * 0.2;
 
 
-  function stripHexAlpha(hex: string) {
-    if (/^#([0-9a-f]{8})$/i.test(hex)) return '#' + hex.slice(1, 7);
-
-    if (/^#([0-9a-f]{4})$/i.test(hex)) {
-      const r = hex[1], g = hex[2], b = hex[3];
-      return '#' + r + r + g + g + b + b;
-    }
-    return hex;
-  }
-
-
-  const toggleProtein = (protein: typeof standards[number]) => {
-    setSelectedStandards(prev =>
-      prev.some(p => p.id_num === protein.id_num)
-        ? prev.filter(p => p.id_num !== protein.id_num)
-        : [...prev, protein]
-    );
-  }
-
-
   const getRelativeMobility = (pct: number, MW: number) => {
-    // Ferguson-like relation: μ = μ0 * exp( - Kr * %T ):
-    const logMW = Math.log10(MW);
+    // Ferguson-like relation: u = u0 * exp( -Kr * %T ):
 
-    const mu0 = 0.95 - 0.18 * logMW;                        // tune 0.95 and 0.18 to taste
-    const Kr_base = 0.005 + 0.015 * logMW;                  // per %T; tune 0.005/0.015
-    const sieving = 1 / (1 + Math.exp(-(pct - 10) / 2.5));  // ~0 at 7.5%, ~1 by 15%
+    const logMW = Math.log10(MW);
+    const mu0 = 0.95 - 0.18 * logMW;
+    const Kr_base = 0.005 + 0.015 * logMW;
+    const sieving = 1 / (1 + Math.exp(-(pct - 10) / 2.5));
 
     const mu = mu0 * Math.exp(-(Kr_base * sieving) * pct);
     return Math.max(0, Math.min(1, mu));
-  };
+  }
+
+
+  const valueToY = (v: number) => {
+    const norm = v / ticks;
+    const a = anchor;
+    let mapped;
+
+    if (norm <= a) {
+      mapped = a * Math.pow(norm / Math.max(a, 1e-9), zoom);
+    } else {
+      mapped = 1 - (1 - a) * Math.pow((1 - norm) / Math.max(1 - a, 1e-9), zoom);
+    }
+    return (wellH * 2) + (mapped * (slabH - wellH));
+  }
 
 
   const GoogleScatterModal: React.FC<{
@@ -124,19 +120,21 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     ticks: number;
 
   }> = ({ open, onClose, positions, selectedStandards, ticks }) => {
-
     const divRef = React.useRef<HTMLDivElement>(null);
     const [ready, setReady] = React.useState(false);
 
     React.useEffect(() => {
       const g = (window as any).google;
+
       if (g?.visualization) {
         setReady(true);
         return;
       }
+
       const existing = document.querySelector<HTMLScriptElement>(
         "script[src='https://www.gstatic.com/charts/loader.js']"
       );
+
       const ensureLoaded = () => {
         (window as any).google.charts.load('current', { packages: ['corechart'] });
         (window as any).google.charts.setOnLoadCallback(() => setReady(true));
@@ -154,7 +152,6 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       document.head.appendChild(script);
     }, []);
 
-    // Build rows
     const buildRows = React.useCallback(() => {
       type Row = [number, number, string, string];
       const rows: Row[] = [];
@@ -162,30 +159,28 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       for (const [wi, wellProteins] of Object.entries(positions)) {
         for (const protein of selectedStandards) {
           const v = wellProteins[protein.id_num];
+
           if (v === undefined || v <= 0) continue;
 
           const rf = Number(v) / ticks;
           const logMW = Number(Math.log10(protein.molecularWeight).toFixed(2));
+
           const tip = `
-            <div style='padding:10px; line-height:1.5; min-width:150px;
-                        font-family:Arial, sans-serif; font-size:14px;'>
+            <div style='padding:10px; line-height:1.5; min-width:150px; font-family:Arial, sans-serif; font-size:14px;'>
               <strong>${protein.name}</strong><br/>
-              Well: ${wi}<br/>
-              Relative Migration: ${rf.toFixed(3)}<br/>
-              Log Molecular Weight: ${logMW.toFixed(2)}<br/>
-              Molecular Weight: ${protein.molecularWeight.toLocaleString()}
+                Well: ${wi}<br/>
+                Relative Migration: ${rf.toFixed(3)}<br/>
+                Log Molecular Weight: ${logMW.toFixed(2)}<br/>
+                Molecular Weight: ${protein.molecularWeight.toLocaleString()}
             </div>
           `;
-          rows.push([
-            rf,
-            logMW,
-            `point { fill-color: ${stripHexAlpha(protein.color)}; }`,
-            tip,
-          ]);
+
+          rows.push([rf, logMW, `point { fill-color: ${protein.color.slice(0, 7)}; }`, tip]);
         }
       }
       rows.sort((a, b) => a[0] - b[0]);
       return rows;
+
     }, [positions, selectedStandards, ticks]);
 
     React.useEffect(() => {
@@ -193,13 +188,14 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
       const g = (window as any).google;
       const data = new g.visualization.DataTable();
+      const chart = new g.visualization.ScatterChart(divRef.current);
+
       data.addColumn('number', 'Relative Migration');
       data.addColumn('number', 'Log Molecular Weight');
       data.addColumn({ type: 'string', role: 'style' });
       data.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });
 
-      const rows = buildRows();
-      data.addRows(rows);
+      data.addRows(buildRows());
 
       const options = {
         legend: 'none',
@@ -220,11 +216,11 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         },
       } as google.visualization.ScatterChartOptions;
 
-      const chart = new g.visualization.ScatterChart(divRef.current);
+      
       chart.draw(data, options);
-
       const onResize = () => chart.draw(data, options);
       window.addEventListener('resize', onResize);
+
       return () => window.removeEventListener('resize', onResize);
     }, [open, ready, buildRows]);
 
@@ -242,13 +238,13 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   };
 
 
-  const handlePlot = () => {
-    handleStop();
+  const onPlot = () => {
+    onStop();
     setShowChart(true);
   };
 
 
-  const handleStop = () => {
+  const onStop = () => {
     setIsRunning(false);
 
     if (timerRef.current) {
@@ -258,9 +254,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   }
 
   
-  const handleToggleRun = () => {
+  const onToggleRun = () => {
     if (isRunning) {
-      handleStop();
+      onStop();
     } else {
       setIsRunning(true);
       setHasStarted(true);
@@ -277,23 +273,20 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               const rf = getRelativeMobility(acrylamidePct, protein.molecularWeight);
               const target = Math.min(rf * ticks * ticks, ticks);
               const current = wellProteins[protein.id_num];
-
-              const baseDur = 10;
-              const duration = baseDur * (50 / voltageAmt);
-              const step = (target - current) / (duration * 50);
+              const step = (target - current) / ((50 / voltageAmt) * 500);
 
               updated[idx][protein.id_num] = Math.min(current + step, target);
             }
           }
           return updated;
         })
-      }, 10) // ~100 fps
+      }, 10)
     }
   }
   
 
-  const handleReset = () => {
-    handleStop();
+  const onReset = () => {
+    onStop();
     setHasStarted(false);
 
     setPositions(prev => {
@@ -308,21 +301,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   }
 
 
-  const handleClear = () => {
+  const onClear = () => {
     setSelectedStandards(standards);
-    handleReset();
-  }
-
-
-  const addWell = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setWellsCount(w => Math.min(6, w + 1));
-  }
-
-
-  const removeWell = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setWellsCount(w => Math.max(2, w - 1));
+    onReset();
   }
 
 
@@ -347,25 +328,31 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     const sides = `M0,${wellH} V${wellH + slabH} H${slabW} V${wellH}`;
     return { fill, top, sides };
   }
-  
   const { fill: pathFill, top: pathTop, sides: pathSides } = buildWells();
 
-  
-  const valueToY = (v: number) => {
-    const norm = v / ticks;
-    const a = anchor;
-    let mapped;
 
-    if (norm <= a) {
-      mapped = a * Math.pow(norm / Math.max(a, 1e-9), zoom);
-    } else {
-      mapped = 1 - (1 - a) * Math.pow((1 - norm) / Math.max(1 - a, 1e-9), zoom);
-    }
-    return (wellH * 2) + (mapped * (slabH - wellH));
+  const onAddWell = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setWellsCount(w => Math.min(6, w + 1));
   }
 
 
-  const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+  const onRemoveWell = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setWellsCount(w => Math.max(2, w - 1));
+  }
+
+
+  const onToggleProtein = (protein: typeof standards[number]) => {
+    setSelectedStandards(prev =>
+      prev.some(p => p.id_num === protein.id_num)
+        ? prev.filter(p => p.id_num !== protein.id_num)
+        : [...prev, protein]
+    );
+  }
+
+
+  const onWheel = (e: React.WheelEvent<SVGSVGElement>) => {
     e.preventDefault();
     if (rafRef.current) return;
 
@@ -384,9 +371,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       const rect = currentTarget.getBoundingClientRect();
       const mouseY = clientY - rect.top;
       const slabTop = wellH + wellH;
-      const slabBottom = anodeT;
 
-      if (mouseY < slabTop || mouseY > slabBottom) return;
+      if (mouseY < slabTop || mouseY > anodeT) return;
 
       const frac = (mouseY - slabTop) / (slabH - wellH);
       const newAnchor = Math.max(0, Math.min(1, frac));
@@ -402,17 +388,16 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   }
 
 
-  const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+  const onMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
     setIsDragging(true);
     setwellWastY(e.clientY);
   }
 
 
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!isDragging || lastY === null) return;
-    if (rafRef.current) return;
+  const onMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isDragging || lastY === null || rafRef.current) return;
 
-    // Cache values:
+    // Cache value:
     const clientY = e.clientY;
 
     rafRef.current = requestAnimationFrame(() => {
@@ -425,7 +410,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   }
 
   
-  const handleMouseUp = () => {
+  const onMouseUp = () => {
     setIsDragging(false);
     setwellWastY(null);
   }
@@ -436,8 +421,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
     return Array.from({ length: ticks + 1 }).map((_, i) => {
       const y = valueToY(i);
-      const dist = y - lastTickY;
-      let opacity = Math.pow(Math.max(0, Math.min(1, dist / minTickH)), 2);
+      const dx = y - lastTickY;
+
+      let opacity = Math.pow(Math.max(0, Math.min(1, dx / minTickH)), 2);
 
       if (i === 0 || i === ticks) {
         opacity = 1;
@@ -448,27 +434,25 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
       if (i !== ticks) {
         const yN = valueToY(ticks);
-        const distToN = yN - y;
-        const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / minTickH)), 2);
+        const fadeNearN = Math.pow(Math.max(0, Math.min(1, (yN - y) / minTickH)), 2);
+
         opacity = Math.min(opacity, fadeNearN);
       }
 
       return (
         <g key={`axis-${i}`} opacity={opacity}>
           <line
-            x1={0}
-            y1={y}
-            x2={slabW}
-            y2={y}
+            x1={0} y1={y} x2={slabW} y2={y}
             stroke={(i === 0 || i === ticks) ? 'var(--sub-text)' : 'var(--text)'}
             strokeWidth={i === 0 || i === ticks ? '0.05rem' : '0.125rem'}
           />
-          <line x1={-20} y1={y} x2={0} y2={y} stroke='var(--accent)' strokeWidth='0.125rem' />
+          <line
+            x1={-20} y1={y} x2={0} y2={y}
+            stroke='var(--accent)'
+            strokeWidth='0.125rem'
+          />
           <text
-            x={-30}
-            y={y + 6}
-            fontSize='14px'
-            fontFamily='sans-serif'
+            x={-30} y={y + 6}
             fill='var(--text)'
             textAnchor='end'
             fontWeight='bold'
@@ -478,15 +462,21 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           {i < ticks &&
             [1, 2].map(j => {
               const subY = valueToY(i + j / 3)
-              const subDist = subY - y
-              const subOpacity = Math.pow(Math.max(0, Math.min(1, subDist / (minTickH / 2))), 2)
-              const yN = valueToY(ticks)
-              const distToN = yN - subY
-              const fadeNearN = Math.pow(Math.max(0, Math.min(1, distToN / (minTickH / 2))), 2)
+              const subOpacity = Math.pow(Math.max(0, Math.min(1, (subY - y) / (minTickH / 2))), 2)
+              const fadeNearN = Math.pow(Math.max(0, Math.min(1, valueToY(ticks) - subY / (minTickH / 2))), 2)
+
               return (
                 <g key={`sub-${i}-${j}`} opacity={subOpacity * fadeNearN}>
-                  <line x1={0} y1={subY} x2={slabW} y2={subY} stroke='var(--sub-text)' strokeWidth='0.05rem' />
-                  <line x1={-12} y1={subY} x2={0} y2={subY} stroke='var(--accent)' strokeWidth='0.05rem' />
+                  <line
+                    x1={0} y1={subY} x2={slabW} y2={subY}
+                    stroke='var(--sub-text)'
+                    strokeWidth='0.05rem'
+                  />
+                  <line
+                    x1={-12} y1={subY} x2={0} y2={subY}
+                    stroke='var(--accent)'
+                    strokeWidth='0.05rem'
+                  />
                 </g>
               )
             })}
@@ -499,26 +489,24 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const dots = React.useMemo(() => {
     const pct = Math.min(15, Math.max(7.5, acrylamidePct));
     const poreSize = 40 / Math.sqrt(pct);
+    const subTicks = 3;
 
-    const dotsPerWell = Math.max(2, Math.round((wellW * pct) / 120));
-    const spacingX = wellW / dotsPerWell;
-
+    const spacingX = wellW / (Math.max(2, Math.round((wellW * pct) / 120)));
     const opacity = Math.max(0, 0.25 * (1 - (zoom - 1)));
-    const subsPerTick = 3;
 
-    const bandDots = Array.from({ length: ticks }).flatMap((_, i) =>
-      Array.from({ length: subsPerTick }).flatMap((__, sub) => {
-        const y = valueToY(i + (sub + 0.5) / subsPerTick);
+    const slabDots = Array.from({ length: ticks }).flatMap((_, i) =>
+      Array.from({ length: subTicks }).flatMap((__, sub) => {
         const cols = Math.floor(slabW / spacingX);
 
         return Array.from({ length: cols }).map((__, j) => (
           <circle
             key={`band-dot-${i}-${sub}-${j}`}
-            cx={j * spacingX + spacingX / 2}
-            cy={y}
-            r={poreSize * 0.25}
             fill='var(--sub-text)'
             opacity={opacity}
+
+            cx={j * spacingX + spacingX / 2}
+            cy={valueToY(i + (sub + 0.5) / subTicks)}
+            r={poreSize * 0.25}
           />
         ));
       })
@@ -527,7 +515,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     const y0 = valueToY(0);
     const y1 = valueToY(1);
 
-    const rowPadPx = Math.max(1, (y1 - y0) / subsPerTick);
+    const rowPadPx = Math.max(1, (y1 - y0) / subTicks);
     const totalPx = y0 - wellH;
 
     const rows = Math.max(2, Math.floor(totalPx / rowPadPx));
@@ -541,16 +529,16 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       return Array.from({ length: cols }).map((__, j) => (
         <circle
           key={`well-dot-${rIdx}-${j}`}
-          cx={j * spacingX + spacingX / 2}
-          cy={y}
-          r={poreSize * 0.25}
           fill='var(--sub-text)'
           opacity={opacity}
+          
+          cx={j * spacingX + spacingX / 2}
+          cy={y} r={poreSize * 0.25}
         />
       ))
     })
 
-    return [...wellDots, ...bandDots];
+    return [...wellDots, ...slabDots];
   }, [acrylamidePct, ticks, zoom, anchor]);
   
 
@@ -561,10 +549,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         style={{
           display: 'flex',
           justifyContent: 'center',
-          gap: '0.5rem',
           paddingLeft: '3.75rem',
           paddingBottom: '1rem',
-          fontSize: '14px',
+          gap: '0.5rem',
           width: slabW
         }}
       >
@@ -572,11 +559,11 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             { 
               label: isRunning ? 'Pause' : hasStarted ? 'Resume' : 'Start',
               icon: isRunning ? <StopIcon /> : <PlayArrowIcon />,
-              onClick: handleToggleRun
+              onClick: onToggleRun
             },
-            { label: 'Plot',  icon: <InsertChartIcon />, onClick: handlePlot },
-            { label: 'Reset', icon: <RestartAltIcon />,  onClick: handleReset },
-            { label: 'Clear', icon: <ClearAllIcon />,    onClick: handleClear },
+            { label: 'Plot',  icon: <InsertChartIcon />, onClick: onPlot },
+            { label: 'Reset', icon: <RestartAltIcon />,  onClick: onReset },
+            { label: 'Clear', icon: <ClearAllIcon />,    onClick: onClear }
           ].map(btn => (
             <Button
               key={btn.label}
@@ -598,43 +585,36 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       {/* Simulation */}
       <div className='gel-container'>
         <svg
-          width={slabW * 1.4}
-          height={totalH}
-          viewBox={`-60 0 ${slabW * 1.4} ${totalH}`}
           className='gel-svg'
-          onWheel={handleWheel}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          style={{
-            cursor: zoom === 1 ? 'default' : isDragging ? 'grabbing' : 'grab'
-          }}
+          onWheel={onWheel}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseLeave={onMouseUp}
+          onMouseUp={onMouseUp}
+
+          height={totalH}
+          width={slabW * 1.4} // Yeah... I'll fix this later
+          viewBox={`-60 0 ${slabW * 1.4} ${totalH}`}
+          style={{ cursor: zoom === 1 ? 'default' : isDragging ? 'grabbing' : 'grab' }}
         >
           <line
-            x1={slabW + wireW + wireO}
-            y1={wellH}
-            x2={slabW + wireW + wireO}
-            y2={(totalH / 2) - 20}
+            x1={slabW + wireW + wireO} y1={wellH}
+            x2={slabW + wireW + wireO} y2={(totalH / 2) - 20}
             stroke='#191919'
             strokeWidth='0.75rem'
             strokeLinecap='round'
           />
           <line
-            x1={slabW + wireW + wireO}
-            y1={(totalH / 2) + 20}
-            x2={slabW + wireW + wireO}
-            y2={anodeT + wellH}
+            x1={slabW + wireW + wireO} y1={(totalH / 2) + 20}
+            x2={slabW + wireW + wireO} y2={anodeT + wellH}
             stroke='#ff3636'
             strokeWidth='0.75rem'
             strokeLinecap='round'
           />
           <g>
             <line
-              x1={slabW + wireW + wireO - 20}
-              y1={(totalH / 2) - 20}
-              x2={slabW + wireW + wireO + 20}
-              y2={(totalH / 2) - 20}
+              x1={slabW + wireW + wireO - 20} y1={(totalH / 2) - 20}
+              x2={slabW + wireW + wireO + 20} y2={(totalH / 2) - 20}
               stroke='#191919'
               strokeWidth='0.75rem'
             />
@@ -647,10 +627,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               strokeWidth='0.75rem'
             />
             <foreignObject
-              x={slabW + wireW + wireO - 48}
-              y={totalH / 2 - 14}
-              width={96}
-              height={28}
+              x={slabW + wireW + wireO - 48} y={totalH / 2 - 14}
+              width={96} height={28}
             >
               <Select
                 variant='standard'
@@ -658,10 +636,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                 onChange={(e) => setVoltageAmt(Number(e.target.value))}
                 sx={{
                   fontWeight: 'bold',
-                  fontSize: '14px',
                   color: 'var(--text)',
-                  '& .MuiSelect-icon': { color: 'var(--text)' },
-                  paddingLeft: '1.75rem'
+                  paddingLeft: '1.75rem',
+                  '& .MuiSelect-icon': { color: 'var(--text)' }
                 }}
               >
                 {[50, 100, 150, 200].map(v => ( <MenuItem key={v} value={v}>{v}V</MenuItem> ))}
@@ -669,9 +646,24 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             </foreignObject>
           </g>
 
-          <rect x={-20} width={slabW + 40} height={wellH * 2} fill='var(--highlight)' stroke='var(--accent)' strokeWidth='0.25rem' ry={5} rx={5} />
+          <rect
+            ry={5} rx={5}
+            x={-20} width={slabW + 40} height={wellH * 2}
+            fill='var(--highlight)'
+            stroke='var(--accent)'
+            strokeWidth='0.25rem'
+          />
+
           <image href={blackWire} x={slabW + wireO} y={wellH - wireH / 2} height={wireH} width={wireW} preserveAspectRatio='xMidYMid meet' />
-          <rect x={-20} y={anodeT} width={slabW + 40} height={wellH * 2} fill='var(--highlight)' stroke='var(--accent)' strokeWidth='0.25rem' ry={5} rx={5} />
+
+          <rect
+            ry={5} rx={5} x={-20}
+            y={anodeT} width={slabW + 40} height={wellH * 2}
+            fill='var(--highlight)'
+            stroke='var(--accent)'
+            strokeWidth='0.25rem'
+          />
+
           <foreignObject x={0} y={anodeT + wellH - 12} width={160} height={24}>
             <Select
               variant='standard'
@@ -679,7 +671,6 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               onChange={(e) => setAcrylamidePct(Number(e.target.value))}
               sx={{
                 fontWeight: 'bold',
-                fontSize: '14px',
                 color: 'var(--sub-text)',
                 '& .MuiSelect-icon': { color: 'var(--sub-text)' },
               }}
@@ -687,6 +678,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               {[7.5,10,12,15].map(a => ( <MenuItem key={a} value={a}>Acrylamide {a}%</MenuItem> ))}
             </Select>
           </foreignObject>
+
           <image href={redWire} x={slabW + wireO} y={anodeT + wellH - wireH / 2} height={wireH} width={wireW} preserveAspectRatio='xMidYMid meet' />
 
           <g className='acrylamide-slab'>
@@ -695,20 +687,21 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
             <g opacity='0.6' clipPath='url(#gel-clip)'>{dots}</g>
             <g className='axis'>{axisTicks}</g>
+
             <path d={pathSides} className='gel-border' />
             <path d={pathTop} className='gel-border' />
           </g>
 
-          <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${wellW/2},${wellH*1.5})`} onClick={removeWell}>
+          <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${wellW/2},${wellH*1.5})`} onClick={onRemoveWell}>
             <circle r={12} />
-            <line x1={-4} y1={0} x2={4} y2={0} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
+            <line x1={-4} y1={0} x2={4} y2={0} strokeLinecap='round' stroke='var(--text)' strokeWidth={2} />
             <title>Remove well</title>
           </g>
 
-          <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${slabW-wellW/2},${wellH*1.5})`} onClick={addWell}>
+          <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${slabW-wellW/2},${wellH*1.5})`} onClick={onAddWell}>
             <circle r={12} />
-            <line x1={-4} y1={0} x2={4} y2={0} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
-            <line x1={0} y1={-4} x2={0} y2={4} stroke='var(--text)' strokeWidth={2} strokeLinecap='round' />
+            <line x1={-4} y1={0} x2={4} y2={0} strokeLinecap='round' stroke='var(--text)' strokeWidth={2} />
+            <line x1={0} y1={-4} x2={0} y2={4} strokeLinecap='round' stroke='var(--text)' strokeWidth={2} />
             <title>Add well</title>
           </g>
 
@@ -716,15 +709,12 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             {selectedStandards.map((protein, i) => {
               return (
                 <rect
+                  x={wellW + ((wellW - bandW) / 2)} y={valueToY(positions[0]?.[protein.id_num] ?? 0) - (bandH * 1.5)}
+                  width={bandW} height={bandH} rx={3} ry={3}
                   key={protein.id_num}
-                  x={wellW + ((wellW - bandW) / 2)}
-                  y={valueToY(positions[0]?.[protein.id_num] ?? 0) - (bandH * 1.5)}                  width={bandW}
-                  height={bandH}
                   fill={protein.color}
                   stroke='var(--background)'
                   strokeWidth={0.5}
-                  rx={3}
-                  ry={3}
                 >
                   <title>{protein.name + ' [Rf = ' + (positions[0]?.[protein.id_num] ?? 0).toFixed(2) + ']'}</title>
                 </rect>
@@ -739,9 +729,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'center',
+        paddingLeft: '3.75rem',
         gap: '0.5rem',
-        width: slabW,
-        paddingLeft: '3.75rem'
+        width: slabW
       }}>
         {standards.map(protein => {
           const isSelected = selectedStandards.some(p => p.id_num === protein.id_num)
@@ -749,7 +739,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             <Chip
               key={protein.id_num}
               label={protein.name}
-              onClick={() => toggleProtein(protein)}
+              onClick={() => onToggleProtein(protein)}
               sx={{
                 backgroundColor: isSelected ? protein.color : 'var(--highlight)',
                 color: 'var(--text)',
@@ -762,10 +752,10 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
       {/* Chart */}
       <GoogleScatterModal
-        open={showChart}
         onClose={() => setShowChart(false)}
-        positions={positions}
+        open={showChart}
         selectedStandards={selectedStandards}
+        positions={positions}
         ticks={ticks}
       />
     </div>
