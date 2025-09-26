@@ -1,10 +1,8 @@
-import './2DElectrophoresis.extracted.css';
-
 import { useEffect, useRef, useState } from 'react';
+import './2DElectrophoresis.extracted.css';
+import { API_URL } from '../../config';
 import axios from 'axios';
 
-// Define the API base URL - adjust this based on where your backend will be running
-const API_BASE_URL = 'http://129.21.34.127:5000/api';
 
 const TwoDE = () => {
   // A bunch of frontend states to control the UI
@@ -69,7 +67,7 @@ const TwoDE = () => {
     };
 
     // Call the backend API
-    axios.post(`${API_BASE_URL}/simulate-ief`, data)
+    axios.post(`${API_URL}/simulate-ief`, data)
       .then(response => {
         // Get the simulation results
         const simulationResults = response.data;
@@ -132,7 +130,7 @@ const TwoDE = () => {
     };
 
     // Call the backend API
-    axios.post(`${API_BASE_URL}/simulate-sds`, data)
+    axios.post(`${API_URL}/simulate-sds`, data)
       .then(response => {
         // Get the simulation results
         const simulationResults = response.data;
@@ -184,7 +182,7 @@ const TwoDE = () => {
 
     try {
       // Upload to backend for processing
-      const response = await axios.post(`${API_BASE_URL}/parse-fasta`, formData, {
+      const response = await axios.post(`${API_URL}/parse-fasta`, formData, {
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(percentCompleted);
