@@ -165,6 +165,7 @@ async def parse_fasta(files: List[UploadFile] = File(...)):
 
         for seq in sequences:
             pid = seq['header'].split("|")[1]
+            display_name = seq['header'].split("|")[2]
 
             # Extract UniProt ID if present
             uniprot_match = re.search(
@@ -178,8 +179,6 @@ async def parse_fasta(files: List[UploadFile] = File(...)):
             protein_info['fullName'] = seq['name']
             protein_info['organism'] = seq['organism']
             protein_info['uniprotId'] = uniprotId
-            protein_info['pdbId'] = 'N/A'
-            protein_info['function'] = 'Imported from FASTA file'
             protein_info['mw'] = seq['mw']
             protein_info['pH'] = seq['pH']
             protein_info['color'] = color_palette[len(new_proteins) % len(color_palette)]
@@ -190,7 +189,8 @@ async def parse_fasta(files: List[UploadFile] = File(...)):
             protein_info['velocity'] = 0
             protein_info['settled'] = False
             protein_info['ID'] = pid
-            protein_info['Link'] = links_dict.get(pid)
+            protein_info['Link'] = links_dict.get(pid) or "N/A"
+            protein_info['display_name'] = display_name
 
             new_proteins.append(protein_info.copy())
 

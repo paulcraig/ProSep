@@ -54,12 +54,12 @@ const TwoDE = () => {
         fullName: dot.fullName,
         organism: dot.organism,
         ID: dot.ID,
-
-        function: dot.function,
         mw: dot.mw,
         pH: dot.pH,
         color: dot.color,
-        sequence: dot.sequence
+        sequence: dot.sequence,
+        display_name: dot.display_name,
+        Link: dot.Link
       })),
       phRange: phRange,
       canvasWidth: 800,
@@ -114,18 +114,19 @@ const TwoDE = () => {
         fullName: dot.fullName,
         organism: dot.organism,
         ID: dot.ID,
-        function: dot.function,
         mw: dot.mw,
         pH: dot.pH,
         color: dot.color,
         x: dot.x,
         y: dot.y,
         bandWidth: dot.bandWidth,
-        sequence: dot.sequence
+        sequence: dot.sequence,
+        display_name: dot.display_name,
+        Link: dot.Link
       })),
       yAxisMode: yAxisMode,
       acrylamidePercentage: acrylamidePercentage,
-      canvasHeight: 600
+      canvasHeight: 600 //it's six centimeters
     };
 
     // Call the backend API
@@ -824,17 +825,7 @@ const TwoDE = () => {
                   className="twoDE-input"
                   disabled={simulationState !== 'ready'} // Disable during simulation
                 />
-                <input
-                  type="range"
-                  id="ph-min-slider"
-                  min="0"
-                  max="14"
-                  step="0.1"
-                  value={phRange.min}
-                  onChange={handlePhSliderChange}
-                  className="twoDE-range"
-                  disabled={simulationState !== 'ready'} // Disable during simulation
-                />
+ 
                 <input
                   type="range"
                   id="ph-max-slider"
@@ -948,7 +939,7 @@ const TwoDE = () => {
                     style={{ backgroundColor: selectedDot?.name === dot.name ? '#3a3a3a' : 'transparent' }}
                   >
                     <div className="twoDE-protein-color" style={{ backgroundColor: dot.color }} />
-                    <span className="twoDE-protein-name">{dot.name}</span>
+                    <span className="twoDE-protein-name">{dot.display_name}</span>
                   </div>
                 ))}
               </div>
@@ -997,16 +988,16 @@ const TwoDE = () => {
                     top: mousePos.y + 10
                   }}
                 >
-                  <h4>{(selectedDot || hoveredDot).fullName}</h4>
+                  <h4>{(selectedDot || hoveredDot).display_name}</h4>
                   <div className="meta">
 
-                    <div>{(selectedDot || hoveredDot).organism}.Link</div>
+                  <div>
+                    Link:{" "}
+                    {(selectedDot || hoveredDot).Link !== "N/A" ? (<a href={(selectedDot || hoveredDot).Link}> {(selectedDot || hoveredDot).Link} </a>) : ("N/A")}</div>
+
                     <div>MW: {(selectedDot || hoveredDot).mw.toLocaleString()} Da</div>
                     <div>pH: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
-                    <div style={{ marginTop: '4px' }}>
-                      <div style={{ fontWeight: 500 }}>Function:</div>
-                      <div className="muted">{(selectedDot || hoveredDot).function}</div>
-                    </div>
+
                     {(selectedDot || hoveredDot).sequence && (
                       <div style={{ marginTop: '4px' }}>
                         <div style={{ fontWeight: 500 }}>Sequence Preview:</div>
