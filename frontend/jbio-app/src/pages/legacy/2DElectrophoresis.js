@@ -54,7 +54,7 @@ const TwoDE = () => {
         fullName: dot.fullName,
         organism: dot.organism,
         ID: dot.ID,
-        pdbId: dot.pdbId,
+
         function: dot.function,
         mw: dot.mw,
         pH: dot.pH,
@@ -114,7 +114,6 @@ const TwoDE = () => {
         fullName: dot.fullName,
         organism: dot.organism,
         ID: dot.ID,
-        pdbId: dot.pdbId,
         function: dot.function,
         mw: dot.mw,
         pH: dot.pH,
@@ -1000,8 +999,8 @@ const TwoDE = () => {
                 >
                   <h4>{(selectedDot || hoveredDot).fullName}</h4>
                   <div className="meta">
-                    <div>Source: {(selectedDot || hoveredDot).organism}</div>
-                    {/* <div>Link: {(selectedDot || hoveredDot).ExternalLink}<div/> */} {/**TODO: Implement this link, send a res to the protein banks and if the request is a 200 then you can display this idk how to do it ho */}
+
+                    <div>{(selectedDot || hoveredDot).organism}.Link</div>
                     <div>MW: {(selectedDot || hoveredDot).mw.toLocaleString()} Da</div>
                     <div>pH: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
                     <div style={{ marginTop: '4px' }}>

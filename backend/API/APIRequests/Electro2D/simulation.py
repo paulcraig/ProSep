@@ -4,6 +4,7 @@ from Bio import SeqIO
 from io import StringIO
 from typing import List, Dict, Any
 from fastapi import APIRouter, UploadFile, File
+import httpx
 
 
 router = APIRouter(
@@ -51,6 +52,43 @@ def calculate_theoretical_pi(sequence: str) -> float:
     total_pka = sum(AMINO_ACIDS[aa]['pKa'] * count for aa, count in counts.items())
     total_count = sum(counts.values())
     return total_pka / total_count if total_count > 0 else 7.0
+
+def find_links(list_of_ids: List[str], use_uniparc_fallback: bool = True):
+    UNIPROT_URL = "https://www.uniprot.org/uniprotkb"
+    PDB_URL = "https://data.rcsb.org/rest/v1/core/entry"
+    NCBI_URL = "https://www.ncbi.nlm.nih.gov/protein"
+
+    protein_links = {}
+
+    with httpx.Client() as client:
+        for pid in list_of_ids:
+            protein_links[pid] = None  # default in case of no links
+
+            # NCBI
+            if pid.replace(".", "").isdigit() or pid.startswith(("NP_", "XP_", "CAA", "AFP")):
+                r = client.get(
+                    f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=protein&id={pid}&retmode=json"
+                )
+                if r.status_code == 200:
+                    protein_links[pid] = f"{NCBI_URL}/{pid}"
+                    continue
+
+            # PDB
+            if len(pid) == 4 and pid.isalnum():
+                r = client.get(f"{PDB_URL}/{pid}")
+                if r.status_code == 200:
+                    protein_links[pid] = f"https://www.rcsb.org/structure/{pid}"
+                    continue
+
+            # UniProt
+            if pid.isalnum() and not pid.replace(".", "").isdigit():
+                r = client.get(f"{UNIPROT_URL}/{pid}")
+                if r.status_code == 200:
+                    protein_links[pid] = f"{UNIPROT_URL}/{pid}"
+                elif use_uniparc_fallback:
+                    protein_links[pid] = f"https://www.uniprot.org/uniparc/{pid}"
+
+    return protein_links
 
 
 def parse_fasta_content(content: str) -> List[Dict[str, Any]]:
@@ -107,6 +145,8 @@ def get_distance_position(mw, canvas_height, acrylamide_percentage, max_distance
 # -------------------------------------------------------------------
 @router.post("/parse-fasta")
 async def parse_fasta(files: List[UploadFile] = File(...)):
+    import re
+
     color_palette = [
         '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
         '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#808080'
@@ -116,31 +156,45 @@ async def parse_fasta(files: List[UploadFile] = File(...)):
     for i, file in enumerate(files):
         content = await file.read()
         sequences = parse_fasta_content(content.decode("utf-8"))
+
+        # Collect all IDs from this file
+        id_list = [seq['header'].split("|")[1] for seq in sequences]
+
+        # Fetch links for all IDs in this file
+        links_dict = find_links(id_list)
+
         for seq in sequences:
-            uniprotId = "N/A"
-            uniprot_match = re.search(r'[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}', seq['header'])
-            if uniprot_match:
-                uniprotId = uniprot_match.group(0)
+            pid = seq['header'].split("|")[1]
 
-            new_proteins.append({
-                'name': seq['name'],
-                'fullName': seq['name'],
-                'organism': seq['organism'],
-                'uniprotId': uniprotId,
-                'pdbId': 'N/A',
-                'function': 'Imported from FASTA file',
-                'mw': seq['mw'],
-                'pH': seq['pH'],
-                'color': color_palette[(len(new_proteins) + i) % len(color_palette)],
-                'sequence': seq['sequence'],
-                'x': 50,
-                'y': 300,
-                'currentpH': 7,
-                'velocity': 0,
-                'settled': False
-            })
+            # Extract UniProt ID if present
+            uniprot_match = re.search(
+                r'[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}',
+                seq['header']
+            )
+            uniprotId = uniprot_match.group(0) if uniprot_match else "N/A"
+
+            protein_info = {}
+            protein_info['name'] = seq['name']
+            protein_info['fullName'] = seq['name']
+            protein_info['organism'] = seq['organism']
+            protein_info['uniprotId'] = uniprotId
+            protein_info['pdbId'] = 'N/A'
+            protein_info['function'] = 'Imported from FASTA file'
+            protein_info['mw'] = seq['mw']
+            protein_info['pH'] = seq['pH']
+            protein_info['color'] = color_palette[len(new_proteins) % len(color_palette)]
+            protein_info['sequence'] = seq['sequence']
+            protein_info['x'] = 50
+            protein_info['y'] = 300
+            protein_info['currentpH'] = 7
+            protein_info['velocity'] = 0
+            protein_info['settled'] = False
+            protein_info['ID'] = pid
+            protein_info['Link'] = links_dict.get(pid)
+
+            new_proteins.append(protein_info.copy())
+
     return new_proteins
-
 
 @router.post("/simulate-ief")
 async def run_ief_simulation(data: Dict[str, Any]):
