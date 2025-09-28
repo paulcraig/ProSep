@@ -53,7 +53,7 @@ const TwoDE = () => {
         name: dot.name,
         fullName: dot.fullName,
         organism: dot.organism,
-        uniprotId: dot.uniprotId,
+        ID: dot.ID,
         pdbId: dot.pdbId,
         function: dot.function,
         mw: dot.mw,
@@ -113,7 +113,7 @@ const TwoDE = () => {
         name: dot.name,
         fullName: dot.fullName,
         organism: dot.organism,
-        uniprotId: dot.uniprotId,
+        ID: dot.ID,
         pdbId: dot.pdbId,
         function: dot.function,
         mw: dot.mw,
@@ -179,6 +179,8 @@ const TwoDE = () => {
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
+
+      console.log(API_URL + "API URL IS HERE")
 
     try {
       // Upload to backend for processing
@@ -986,6 +988,7 @@ const TwoDE = () => {
               />
 
               {/* Protein information popup - show for both canvas clicks and list clicks */}
+              
               {(hoveredDot || selectedDot) && (
                 <div
                   id="protein-info-card"
@@ -998,26 +1001,7 @@ const TwoDE = () => {
                   <h4>{(selectedDot || hoveredDot).fullName}</h4>
                   <div className="meta">
                     <div>Source: {(selectedDot || hoveredDot).organism}</div>
-                    <div>
-                      UniProt: <a
-                        href={`https://www.uniprot.org/uniprotkb/${(selectedDot || hoveredDot).uniprotId !== 'N/A' ? (selectedDot || hoveredDot).uniprotId : (selectedDot || hoveredDot).name.replace(/\s+/g, '_')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {(selectedDot || hoveredDot).uniprotId !== 'N/A' ? (selectedDot || hoveredDot).uniprotId : (selectedDot || hoveredDot).name}
-                      </a>
-                    </div>
-                    {(selectedDot || hoveredDot).pdbId !== 'N/A' && (
-                      <div>
-                        PDB: <a
-                          href={`https://www.rcsb.org/structure/${(selectedDot || hoveredDot).pdbId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {(selectedDot || hoveredDot).pdbId}
-                        </a>
-                      </div>
-                    )}
+                    {/* <div>Link: {(selectedDot || hoveredDot).ExternalLink}<div/> */} {/**TODO: Implement this link, send a res to the protein banks and if the request is a 200 then you can display this idk how to do it ho */}
                     <div>MW: {(selectedDot || hoveredDot).mw.toLocaleString()} Da</div>
                     <div>pH: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
                     <div style={{ marginTop: '4px' }}>
