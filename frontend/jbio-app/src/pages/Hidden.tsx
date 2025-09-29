@@ -13,6 +13,12 @@ const Hidden: React.FC = () => {
 
 export const useHiddenUnlock = () => {
   const [unlocked, setUnlocked] = useState(false);
+  const konami = [
+      'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+      'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
+      'b', 'a'
+    ];
+    
   let keyDx = 0;
 
   useEffect(() => {
@@ -25,12 +31,6 @@ export const useHiddenUnlock = () => {
       setUnlocked(true);
       return;
     }
-
-    const konami = [
-      'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
-      'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
-      'b', 'a'
-    ];
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === konami[keyDx]) {
