@@ -243,6 +243,7 @@ def simulate_sds(proteins, y_axis_mode, acrylamide_percentage, canvas_height, st
 
 @app.route('/api/parse-fasta', methods=['POST'])
 def parse_fasta():
+
     """Parse uploaded FASTA files"""
     if 'files' not in request.files:
         return jsonify({'error': 'No files provided'}), 400
