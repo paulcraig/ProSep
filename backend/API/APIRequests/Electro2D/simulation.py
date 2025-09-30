@@ -165,7 +165,7 @@ async def parse_fasta(files: List[UploadFile] = File(...)):
 
         for seq in sequences:
             pid = seq['header'].split("|")[1]
-            display_name = seq['header'].split("|")[2]
+            display_name = seq['header'].split("|")[-1]
 
             # Extract UniProt ID if present
             uniprot_match = re.search(
