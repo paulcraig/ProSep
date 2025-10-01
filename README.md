@@ -189,7 +189,12 @@ Navigate to the top level directory by typing in the command line
 
 ```bash
 cd ProSep
-python3 -m unittest backend.Electro1DTests.ProteinTest
+```
+
+Then execute a test with
+
+```bash
+python -m unittest backend.Electro1DTests.ProteinTest
 ```
 
 OR
