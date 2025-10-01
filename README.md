@@ -14,26 +14,26 @@ Dr. Paul Craig received his B.S. in Chemistry from Oral Roberts University in 19
 ### Git
 
 ```bash
-git clone https://github.com/AmrMualla/RITSimulationofProteinSimulations.git
+git clone https://github.com/paulcraig/ProSep
 ```
 
-Windows:
-```bash
-cd RITSimulationofProteinSimulations\
-```
+#### VSCode
+
+This repository contains a python 3.12 slim image. Ensure you have installed the dev containers extension,
+open the command palette, and either build the container or rebuild it.
+
+#### Manual without image
 
 ```bash
-py -m pip install -r requirements.txt
-```
-
-macOS or Linux:
-```bash
-cd RITSimulationofProteinSimulations/
+cd ProSep
 ```
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
+
+Windows may have python set to be under `py` instead of `python`. If this is the case, simply
+replace all calls to `python` with `py`.
 
 ### Software Requirements
 - Python 3.7 or higher
@@ -43,14 +43,8 @@ pip install -r requirements.txt
 ## Usage for Development
 Navigate to the top level directory by typing in the command line 
 
-Windows:
 ```bash
-cd RITSimulationofProteinSimulations\
-```
-
-macOS or Linux:
-```bash
-cd RITSimulationofProteinSimulations/
+cd ProSep
 ```
 <br/>
 
@@ -61,14 +55,8 @@ uvicorn server:app --reload
 
 Navigate to the jbio-web-app subdirectory by typing in the command line 
 
-Windows:
 ```bash
-cd frontend\jbio-web-app\
-```
-
-macOS or Linux:
-```bash
-cd frontend/jbio-web-app/
+cd frontend/jbio-app
 ```
 
 <br/>
@@ -80,13 +68,9 @@ npm start
 
 A browser will open with the URL: http://localhost:3000/
 
-![BrowserImage.png](READMEImages%2FBrowserImage.png)
-
 Press the **`1D Electrophoresis`** button on the left.
 
 Follow the instructions listed beneath the simulation to load the desired FASTA files and begin the simulation:
-
-![1DEInstructions.png](READMEImages%2F1DEInstructions.png)
 
 ## Testing Usage
 
@@ -109,27 +93,21 @@ once you navigate to
 
 Windows:
 ```bash
-..\RITSimulationofProteinSimulations\frontend\jbio-web-app
+ProSep/frontend/jbio-app
 ```
 
 macOS or Linux:
 
 ```bash
-~/RITSimulationofProteinSimulations/frontend/jbio-web-app
+ProSep/frontend/jbio-app
 ```
 
 <br/>
 
 To do so, open the terminal, which is usually found under the View tab in most IDEs, and select the Terminal button. It will open up the terminal in the default directory. Then navigate to the desired directory by typing
 
-Windows:
 ```bash
-cd frontend\jbio-web-app
-```
-
-macOS or Linux:
-```bash
-cd frontend/jbio-web-app
+cd frontend/jbio-app
 ```
 
 <br/>
@@ -151,7 +129,7 @@ npm test
 
 will bring up the watch usage buttons which you can use to run the tests. If there is every an error saying:
 
-```bash 
+```
 npm test is not recognized
 ```
 
@@ -180,16 +158,10 @@ After running a test, it will tell you how many test suites and tests have passe
 ![FrontendTestingImage2.png](READMEImages%2FFrontendTestingImage2.png)
 
 #### Jest Test Basics
-If on Windows, the Jest tests are stored in
+The Jest tests are stored in
 
 ```bash
-.\\RITSimulationofProteinSimulations\frontend\jbio-web-app\src\components\__tests__
-```
-
-If on macOS or Linux, the Jest tests are stored in
-
-```bash
-~/RITSimulationofProteinSimulations/frontend/jbio-web-app/src/components/__tests__
+ProSep/frontend/jbio-web-app/src/components/__tests__
 ```
 
 <br/>
@@ -215,18 +187,10 @@ You can replace the ```'Test name'``` with whatever you want to name the test. E
 
 Navigate to the top level directory by typing in the command line
 
-Windows:
 ```bash
-cd .\RITSimulationofProteinSimulations\
-py -m unittest backend.Electro1DTests.ProteinTest
-```
-
-macOS or Linux:
-```bash
-cd ~/RITSimulationofProteinSimulations/
+cd ProSep
 python3 -m unittest backend.Electro1DTests.ProteinTest
 ```
-
 
 OR
 
