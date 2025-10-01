@@ -7,7 +7,7 @@
 ## Project Sponsor
 - [Dr. Paul Craig](mailto:pac8612@rit.edu)
 
-![PaulPhoto.jpg](frontend%2Fjbio-web-app%2Fsrc%2Fcomponents%2Fabout_images%2FPaulPhoto.jpg)
+<img src="frontend/jbio-app/src/assets/profiles/Paul_Craig.jpg" alt="Paul Craig" width="200"/>
 
 Dr. Paul Craig received his B.S. in Chemistry from Oral Roberts University in 1979, and his Ph.D. in Biological Chemistry from The University of Michigan in 1985. Following a post-doc at Henry Ford Hospital (biophysical chemistry of blood clotting; 1985-1988), he spent five years as an analytical biochemistry at BioQuant, Inc., in Ann Arbor, Michigan before joining RIT in 1993.
 ## Download and Installation:
@@ -240,7 +240,21 @@ Analyze results from the tests being run and modify the test or method being tes
 
 - TODO
 
-## Project Team
+## Project Teams
+
+- Fall 2025 to Spring 2026:
+  - Coach:
+    - [Mark Wilson](mailto:mwvse@rit.edu)
+  - Developers:
+    - Luke Knofczynski
+
+    - Zachary Van Horn
+
+    - Shreyas Gadwalker
+
+    - Jacob Fey
+
+    - Aditya Vikram
 
 - Fall 2023 to Spring 2024:
   - Coach:
