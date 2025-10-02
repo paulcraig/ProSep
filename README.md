@@ -53,7 +53,7 @@ Launch the API server by typing in the command line:
 uvicorn server:app --reload
 ```
 
-Navigate to the jbio-web-app subdirectory by typing in the command line 
+Navigate to the jbio-app subdirectory by typing in the command line 
 
 ```bash
 cd frontend/jbio-app
@@ -73,114 +73,6 @@ Press the **`1D Electrophoresis`** button on the left.
 Follow the instructions listed beneath the simulation to load the desired FASTA files and begin the simulation:
 
 ## Testing Usage
-
-### Frontend Guide:
-#### Author: Chase Amador
-
-#### Introduction
-
-This guide will be going over the basics of the Jest tests created in this project, including how to install Jest, create a basic Jest class, and the standards followed creating the existing Jest tests. Jest was a great choice for the team because of the choice to use Node.js and React. Jest synergizes very well with both of these and makes it easy to use.
-
-#### Installation
-
-Installation for Jest is simple with the help of a package manager. Since we are using Node.js with ```npm``` as the package manager, installation is as easy as pasting: 
-
-```bash
-npm install --save-dev jest
-```
-
-once you navigate to 
-
-Windows:
-```bash
-ProSep/frontend/jbio-app
-```
-
-macOS or Linux:
-
-```bash
-ProSep/frontend/jbio-app
-```
-
-<br/>
-
-To do so, open the terminal, which is usually found under the View tab in most IDEs, and select the Terminal button. It will open up the terminal in the default directory. Then navigate to the desired directory by typing
-
-```bash
-cd frontend/jbio-app
-```
-
-<br/>
-
-This should put you in the correct directory, so typing 
-
-```bash
-npm install --save-dev jest
-```
-
-in the terminal will install Jest for you and have everything ready to go.
-
-#### Running the Tests
-Once the installation is complete, typing 
-
-```bash
-npm test
-```
-
-will bring up the watch usage buttons which you can use to run the tests. If there is every an error saying:
-
-```
-npm test is not recognized
-```
-
- type: 
-
-```bash
-npm install
-```
-
-again to update the package. Then you should see this:
-
-![FrontendTestingImage1.png](READMEImages%2FFrontendTestingImage1.png)
-
-```a```will run all the test suites.
-
-```f``` will run all the failed tests.
-
-```p``` will let you chose a test suite to test by typing its name.
-
-```t``` will let you chose a specific test to test by typing its name.
-
-```q``` will end the session.
-
-After running a test, it will tell you how many test suites and tests have passed and if they failed, where and why they did. Heres an example output:
-
-![FrontendTestingImage2.png](READMEImages%2FFrontendTestingImage2.png)
-
-#### Jest Test Basics
-The Jest tests are stored in
-
-```bash
-ProSep/frontend/jbio-web-app/src/components/__tests__
-```
-
-<br/>
-
-Currently, there is a test class for each frontend component in the project. They all vary depending on the component but all have a similar format that should be used when creating more tests. For starters, these imports are needed for jest tests:
-
-![FrontendTestingImage3.png](READMEImages%2FFrontendTestingImage3.png)
-
-These are pretty standard imports, the first line doesn’t change, it imports React which is what is used for the web app. The second line is the same format, but you will add in methods you use in your tests. Some examples would be 
-
-```render```, ```fireEvent```, ```screen```, and various others. Adding more methods would look like this:
-
-![FrontendTestingImage4.png](READMEImages%2FFrontendTestingImage4.png)
-
-Now for creating tests, the default test will look like this:
-
-![FrontEndTestingImage5.png](READMEImages%2FFrontEndTestingImage5.png)
-
-You can replace the ```'Test name'``` with whatever you want to name the test. Ensure that it is detailed for ease of viewing which test is being run.
 
 ### Backend Guide:
 #### Author: Mack Leonard
