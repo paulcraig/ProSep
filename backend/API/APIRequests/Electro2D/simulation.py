@@ -7,7 +7,7 @@ from fastapi import APIRouter, UploadFile, File
 
 
 router = APIRouter(
-    prefix="/api",
+    prefix="/2d",
     tags=["2D Simulation"]
 )
 
