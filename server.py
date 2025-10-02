@@ -2,9 +2,9 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import backend.API.APIRequests.startup as startup
-import backend.API.APIRequests.Electro1D.simulation as electro_1d_simulation
-import backend.API.APIRequests.Electro2D.simulation as electro_2d_simulation
+import backend.startup as startup
+import backend.API.Electro1D.simulation as electro_1d_simulation
+import backend.root as electro_2d_simulation
 
 '''
 HOW TO START UP API SERVER:
