@@ -108,7 +108,7 @@ const TwoDE = () => {
     setSimulationState('sds-running');
 
     // Prepare data to send to the backend
-    const data = {
+       const data = {
       proteins: dots.map(dot => ({
         name: dot.name,
         fullName: dot.fullName,
@@ -179,8 +179,6 @@ const TwoDE = () => {
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
-
-      console.log(API_URL + "API URL IS HERE")
 
     try {
       // Upload to backend for processing
@@ -825,7 +823,17 @@ const TwoDE = () => {
                   className="twoDE-input"
                   disabled={simulationState !== 'ready'} // Disable during simulation
                 />
- 
+                <input
+                  type="range"
+                  id="ph-min-slider"
+                  min="0"
+                  max="14"
+                  step="0.1"
+                  value={phRange.min}
+                  onChange={handlePhSliderChange}
+                  className="twoDE-range"
+                  disabled={simulationState !== 'ready'} // Disable during simulation
+                />
                 <input
                   type="range"
                   id="ph-max-slider"
@@ -939,7 +947,7 @@ const TwoDE = () => {
                     style={{ backgroundColor: selectedDot?.name === dot.name ? '#3a3a3a' : 'transparent' }}
                   >
                     <div className="twoDE-protein-color" style={{ backgroundColor: dot.color }} />
-                    <span className="twoDE-protein-name">{dot.display_name}</span>
+                    <span className="twoDE-protein-name">{dot.name}</span>
                   </div>
                 ))}
               </div>
@@ -978,7 +986,6 @@ const TwoDE = () => {
               />
 
               {/* Protein information popup - show for both canvas clicks and list clicks */}
-              
               {(hoveredDot || selectedDot) && (
                 <div
                   id="protein-info-card"
@@ -988,16 +995,21 @@ const TwoDE = () => {
                     top: mousePos.y + 10
                   }}
                 >
-                  <h4>{(selectedDot || hoveredDot).display_name}</h4>
+                  <h4>{(selectedDot || hoveredDot).fullName}</h4>
                   <div className="meta">
 
-                  <div>
+                   <div>
                     Link:{" "}
-                    {(selectedDot || hoveredDot).Link !== "N/A" ? (<a href={(selectedDot || hoveredDot).Link}> {(selectedDot || hoveredDot).Link} </a>) : ("N/A")}</div>
+                    {(selectedDot || hoveredDot).Link !== "N/A" ? (<a href={(selectedDot || hoveredDot).Link}> {(selectedDot || hoveredDot).Link} </a>) : ("N/A")}
+                  </div>
 
+                    
                     <div>MW: {(selectedDot || hoveredDot).mw.toLocaleString()} Da</div>
                     <div>pH: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
-
+                    <div style={{ marginTop: '4px' }}>
+                      <div style={{ fontWeight: 500 }}>Function:</div>
+                      <div className="muted">{(selectedDot || hoveredDot).function}</div>
+                    </div>
                     {(selectedDot || hoveredDot).sequence && (
                       <div style={{ marginTop: '4px' }}>
                         <div style={{ fontWeight: 500 }}>Sequence Preview:</div>
