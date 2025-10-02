@@ -1,11 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './Hidden.css';
+
+const KONAMI = [
+    'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+    'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
+    'b', 'a'
+  ];
 
 
 const Hidden: React.FC = () => {
   return (
-    <div>
-      <h2>Secret Page</h2>
+    <div style={{padding: '1.75rem'}}>
+      <h2 style={{color: 'var(--accent)'}}>Secret Page</h2>
     </div>
   );
 };
@@ -13,35 +19,29 @@ const Hidden: React.FC = () => {
 
 export const useHiddenUnlock = () => {
   const [unlocked, setUnlocked] = useState(false);
-  const konami = [
-      'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
-      'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
-      'b', 'a'
-    ];
-    
-  let keyDx = 0;
+  const keyDx = useRef(0);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      setUnlocked(true);
-      return;
-    }
+    // if (process.env.NODE_ENV === 'development') {
+    //   setUnlocked(true);
+    //   return;
+    // }
 
-    if (localStorage.getItem('hiddenUnlocked') === 'true') {
-      setUnlocked(true);
-      return;
-    }
+    // if (localStorage.getItem('hiddenUnlocked') === 'true') {
+    //   setUnlocked(true);
+    //   return;
+    // }
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === konami[keyDx]) {
-        keyDx++;
+      if (e.key === KONAMI[keyDx.current]) {
+        keyDx.current++;
 
-        if (keyDx === konami.length) {
+        if (keyDx.current === KONAMI.length) {
           setUnlocked(true);
           localStorage.setItem('hiddenUnlocked', 'true');
           window.removeEventListener('keydown', onKeyDown);
         }
-      } else { keyDx = 0; }
+      } else { keyDx.current = 0; }
     };
 
     window.addEventListener('keydown', onKeyDown);
