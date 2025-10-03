@@ -59,6 +59,12 @@ Navigate to the jbio-app subdirectory by typing in the command line
 cd frontend/jbio-app
 ```
 
+Then install the npm files
+
+```bash
+npm install
+```
+
 <br/>
 
 Launch the application by typing in the command line:
@@ -71,6 +77,15 @@ A browser will open with the URL: http://localhost:3000/
 Press the **`1D Electrophoresis`** button on the left.
 
 Follow the instructions listed beneath the simulation to load the desired FASTA files and begin the simulation:
+
+![1D Instructions](frontend/jbio-app/src/assets/readmes/1DEinstructions.png)
+
+## Tagging Policy
+
+The server picks up changes via semantic versioning. As such, all tags must come
+from the main branch and be tagged semantically.
+
+For example: `v1.1.1` -> `v1.1.2`
 
 ## Testing Usage
 
