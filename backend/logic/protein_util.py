@@ -77,47 +77,10 @@ class Protein():
                         protein_links[pid] = f"https://www.uniprot.org/uniparc/{pid}"
 
         return protein_links
-    def parse_fasta_content(self,content: str) -> List[Dict[str, Any]]:
-        sequences = []
-        fasta_io = StringIO(content)
-        for record in SeqIO.parse(fasta_io, "fasta"):
-            header = str(record.description)
-            sequence = str(record.seq)
-            mw = self.calculate_molecular_weight(sequence)
-            pH = self.calculate_theoretical_pi(sequence)
-
-            info = self.extract_protein_info(header)
-            sequences.append({
-                'header': header,
-                'sequence': sequence,
-                'name': info['name'],
-                'organism': info['organism'],
-                'mw': mw,
-                'pH': pH
-            })
-        return sequences
+    
     def extract_protein_info(header: str) -> Dict[str, str]:
         match = re.match(r'^gi\|(\d+)\|.*\|\s*(.*?)\s*\[(.*?)\]$', header)
         if match:
             return {'id': match.group(1), 'name': match.group(2), 'organism': match.group(3)}
         return {'id': 'unknown', 'name': header, 'organism': 'Unknown organism'}
-    def get_ph_position(pH, canvas_width, min_ph, max_ph):
-        clampedPH = min(max(pH, min_ph), max_ph)
-        return 50 + ((clampedPH - min_ph) / (max_ph - min_ph)) * (canvas_width - 100)
-
-
-    def get_mw_position(mw, canvas_height, acrylamide_percentage):
-        min_mw = 1000
-        max_mw = 1000000
-        log_mw = math.log10(min(max(mw, min_mw), max_mw))
-        acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 15
-        return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(min_mw))) * (canvas_height - 220) * acrylamide_factor
-
-
-    def get_distance_position(mw, canvas_height, acrylamide_percentage, max_distance_traveled=6):
-        min_mw = 1000
-        max_mw = 1000000
-        normalized_mw = (math.log10(min(max(mw, min_mw), max_mw)) - math.log10(min_mw)) / (math.log10(max_mw) - math.log10(min_mw))
-        acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 10
-        distance = max_distance_traveled * (1 - normalized_mw) * acrylamide_factor
-        return 170 + (distance / (max_distance_traveled * acrylamide_factor)) * (canvas_height - 220)
+    
