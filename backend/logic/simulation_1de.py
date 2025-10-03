@@ -3,12 +3,12 @@ import random
 from typing import Any
 
 from fastapi import UploadFile
-from protein_util import Protein
+from logic.protein_util import Protein
 
 class Simulation_1de():
-    ACCEPTED_FILE_TYPES = ['fasta', 'fas', 'fa', 'fna', 'ffn', 'faa', 'mpfa', 'frn']
+    ACCEPTED_FILE_TYPES = ['fasta', 'fas', 'fa', 'fna', 'ffn', 'faa', 'mpfa', 'frn','faa']
 
-    def fileGetProteinInfo(self,file: UploadFile) -> Any:
+    def fileGetProteinInfo(file: UploadFile) -> Any:
         '''
         Parse a single FASTA file and return protein info.
         '''
@@ -18,7 +18,7 @@ class Simulation_1de():
         
         try:
             filetype = file.filename.split('.')[-1]
-            if filetype in self.ACCEPTED_FILE_TYPES:
+            if filetype in Simulation_1de.ACCEPTED_FILE_TYPES:
                 temp_data_file = open('temp_data_file.faa', 'w+')
                 content = file.file.read().decode('utf-8')
                 temp_data_file.write(content)
@@ -96,17 +96,17 @@ class Simulation_1de():
 
 
 
-    def batchFileGetProteinInfo(self,files: list[UploadFile]) -> Any:
+    def batchFileGetProteinInfo(files: list[UploadFile]) -> Any:
         '''
         Parse a batch of FASTA files and return lists of proteins per well.
         '''
         well_data = []
-        self.sort_files(files)
+        Simulation_1de.sort_files(files)
 
         for file in files:
             filetype = file.filename.split('.')[-1]
 
-            if filetype in self.ACCEPTED_FILE_TYPES:
-                well_data.append(self.fileGetProteinInfo(file))
+            if filetype in Simulation_1de.ACCEPTED_FILE_TYPES:
+                well_data.append(Simulation_1de.fileGetProteinInfo(file))
                 
         return well_data

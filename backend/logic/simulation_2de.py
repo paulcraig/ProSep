@@ -5,10 +5,14 @@ from typing import Any, Dict, List
 from fastapi import File, UploadFile
 import numpy as np
 from Bio import SeqIO
-from protein_util import Protein
+from logic.protein_util import Protein
 
 
-class Electro2d_util():
+class Simulation_2de():
+    color_palette = [
+            '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
+            '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#808080'
+        ]
     def simulate_ief(proteins, ph_range, canvas_width, canvas_height, steps=25):
         min_ph = ph_range['min']
         max_ph = ph_range['max']
@@ -86,65 +90,55 @@ class Electro2d_util():
             simulation_results.append(step_results)
 
         return simulation_results
-    def parse_fasta(files: List[UploadFile] = File(...)):
-
-        color_palette = [
-            '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-            '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#808080'
-        ]
-        new_proteins = []
-
-        for i, file in enumerate(files):
-            content = file.read()
-            sequences = Protein.parse_fasta_content(content.decode("utf-8"))
-
+    def parse_fasta(sequences,new_proteins):
             # Collect all IDs from this file
-            id_list = [seq['header'].split("|")[1] for seq in sequences]
+        id_list = [seq['header'].split("|")[1] for seq in sequences]
 
-            # Fetch links for all IDs in this file
-            links_dict = Protein.find_links(id_list)
+        # Fetch links for all IDs in this file
+        links_dict = Protein.find_links(id_list)
 
-            for seq in sequences:
-                pid = seq['header'].split("|")[1]
-                display_name = seq['header'].split("|")[-1]
+        for seq in sequences:
+            pid = seq['header'].split("|")[1]
+            display_name = seq['header'].split("|")[-1]
 
-                # Extract UniProt ID if present
-                uniprot_match = re.search(
-                    r'[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}',
-                    seq['header']
-                )
-                uniprotId = uniprot_match.group(0) if uniprot_match else "N/A"
+            # Extract UniProt ID if present
+            uniprot_match = re.search(
+                r'[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}',
+                seq['header']
+            )
+            uniprotId = uniprot_match.group(0) if uniprot_match else "N/A"
 
-                protein_info = {}
-                protein_info['name'] = seq['name']
-                protein_info['fullName'] = seq['name']
-                protein_info['organism'] = seq['organism']
-                protein_info['uniprotId'] = uniprotId
-                protein_info['mw'] = seq['mw']
-                protein_info['pH'] = seq['pH']
-                protein_info['color'] = color_palette[len(new_proteins) % len(color_palette)]
-                protein_info['sequence'] = seq['sequence']
-                protein_info['x'] = 50
-                protein_info['y'] = 300
-                protein_info['currentpH'] = 7
-                protein_info['velocity'] = 0
-                protein_info['settled'] = False
-                protein_info['ID'] = pid
-                protein_info['Link'] = links_dict.get(pid) or "N/A"
-                protein_info['display_name'] = display_name
+            protein_info = {}
+            protein_info['name'] = seq['name']
+            protein_info['fullName'] = seq['name']
+            protein_info['organism'] = seq['organism']
+            protein_info['uniprotId'] = uniprotId
+            protein_info['mw'] = seq['mw']
+            protein_info['pH'] = seq['pH']
+            protein_info['color'] = Simulation_2de.color_palette[len(new_proteins) % len(Simulation_2de.color_palette)]
+            protein_info['sequence'] = seq['sequence']
+            protein_info['x'] = 50
+            protein_info['y'] = 300
+            protein_info['currentpH'] = 7
+            protein_info['velocity'] = 0
+            protein_info['settled'] = False
+            protein_info['ID'] = pid
+            protein_info['Link'] = links_dict.get(pid) or "N/A"
+            protein_info['display_name'] = display_name
 
-                new_proteins.append(protein_info.copy())
+            new_proteins.append(protein_info.copy())
 
-        return new_proteins
+        
     def parse_fasta_content(content: str) -> List[Dict[str, Any]]:
         sequences = []
         fasta_io = StringIO(content)
         for record in SeqIO.parse(fasta_io, "fasta"):
             header = str(record.description)
             sequence = str(record.seq)
+            print(sequence)
             mw = Protein.calculate_molecular_weight(sequence)
             pH = Protein.calculate_theoretical_pi(sequence)
-            
+
             info = Protein.extract_protein_info(header)
             sequences.append({
                 'header': header,

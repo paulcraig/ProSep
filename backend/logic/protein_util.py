@@ -28,15 +28,15 @@ class Protein():
     'Y': {'mass': 163.17, 'pKa': 10.07},
     'V': {'mass': 99.13, 'pKa': 0}
 }
-    def calculate_molecular_weight(self,sequence: str) -> float:
-        return sum(self.AMINO_ACIDS.get(aa, {'mass': 0})['mass'] for aa in sequence)
-    def calculate_theoretical_pi(self,sequence: str) -> float:
+    def calculate_molecular_weight(sequence: str) -> float:
+        return sum(Protein.AMINO_ACIDS.get(aa, {'mass': 0})['mass'] for aa in sequence)
+    def calculate_theoretical_pi(sequence: str) -> float:
         counts = {}
         for aa in sequence:
-            if aa in self.AMINO_ACIDS and self.AMINO_ACIDS[aa]['pKa'] > 0:
+            if aa in Protein.AMINO_ACIDS and Protein.AMINO_ACIDS[aa]['pKa'] > 0:
                 counts[aa] = counts.get(aa, 0) + 1
 
-        total_pka = sum(self.AMINO_ACIDS[aa]['pKa'] * count for aa, count in counts.items())
+        total_pka = sum(Protein.AMINO_ACIDS[aa]['pKa'] * count for aa, count in counts.items())
         total_count = sum(counts.values())
         return total_pka / total_count if total_count > 0 else 7.0
     
@@ -83,4 +83,6 @@ class Protein():
         if match:
             return {'id': match.group(1), 'name': match.group(2), 'organism': match.group(3)}
         return {'id': 'unknown', 'name': header, 'organism': 'Unknown organism'}
+    
+
     

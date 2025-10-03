@@ -2,8 +2,7 @@ import  re
 import numpy as np
 from typing import List, Dict, Any
 from fastapi import APIRouter, UploadFile, File
-from protein_util import Protein
-from simulation_2de import Electro2d_util
+from logic.simulation_2de import Simulation_2de
 router = APIRouter(
     prefix="/2d",
     tags=["2D Simulation"]
@@ -13,9 +12,20 @@ router = APIRouter(
 # -------------------------------------------------------------------
 @router.post("/parse-fasta")
 async def parse_fasta(files: List[UploadFile] = File(...)):
-    
+ 
+    color_palette = [
+        '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
+        '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#808080'
+    ]
+    new_proteins = []
 
-    return Electro2d_util.parse_fasta(files)
+    for i, file in enumerate(files):
+        content = await file.read()
+        sequences = Simulation_2de.parse_fasta_content(content.decode("utf-8"))
+        Simulation_2de.parse_fasta(sequences,new_proteins)
+        
+
+    return new_proteins
 
 @router.post("/simulate-ief")
 async def run_ief_simulation(data: Dict[str, Any]):
@@ -23,7 +33,7 @@ async def run_ief_simulation(data: Dict[str, Any]):
     ph_range = data.get("phRange", {"min": 0, "max": 14})
     canvas_width = data.get("canvasWidth", 800)
     canvas_height = data.get("canvasHeight", 600)
-    return Electro2d_util.simulate_ief(proteins, ph_range, canvas_width, canvas_height)
+    return Simulation_2de.simulate_ief(proteins, ph_range, canvas_width, canvas_height)
 
 
 @router.post("/simulate-sds")
@@ -32,5 +42,5 @@ async def run_sds_simulation(data: Dict[str, Any]):
     y_axis_mode = data.get("yAxisMode", "mw")
     acrylamide_percentage = data.get("acrylamidePercentage", 7.5)
     canvas_height = data.get("canvasHeight", 600)
-    return Electro2d_util.simulate_sds(proteins, y_axis_mode, acrylamide_percentage, canvas_height)
+    return Simulation_2de.simulate_sds(proteins, y_axis_mode, acrylamide_percentage, canvas_height)
 
