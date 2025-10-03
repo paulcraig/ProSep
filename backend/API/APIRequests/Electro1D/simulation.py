@@ -7,7 +7,7 @@ from backend.Electro1D import Protein
 
 
 router = APIRouter(
-    prefix='/api/1d',
+    prefix='/1d',
     tags=['1D Simulation']
 )
 

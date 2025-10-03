@@ -8,7 +8,7 @@ import httpx
 
 
 router = APIRouter(
-    prefix="/api",
+    prefix="/2d",
     tags=["2D Simulation"]
 )
 
