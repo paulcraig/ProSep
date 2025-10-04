@@ -60,7 +60,12 @@ class Simulation_2de():
     def simulate_sds(proteins, y_axis_mode, acrylamide_percentage, canvas_height, steps=25):
         simulation_results = []
         condensed_proteins = []
+        mws:List = []
+
         for protein in proteins:
+
+            mws.append(protein['mw'])
+
             protein_data = protein.copy()
             protein_data.update({
                 'y': 150,
@@ -76,9 +81,9 @@ class Simulation_2de():
                 protein_data = protein.copy()
                 prev_data = simulation_results[step - 1][i]
                 if y_axis_mode == 'mw':
-                    targetPosY = Simulation_2de.get_mw_position(protein['mw'], canvas_height, acrylamide_percentage)
+                    targetPosY = Simulation_2de.get_mw_position(protein['mw'], canvas_height, acrylamide_percentage, min_mw=min(mws), max_mw=max(mws))
                 else:
-                    targetPosY = Simulation_2de.get_distance_position(protein['mw'], canvas_height, acrylamide_percentage)
+                    targetPosY = Simulation_2de.get_distance_position(protein['mw'], canvas_height, acrylamide_percentage, min_mw=min(mws), max_mw=max(mws))
 
                 if targetPosY >= 600:
                     targetPosY = 600
@@ -165,18 +170,14 @@ class Simulation_2de():
 
 
     @staticmethod
-    def get_mw_position(mw, canvas_height, acrylamide_percentage):
-        min_mw = 1000
-        max_mw = 1000000
+    def get_mw_position(mw, canvas_height, acrylamide_percentage, min_mw = 1000, max_mw = 1000000):
         log_mw = math.log10(min(max(mw, min_mw), max_mw))
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 15
         return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(min_mw))) * (canvas_height - 220) * acrylamide_factor
 
 
     @staticmethod
-    def get_distance_position(mw, canvas_height, acrylamide_percentage, max_distance_traveled=6):
-        min_mw = 1000
-        max_mw = 1000000
+    def get_distance_position(mw, canvas_height, acrylamide_percentage, max_distance_traveled=6, min_mw = 1000, max_mw = 1000000):
         normalized_mw = (math.log10(min(max(mw, min_mw), max_mw)) - math.log10(min_mw)) / (math.log10(max_mw) - math.log10(min_mw))
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 10
         distance = max_distance_traveled * (1 - normalized_mw) * acrylamide_factor
