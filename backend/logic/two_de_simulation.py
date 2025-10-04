@@ -1,18 +1,20 @@
-from io import StringIO
-import math
-import re
-from typing import Any, Dict, List
-from fastapi import File, UploadFile
+import math, re
+
 import numpy as np
+from io import StringIO
+from typing import Any, Dict, List
+
 from Bio import SeqIO
-from logic.protein_util import Protein
+from utility.protein import Protein
 
 
 class Simulation_2de():
-    color_palette = [
-            '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-            '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#808080'
-        ]
+    COLOR_PALETTE = [
+        '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
+        '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#808080'
+    ]
+
+    @staticmethod
     def simulate_ief(proteins, ph_range, canvas_width, canvas_height, steps=25):
         min_ph = ph_range['min']
         max_ph = ph_range['max']
@@ -24,7 +26,7 @@ class Simulation_2de():
             for protein in proteins:
                 protein_data = protein.copy()
                 clampedPH = min(max(protein['pH'], min_ph), max_ph)
-                targetX = Protein.get_ph_position(clampedPH, canvas_width, min_ph, max_ph)
+                targetX = Simulation_2de.get_ph_position(clampedPH, canvas_width, min_ph, max_ph)
 
                 if step == 0:
                     startX = np.random.uniform(50, canvas_width - 50)
@@ -54,6 +56,7 @@ class Simulation_2de():
         return simulation_results
 
 
+    @staticmethod
     def simulate_sds(proteins, y_axis_mode, acrylamide_percentage, canvas_height, steps=25):
         simulation_results = []
         condensed_proteins = []
@@ -73,9 +76,9 @@ class Simulation_2de():
                 protein_data = protein.copy()
                 prev_data = simulation_results[step - 1][i]
                 if y_axis_mode == 'mw':
-                    targetPosY = Protein.get_mw_position(protein['mw'], canvas_height, acrylamide_percentage)
+                    targetPosY = Simulation_2de.get_mw_position(protein['mw'], canvas_height, acrylamide_percentage)
                 else:
-                    targetPosY = Protein.get_distance_position(protein['mw'], canvas_height, acrylamide_percentage)
+                    targetPosY = Simulation_2de.get_distance_position(protein['mw'], canvas_height, acrylamide_percentage)
 
                 if targetPosY >= 600:
                     targetPosY = 600
@@ -90,6 +93,9 @@ class Simulation_2de():
             simulation_results.append(step_results)
 
         return simulation_results
+    
+
+    @staticmethod
     def parse_fasta(sequences,new_proteins):
             # Collect all IDs from this file
         id_list = [seq['header'].split("|")[1] for seq in sequences]
@@ -115,7 +121,7 @@ class Simulation_2de():
             protein_info['uniprotId'] = uniprotId
             protein_info['mw'] = seq['mw']
             protein_info['pH'] = seq['pH']
-            protein_info['color'] = Simulation_2de.color_palette[len(new_proteins) % len(Simulation_2de.color_palette)]
+            protein_info['color'] = Simulation_2de.COLOR_PALETTE[len(new_proteins) % len(Simulation_2de.COLOR_PALETTE)]
             protein_info['sequence'] = seq['sequence']
             protein_info['x'] = 50
             protein_info['y'] = 300
@@ -129,6 +135,7 @@ class Simulation_2de():
             new_proteins.append(protein_info.copy())
 
         
+    @staticmethod
     def parse_fasta_content(content: str) -> List[Dict[str, Any]]:
         sequences = []
         fasta_io = StringIO(content)
@@ -150,11 +157,14 @@ class Simulation_2de():
             })
         return sequences
     
+
+    @staticmethod
     def get_ph_position(pH, canvas_width, min_ph, max_ph):
         clampedPH = min(max(pH, min_ph), max_ph)
         return 50 + ((clampedPH - min_ph) / (max_ph - min_ph)) * (canvas_width - 100)
 
 
+    @staticmethod
     def get_mw_position(mw, canvas_height, acrylamide_percentage):
         min_mw = 1000
         max_mw = 1000000
@@ -163,6 +173,7 @@ class Simulation_2de():
         return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(min_mw))) * (canvas_height - 220) * acrylamide_factor
 
 
+    @staticmethod
     def get_distance_position(mw, canvas_height, acrylamide_percentage, max_distance_traveled=6):
         min_mw = 1000
         max_mw = 1000000
