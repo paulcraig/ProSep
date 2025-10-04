@@ -11,7 +11,6 @@ router = APIRouter(
 
 @router.post('/ProteinInfo/File', response_model=list[Any])
 async def fileGetProteinInfo(file: UploadFile) -> Any:
-
     return Simulation_1de.fileGetProteinInfo(file)
 
 
