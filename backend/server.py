@@ -2,9 +2,10 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import backend.API.APIRequests.startup as startup
-import backend.API.APIRequests.Electro1D.simulation as electro_1d_simulation
-import backend.API.APIRequests.Electro2D.simulation as electro_2d_simulation
+import api.one_de_routes as one_de_routes
+import api.two_de_routes as two_de_routes
+
+
 
 '''
 HOW TO START UP API SERVER:
@@ -49,9 +50,8 @@ app.add_middleware(
 )
 
 # Routers
-app.include_router(startup.router)
-app.include_router(electro_1d_simulation.router)
-app.include_router(electro_2d_simulation.router)  # NEW
+app.include_router(one_de_routes.router)
+app.include_router(two_de_routes.router)
 
 ''' 
 NOTE FOR FUTURE DEVELOPERS:
