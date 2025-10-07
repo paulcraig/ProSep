@@ -4,14 +4,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import backend.api.one_de_routes as one_de_routes
 import backend.api.two_de_routes as two_de_routes
-
-
+import backend.api.artifact_routes as artifact_routes
 
 '''
 HOW TO START UP API SERVER:
    
-1. Run the command: uvicorn server:app --reload
-        (If that command doesn't work, try: python -m uvicorn server:app --reload)
+1. Run the command: uvicorn backend.server:app --reload // FROM ROOT
+        (If that command doesn't work, try: python -m uvicorn backend.server:app --reload)
    This activates the FastAPI system. The terminal window will
    have to stay open for as long as you have the server running.
    
@@ -52,17 +51,8 @@ app.add_middleware(
 # Routers
 app.include_router(one_de_routes.router)
 app.include_router(two_de_routes.router)
+app.include_router(artifact_routes.router)
 
-''' 
-NOTE FOR FUTURE DEVELOPERS:
-In order to add additional files for the API, such as the addition of 2DE,
-simply do the following:
-1. Make the file (look at Electro1D.simulation.py in the API Requests folder for reference)
-2. import the file (ex: import backend.API.APIRequests.startup as startup)
-3. above this comment, add: app.include_router(FILE_VARIABLE_HERE.router)
-
-It should now be all good to go!
-'''
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8000)
