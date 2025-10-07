@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_DIR="/shared/ProSep"
 STATE_FILE="/var/www/.deployed_tag"
 FRONTEND_URL="http://protein-separation-sim.se.rit.edu/"
-BACKEND_PROCESS="uvicorn server:app"
+BACKEND_PROCESS="uvicorn backend.server:app"
 WWW_DIR="/var/www/html"
 
 REPAIR=false
