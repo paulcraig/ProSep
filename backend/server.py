@@ -2,8 +2,8 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import api.one_de_routes as one_de_routes
-import api.two_de_routes as two_de_routes
+import backend.api.one_de_routes as one_de_routes
+import backend.api.two_de_routes as two_de_routes
 
 
 
