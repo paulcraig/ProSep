@@ -53,13 +53,13 @@ const TwoDE = () => {
         name: dot.name,
         fullName: dot.fullName,
         organism: dot.organism,
-        uniprotId: dot.uniprotId,
-        pdbId: dot.pdbId,
-        function: dot.function,
+        ID: dot.ID,
         mw: dot.mw,
         pH: dot.pH,
         color: dot.color,
-        sequence: dot.sequence
+        sequence: dot.sequence,
+        display_name: dot.display_name,
+        Link: dot.Link
       })),
       phRange: phRange,
       canvasWidth: 800,
@@ -67,7 +67,7 @@ const TwoDE = () => {
     };
 
     // Call the backend API
-    axios.post(`${API_URL}/simulate-ief`, data)
+    axios.post(`${API_URL}/2d/simulate-ief`, data)
       .then(response => {
         // Get the simulation results
         const simulationResults = response.data;
@@ -113,24 +113,24 @@ const TwoDE = () => {
         name: dot.name,
         fullName: dot.fullName,
         organism: dot.organism,
-        uniprotId: dot.uniprotId,
-        pdbId: dot.pdbId,
-        function: dot.function,
+        ID: dot.ID,
         mw: dot.mw,
         pH: dot.pH,
         color: dot.color,
         x: dot.x,
         y: dot.y,
         bandWidth: dot.bandWidth,
-        sequence: dot.sequence
+        sequence: dot.sequence,
+        display_name: dot.display_name,
+        Link: dot.Link
       })),
       yAxisMode: yAxisMode,
       acrylamidePercentage: acrylamidePercentage,
-      canvasHeight: 600
+      canvasHeight: 600 //it's six centimeters
     };
 
     // Call the backend API
-    axios.post(`${API_URL}/simulate-sds`, data)
+    axios.post(`${API_URL}/2d/simulate-sds`, data)
       .then(response => {
         // Get the simulation results
         const simulationResults = response.data;
@@ -180,9 +180,11 @@ const TwoDE = () => {
       formData.append('files', files[i]);
     }
 
+      console.log(API_URL + "API URL IS HERE")
+
     try {
       // Upload to backend for processing
-      const response = await axios.post(`${API_URL}/parse-fasta`, formData, {
+      const response = await axios.post(`${API_URL}/2d/parse-fasta`, formData, {
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(percentCompleted);
@@ -823,17 +825,7 @@ const TwoDE = () => {
                   className="twoDE-input"
                   disabled={simulationState !== 'ready'} // Disable during simulation
                 />
-                <input
-                  type="range"
-                  id="ph-min-slider"
-                  min="0"
-                  max="14"
-                  step="0.1"
-                  value={phRange.min}
-                  onChange={handlePhSliderChange}
-                  className="twoDE-range"
-                  disabled={simulationState !== 'ready'} // Disable during simulation
-                />
+ 
                 <input
                   type="range"
                   id="ph-max-slider"
@@ -947,7 +939,7 @@ const TwoDE = () => {
                     style={{ backgroundColor: selectedDot?.name === dot.name ? '#3a3a3a' : 'transparent' }}
                   >
                     <div className="twoDE-protein-color" style={{ backgroundColor: dot.color }} />
-                    <span className="twoDE-protein-name">{dot.name}</span>
+                    <span className="twoDE-protein-name">{dot.display_name}</span>
                   </div>
                 ))}
               </div>
@@ -986,6 +978,7 @@ const TwoDE = () => {
               />
 
               {/* Protein information popup - show for both canvas clicks and list clicks */}
+              
               {(hoveredDot || selectedDot) && (
                 <div
                   id="protein-info-card"
@@ -995,35 +988,16 @@ const TwoDE = () => {
                     top: mousePos.y + 10
                   }}
                 >
-                  <h4>{(selectedDot || hoveredDot).fullName}</h4>
+                  <h4>{(selectedDot || hoveredDot).display_name}</h4>
                   <div className="meta">
-                    <div>Source: {(selectedDot || hoveredDot).organism}</div>
-                    <div>
-                      UniProt: <a
-                        href={`https://www.uniprot.org/uniprotkb/${(selectedDot || hoveredDot).uniprotId !== 'N/A' ? (selectedDot || hoveredDot).uniprotId : (selectedDot || hoveredDot).name.replace(/\s+/g, '_')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {(selectedDot || hoveredDot).uniprotId !== 'N/A' ? (selectedDot || hoveredDot).uniprotId : (selectedDot || hoveredDot).name}
-                      </a>
-                    </div>
-                    {(selectedDot || hoveredDot).pdbId !== 'N/A' && (
-                      <div>
-                        PDB: <a
-                          href={`https://www.rcsb.org/structure/${(selectedDot || hoveredDot).pdbId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {(selectedDot || hoveredDot).pdbId}
-                        </a>
-                      </div>
-                    )}
+
+                  <div>
+                    Link:{" "}
+                    {(selectedDot || hoveredDot).Link !== "N/A" ? (<a href={(selectedDot || hoveredDot).Link}> {(selectedDot || hoveredDot).Link} </a>) : ("N/A")}</div>
+
                     <div>MW: {(selectedDot || hoveredDot).mw.toLocaleString()} Da</div>
                     <div>pH: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
-                    <div style={{ marginTop: '4px' }}>
-                      <div style={{ fontWeight: 500 }}>Function:</div>
-                      <div className="muted">{(selectedDot || hoveredDot).function}</div>
-                    </div>
+
                     {(selectedDot || hoveredDot).sequence && (
                       <div style={{ marginTop: '4px' }}>
                         <div style={{ fontWeight: 500 }}>Sequence Preview:</div>
