@@ -57,6 +57,36 @@
   fill: var(--accent);
 }
 
+.protein-tooltip {
+  box-shadow: 0 4px 4px var(--background);
+  background-color: var(--sub-accent);
+  color: var(--sub-text);
+
+  border: 3px solid var(--accent);
+  border-radius: 6px;
+
+  position: fixed;
+  z-index: 2;
+  padding: 12px;
+  font-size: 14px;
+  min-width: 240px;
+}
+
+.protein-tooltip-title {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--accent);
+}
+
+.protein-tooltip a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.protein-tooltip a:hover {
+  text-decoration: underline;
+}
+
 /* .gel-wrapper, .gel-container, .toolbar, .chips {
   border: 1px solid red;
 } */

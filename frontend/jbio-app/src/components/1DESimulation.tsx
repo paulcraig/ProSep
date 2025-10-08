@@ -57,6 +57,14 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const timerRef = React.useRef<number | null>(null);
 
   const [showChart, setShowChart] = useState(false);
+  const [tooltipData, setTooltipData] = useState<{
+    protein: typeof standards[number];
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const [isDraggingTooltip, setIsDraggingTooltip] = useState(false);
+  const [tooltipDragStart, setTooltipDragStart] = useState<{ x: number; y: number } | null>(null);
 
   const [selectedStandards, setSelectedStandards] = useState<typeof standards[number][]>(standards);
   const [positions, setPositions] = useState<Record<number, Record<string, number>>>(() =>
@@ -85,8 +93,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
   const bandW = wellW * 0.8;
   const bandH = wellH * 0.2;
-
-  const simDelay = 250; //ms
+  
+  const simDelay = 250; // ms
 
 
   const getRelativeMobility = (pct: number, MW: number) => {
@@ -115,6 +123,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     return (wellH * 2) + (mapped * (slabH - wellH));
   }
 
+  const bandMin = valueToY(0) + (bandH * 0.25)
 
   const GoogleScatterModal: React.FC<{
     open: boolean;
@@ -593,7 +602,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       </div>
 
       {/* Simulation */}
-      <div className='gel-container'>
+      <div className='gel-container' onClick={() => setTooltipData(null)}>
         <svg
           className='gel-svg'
           onWheel={onWheel}
@@ -725,15 +734,28 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             {selectedStandards.map((protein, i) => {
               return (
                 <rect
-                  x={wellW + ((wellW - bandW) / 2)} y={valueToY(positions[0]?.[protein.id_num] ?? 0) + (bandH / 4)}
+                  x={wellW + ((wellW - bandW) / 2)} y={Math.max(valueToY(positions[0]?.[protein.id_num] ?? 0) - (bandH * 1.25), bandMin)}
                   width={bandW} height={bandH} rx={3} ry={3}
                   key={protein.id_num}
                   fill={protein.color}
                   stroke='var(--background)'
                   strokeWidth={0.5}
-                >
-                  <title>{protein.name + ' [Rf = ' + (positions[0]?.[protein.id_num] ?? 0).toFixed(2) + ']'}</title>
-                </rect>
+                  style={{ cursor: 'pointer' }}
+                  onClick={(e) => {
+                    if (tooltipData?.protein != protein) {
+                      e.stopPropagation();
+                      const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
+                      
+                      setTooltipData({
+                        protein,
+                        x: rect.left + rect.width / 2,
+                        y: rect.top
+                      });
+                      return;
+                    }
+                    setTooltipData(null);
+                  }}
+                />
               )
             })}
           </g>
@@ -789,6 +811,60 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           )
         })}
       </div>
+
+      {/* Protein Tooltip */}
+      {tooltipData && (
+        <div
+          className='protein-tooltip'
+          style={{
+            left: tooltipData.x,
+            top: tooltipData.y,
+            transform: 'translate(40px, -100%)',
+            cursor: isDraggingTooltip ? 'grabbing' : 'grab'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => {
+            setIsDraggingTooltip(true);
+            setTooltipDragStart({ x: e.clientX - tooltipData.x, y: e.clientY - tooltipData.y });
+          }}
+          onMouseMove={(e) => {
+            if (isDraggingTooltip && tooltipDragStart) {
+              setTooltipData({
+                ...tooltipData,
+                x: e.clientX - tooltipDragStart.x,
+                y: e.clientY - tooltipDragStart.y
+              });
+            }
+          }}
+          onMouseUp={() => {
+            setIsDraggingTooltip(false);
+            setTooltipDragStart(null);
+          }}
+          onMouseLeave={() => {
+            if (isDraggingTooltip) {
+              setIsDraggingTooltip(false);
+              setTooltipDragStart(null);
+            }
+          }}
+        >
+          <div className='protein-tooltip-title'>
+            Protein Information
+          </div>
+          <div>Name: {tooltipData.protein.name}</div>
+          <div>Molecular Weight: {tooltipData.protein.molecularWeight.toLocaleString()}</div>
+          <div>Rm Value: {((positions[0]?.[tooltipData.protein.id_num] ?? 0) / ticks * 100).toFixed(2)}%</div>
+          <div>
+            PDB:{' '}
+            <a
+              href={`https://www.rcsb.org/structure/${tooltipData.protein.id_num}`}
+              target='_blank'
+              rel='noopener noreferrer'
+            >
+              {tooltipData.protein.id_num}
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Chart */}
       <GoogleScatterModal
