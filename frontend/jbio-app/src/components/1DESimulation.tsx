@@ -86,6 +86,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const bandW = wellW * 0.8;
   const bandH = wellH * 0.2;
 
+  const simDelay = 250; //ms
+
 
   const getRelativeMobility = (pct: number, MW: number) => {
     // Ferguson relation: u = u0 * exp( -Kr * %T ):
@@ -216,7 +218,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             visibleInLegend: true,
           },
         },
-      } as google.visualization.ScatterChartOptions;
+      };
 
       
       chart.draw(data, options);
@@ -260,23 +262,29 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     if (isRunning) {
       onStop();
     } else {
+      let startTime = performance.now();
+
       setIsRunning(true);
       setHasStarted(true);
 
       timerRef.current = window.setInterval(() => {
+        const elapsed = performance.now() - startTime;
+        if (elapsed < (simDelay * 1.25)) return;
+
         setPositions(prev => {
           const updated: typeof prev = { ...prev }
 
           for (const [wi, wellProteins] of Object.entries(prev)) {
             const idx = Number(wi);
-            updated[idx] = { ...wellProteins }
+            updated[idx] = { ...wellProteins };
 
             for (const protein of selectedStandards) {
+              const current = wellProteins[protein.id_num];
+              if (current === undefined) continue;
+
               const rf = getRelativeMobility(acrylamidePct, protein.molecularWeight);
               const target = Math.min(rf * ticks * ticks, ticks);
-              const current = wellProteins[protein.id_num];
               const step = (target - current) / ((50 / voltageAmt) * 500);
-
               updated[idx][protein.id_num] = Math.min(current + step, target);
             }
           }
@@ -707,11 +715,17 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             <title>Add well</title>
           </g>
 
-          <g className='standards-well'>
+          <g
+            className='standards-well'
+            style={{
+              opacity: hasStarted ? 1 : 0,
+              transition: hasStarted ? `opacity ${simDelay / 1000}s ease-in ${simDelay / 1000}s` : 'none'
+            }}
+          >
             {selectedStandards.map((protein, i) => {
               return (
                 <rect
-                  x={wellW + ((wellW - bandW) / 2)} y={valueToY(positions[0]?.[protein.id_num] ?? 0) - (bandH * 1.5)}
+                  x={wellW + ((wellW - bandW) / 2)} y={valueToY(positions[0]?.[protein.id_num] ?? 0) + (bandH / 4)}
                   width={bandW} height={bandH} rx={3} ry={3}
                   key={protein.id_num}
                   fill={protein.color}
@@ -721,6 +735,30 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                   <title>{protein.name + ' [Rf = ' + (positions[0]?.[protein.id_num] ?? 0).toFixed(2) + ']'}</title>
                 </rect>
               )
+            })}
+          </g>
+          <g className='filename-bands' style={{
+            opacity: hasStarted ? 0 : 1,
+            transition: 'opacity 0.25s ease-out'
+          }}>
+            {Array.from({ length: wellsCount }).map((_, wi) => {
+              const hasProteins = Object.keys(positions[wi] || {}).length > 0;
+              const label = wi === 0 ? 'Standard Proteins' : `File ${wi}`;
+
+              if (!hasProteins) return null;
+              
+              return (
+                <rect
+                  key={`filename-band-${wi}`}
+                  x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)} y={wellH * 1.65}
+                  width={bandW} height={bandH} rx={3} ry={3}
+                  fill='var(--highlight)'
+                  stroke='var(--accent)'
+                  strokeWidth={0.5}
+                >
+                  <title>{label}</title>
+                </rect>
+              );
             })}
           </g>
         </svg>
