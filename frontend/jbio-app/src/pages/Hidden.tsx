@@ -17,25 +17,29 @@ const Hidden: React.FC = () => {
   const artifactRef = useRef<ArtifactListRef>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && artifactRef.current) {
-      artifactRef.current.uploadFile(file);
-    }
+    const files = e.target.files;
+    if (!files || !artifactRef.current) return;
+
+    Array.from(files).forEach((file) => {
+      artifactRef.current!.uploadFile(file);
+    });
+
+    e.target.value = '';
   };
 
   return (
-    <div className="hidden-page">
-      <Box className="hidden-header">
+    <div className='hidden-page'>
+      <Box className='hidden-header'>
         <IconButton
-          component="label"
-          size="small"
-          className="hidden-upload-btn"
-          title="Upload File"
+          component='label'
+          size='small'
+          className='hidden-upload-btn'
+          title='Upload Files'
         >
           <UploadIcon />
-          <input type="file" hidden onChange={handleFileChange} />
+          <input type='file' hidden multiple onChange={handleFileChange} />
         </IconButton>
-        <h2 className="section-header">Artifacts</h2>
+        <h2 className='section-header'>Artifacts</h2>
       </Box>
 
       <ArtifactList ref={artifactRef} />

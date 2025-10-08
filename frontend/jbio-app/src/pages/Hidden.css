@@ -26,10 +26,10 @@
 .hidden-upload-btn {
   padding: 0 !important;
   margin: 0 !important;
-  color: var(--accent) !important;
+  color: var(--text) !important;
   transition: color 0.2s ease;
 }
 
 .hidden-upload-btn:hover {
-  color: var(--text) !important;
+  color: var(--accent) !important;
 }
