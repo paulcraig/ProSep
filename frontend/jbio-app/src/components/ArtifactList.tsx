@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { API_URL } from '../config';
+import './ArtifactList.css';
 
-import { Box, Card, CardContent, CardMedia, Typography, IconButton, Stack, TextField, Button, Alert } from '@mui/material';
-
-import AddPhotoAlternateRoundedIcon from '@mui/icons-material/AddPhotoAlternateRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
+import { Box, Card, CardContent, CardMedia, Typography, IconButton, Stack } from '@mui/material';
+import ReplaceIcon from '@mui/icons-material/SwapHorizRounded';
+import DownloadIcon from '@mui/icons-material/DownloadRounded';
+import DeleteIcon from '@mui/icons-material/DeleteRounded';
+import DragIndictor from '@mui/icons-material/DragIndicator';
 
 
 interface Artifact {
@@ -18,84 +17,93 @@ interface Artifact {
 }
 
 
-export default function ArtifactList(): JSX.Element {
-  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [newName, setNewName] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
+export interface ArtifactListRef {
+  uploadFile: (file: File) => Promise<void>;
+}
 
+
+const ArtifactList = forwardRef<ArtifactListRef>((_, ref) => {
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  
   async function fetchArtifacts(): Promise<void> {
     try {
       const res = await fetch(`${API_URL}/artifacts`);
+
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
+
       const data = await res.json();
       setArtifacts(data);
-      setError(null);
+
     } catch (err) {
       console.error(err);
-      setError('Failed to load artifacts from the server.');
     }
   }
+
 
   useEffect(() => {
     fetchArtifacts();
   }, []);
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
-    if (!e.target.files?.length) return;
-    const file = e.target.files[0];
+
+  async function handleUpload(file: File): Promise<void> {
     const formData = new FormData();
     formData.append('file', file);
-
     try {
-      const res = await fetch(`${API_URL}/artifacts`, { method: 'POST', body: formData });
+      const res = await fetch(`${API_URL}/artifacts`, {
+        method: 'POST',
+        body: formData,
+      });
+
       if (!res.ok) throw new Error(`Upload failed (${res.status})`);
 
-      setError(null);
       await fetchArtifacts();
 
     } catch (err) {
       console.error(err);
-      setError('Upload failed. Please check your connection or server status.');
     }
   }
+
+
+  useImperativeHandle(ref, () => ({
+    uploadFile: handleUpload,
+  }));
+
 
   async function handleDelete(name: string): Promise<void> {
     try {
       const res = await fetch(`${API_URL}/artifacts/${encodeURIComponent(name)}`, { method: 'DELETE' });
+
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
 
-      setError(null);
       await fetchArtifacts();
 
     } catch (err) {
       console.error(err);
-      setError(`Failed to delete ${name}.`);
     }
   }
 
-  async function handleRename(oldName: string): Promise<void> {
-    if (!newName || newName === oldName) {
-      setEditing(null);
-      return;
-    }
+
+  async function handleReplace(name: string, file: File): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/artifacts/${encodeURIComponent(oldName)}`, {
+      const res = await fetch(`${API_URL}/artifacts/${encodeURIComponent(name)}/replace`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ new_name: newName }),
+        body: formData,
       });
-      if (!res.ok) throw new Error(`Rename failed (${res.status})`);
 
-      setError(null);
-      setEditing(null);
+      if (!res.ok) throw new Error(`Replace failed (${res.status})`);
+
       await fetchArtifacts();
 
     } catch (err) {
       console.error(err);
-      setError(`Failed to rename ${oldName}.`);
     }
   }
+
 
   async function handleDownload(name: string): Promise<void> {
     try {
@@ -113,134 +121,148 @@ export default function ArtifactList(): JSX.Element {
 
     } catch (err) {
       console.error(err);
-      setError(`Failed to download ${name}.`);
     }
   }
 
+
+  async function saveOrder(newOrder: Artifact[]): Promise<void> {
+    try {
+      const fileOrder = newOrder.map(f => f.name);
+      const res = await fetch(`${API_URL}/artifacts/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_order: fileOrder }),
+      });
+
+      if (!res.ok) throw new Error(`Reorder failed (${res.status})`);
+
+    } catch (err) {
+      console.error(err);
+      await fetchArtifacts();
+    }
+  }
+
+
+  function handleDragStart(e: React.DragEvent, index: number): void {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.75';
+    }
+  }
+
+
+  function handleDragEnd(e: React.DragEvent): void {
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1';
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  }
+
+
+  function handleDragOver(e: React.DragEvent, index: number): void {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  }
+
+
+  function handleDragLeave(): void {
+    setDragOverIndex(null);
+  }
+
+
+  function handleDrop(e: React.DragEvent, dropIndex: number): void {
+    e.preventDefault();
+
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newArtifacts = [...artifacts];
+    const draggedItem = newArtifacts[draggedIndex];
+
+    newArtifacts.splice(draggedIndex, 1);
+    newArtifacts.splice(dropIndex, 0, draggedItem);
+
+    setArtifacts(newArtifacts);
+    setDragOverIndex(null);
+    saveOrder(newArtifacts);
+  }
+
+
   return (
     <Box>
-      {error && (
-        <Alert severity='error' sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Button component='label' startIcon={<AddPhotoAlternateRoundedIcon />} sx={{ mb: 2 }}>
-        Upload
-        <input type='file' hidden onChange={handleUpload} />
-      </Button>
-
       <Stack direction='row' flexWrap='wrap' gap={2} sx={{ justifyContent: 'flex-start' }}>
-        {artifacts.map((file) => (
+        {artifacts.map((file, index) => (
           <Card
             key={file.id}
-            sx={{
-              width: 260,
-              height: 180,
-              backgroundColor: 'var(--sub-background)',
-              color: 'var(--text)',
-              border: '4px solid var(--accent)',
-              borderRadius: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              overflow: 'hidden',
-            }}
+            className={`artifact-card ${dragOverIndex === index ? 'drag-over' : ''}`}
+            draggable
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragEnd={handleDragEnd}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, index)}
           >
-            {/* Preview */}
-            <Box
-              sx={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-              }}
-            >
+            <Box className='artifact-media-container'>
+              <Box className='artifact-drag-icon'>
+                <DragIndictor fontSize='small' />
+              </Box>
               <CardMedia
                 component='img'
-                src={`${API_URL}/artifacts/${encodeURIComponent(file.name)}`}
+                className='artifact-media'
+                src={`${API_URL}/artifacts/${encodeURIComponent(file.name)}/preview`}
                 alt={file.name}
-                sx={{
-                  maxHeight: '100%',
-                  maxWidth: '100%',
-                  objectFit: 'contain',
-                }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
               />
             </Box>
-
-            <CardContent
-              sx={{
-                p: 1,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                {editing === file.name ? (
-                  <TextField
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    size='small'
-                    variant='outlined'
-                    sx={{
-                      input: {
-                        color: 'var(--text)',
-                        p: '2px 6px',
-                      },
-                    }}
-                  />
-                ) : (
-                  <>
-                    <Typography noWrap sx={{ fontSize: 14, fontWeight: 500 }} title={file.name}>
-                      {file.name}
-                    </Typography>
-                    <Typography sx={{ fontSize: 12, opacity: 0.7 }}>
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </Typography>
-                  </>
-                )}
+            <CardContent className='artifact-content'>
+              <Box className='artifact-info'>
+                <Typography className='artifact-name' title={file.name}>
+                  {file.name}
+                </Typography>
+                <Typography className='artifact-size'>
+                  {file.size < 1024 * 1024 ? `${(file.size / 1024).toFixed(2)} KB` : `${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                </Typography>
               </Box>
-
-              <Stack direction='row'>
+              <Stack direction='row' className='artifact-actions'>
                 <IconButton
                   size='small'
                   onClick={() => handleDownload(file.name)}
                   title='Download'
-                  sx={{ color: 'var(--accent)' }}
+                  className='artifact-icon'
                 >
-                  <DownloadRoundedIcon fontSize='small' />
+                  <DownloadIcon fontSize='small' />
+                </IconButton>
+                <IconButton
+                  size='small'
+                  component='label'
+                  title='Replace'
+                  className='artifact-icon'
+                >
+                  <ReplaceIcon fontSize='small' />
+                  <input
+                    type='file'
+                    hidden
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleReplace(file.name, f);
+                    }}
+                  />
                 </IconButton>
                 <IconButton
                   size='small'
                   onClick={() => handleDelete(file.name)}
                   title='Delete'
-                  sx={{ color: 'var(--accent)' }}
+                  className='artifact-icon'
                 >
-                  <DeleteRoundedIcon fontSize='small' />
-                </IconButton>
-                <IconButton
-                  size='small'
-                  onClick={() => {
-                    if (editing === file.name) {
-                      handleRename(file.name);
-                    } else {
-                      setEditing(file.name);
-                      setNewName(file.name);
-                    }
-                  }}
-                  title={editing === file.name ? 'Save' : 'Rename'}
-                  sx={{ color: 'var(--accent)' }}
-                >
-                  {editing === file.name ? (
-                    <SaveRoundedIcon fontSize='small' />
-                  ) : (
-                    <EditRoundedIcon fontSize='small' />
-                  )}
+                  <DeleteIcon fontSize='small' />
                 </IconButton>
               </Stack>
             </CardContent>
@@ -249,4 +271,6 @@ export default function ArtifactList(): JSX.Element {
       </Stack>
     </Box>
   );
-}
+});
+
+export default ArtifactList;

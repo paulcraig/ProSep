@@ -1,0 +1,103 @@
+.artifact-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: flex-start;
+}
+
+.artifact-card {
+  width: 320px;
+  height: 240px;
+  background-color: var(--sub-background) !important;
+  color: var(--text) !important;
+  border: 4px solid var(--accent);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: grab;
+  transition: border 0.2s ease, transform 0.2s ease;
+  box-shadow: none !important;
+}
+
+.artifact-card.drag-over {
+  border-color: var(--text);
+  transform: scale(1.05);
+}
+
+.artifact-card:active {
+  cursor: grabbing;
+}
+
+.artifact-drag-icon {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  color: var(--accent);
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+
+.artifact-drag-icon:active {
+  cursor: grabbing;
+}
+
+.artifact-media-container {
+  height: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.artifact-media {
+  max-width: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.artifact-content {
+  height: 10%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-top: 3px solid var(--accent);
+  padding: 0.8rem !important;
+  padding-bottom: 1.4rem !important;
+}
+
+.artifact-info {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.artifact-name {
+  font-size: 14px !important;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artifact-size {
+  font-size: 12px !important;
+  opacity: 0.7;
+}
+
+.artifact-actions {
+  display: flex;
+  margin-top: -2px;
+}
+
+.artifact-icon {
+  color: var(--accent) !important;
+  transition: color 0.2s ease;
+}
+
+.artifact-icon:hover {
+  color: var(--text) !important;
+}

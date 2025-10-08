@@ -1,0 +1,35 @@
+.hidden-page {
+  background: var(--background);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem;
+}
+
+.hidden-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  color: var(--accent);
+  margin: 0 0 1rem 0;
+}
+
+.hidden-header .section-header {
+    margin: 0;
+    line-height: 1;
+}
+
+.hidden-upload-btn {
+  padding: 0 !important;
+  margin: 0 !important;
+  color: var(--accent) !important;
+  transition: color 0.2s ease;
+}
+
+.hidden-upload-btn:hover {
+  color: var(--text) !important;
+}

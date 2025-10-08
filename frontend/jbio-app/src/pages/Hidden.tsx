@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './Hidden.css';
-import ArtifactList from '../components/ArtifactList';
+
+import ArtifactList, { ArtifactListRef } from '../components/ArtifactList';
+
+import { Box, IconButton, Typography } from '@mui/material';
+import UploadIcon from '@mui/icons-material/UploadFile';
 
 const KONAMI = [
     'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
@@ -10,9 +14,31 @@ const KONAMI = [
 
 
 const Hidden: React.FC = () => {
+  const artifactRef = useRef<ArtifactListRef>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && artifactRef.current) {
+      artifactRef.current.uploadFile(file);
+    }
+  };
+
   return (
-    <div style={{padding: '1.75rem'}}>
-      <ArtifactList />
+    <div className="hidden-page">
+      <Box className="hidden-header">
+        <IconButton
+          component="label"
+          size="small"
+          className="hidden-upload-btn"
+          title="Upload File"
+        >
+          <UploadIcon />
+          <input type="file" hidden onChange={handleFileChange} />
+        </IconButton>
+        <h2 className="section-header">Artifacts</h2>
+      </Box>
+
+      <ArtifactList ref={artifactRef} />
     </div>
   );
 };
