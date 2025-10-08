@@ -5,3 +5,4 @@ bio~=1.6.2
 uvicorn~=0.21.1
 python-multipart
 Pillow~=10.4.0
+PyMuPDF~=1.26.4
