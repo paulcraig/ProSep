@@ -1,0 +1,53 @@
+# ASP.NET / .NET Core .gitignore
+
+## Ignore build output
+bin/
+obj/
+out/
+publish/
+TestResults/
+
+## Ignore user-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Ignore VS Code settings
+.vscode/
+
+## Ignore Rider settings
+.idea/
+*.sln.iml
+
+## Ignore NuGet packages
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+project.lock.json
+project.fragment.lock.json
+
+## Ignore ASP.NET secrets
+secrets.json
+
+## Ignore logs
+*.log
+
+## Ignore generated files
+*.generated.cs
+
+## Ignore coverage reports
+coverage/
+*.coverage
+*.coveragexml
+
+## Ignore other files
+*.vspscc
+*.vssscc
+_ReSharper*/
+*.DotSettings.user
+
+## Ignore environment files
+.env
+.env.*
