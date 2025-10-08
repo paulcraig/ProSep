@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using Frontend.Models
 @using Frontend.Components.Controls
+@inject HttpClient httpClient
 
 <PageTitle>JBioFramework</PageTitle>
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
@@ -111,14 +112,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var httpClient = new HttpClient();
-        FileStream? fileStream = null;
         try
         {
-            fileStream = new FileStream("wwwroot/assets/profiles/profiles.json", FileMode.Open, FileAccess.Read);
-            using StreamReader reader = new StreamReader(fileStream);
-            fileStream = null;
-            var profilesJson = await reader.ReadToEndAsync();
+            var profilesJson = await httpClient.GetStringAsync("assets/profiles/profiles.json");
             var allProfiles = System.Text.Json.JsonSerializer.Deserialize<List<Profile>>(profilesJson) ?? new List<Profile>();
 
             sponsors = allProfiles.Where(p => p.Role == "Sponsor").ToList();
@@ -126,12 +122,9 @@
             currentDevelopers = allProfiles.Where(p => p.Role == "Developer" && p.Current).ToList();
             pastDevelopers = allProfiles.Where(p => p.Role == "Developer" && !p.Current).ToList();
         }
-        finally
+        catch (Exception ex)
         {
-            if (fileStream != null)
-            {
-                await fileStream.DisposeAsync();
-            }
+            Console.WriteLine($"Error loading profiles: {ex.Message}");
         }
     }
 
