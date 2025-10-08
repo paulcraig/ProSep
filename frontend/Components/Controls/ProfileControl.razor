@@ -1,0 +1,72 @@
+@using Frontend.Models
+<MudPaper Class="pa-4 mb-4" Elevation="1" Style="text-align:center; border-radius: 8px;" Height="@ProfileHeight">
+
+    @if (string.IsNullOrWhiteSpace(GetProfileImage()))
+    {
+        <MudAvatar Style="width: 100px; height: 100px; font-size: 40px;" Variant="Variant.Outlined">
+            @string.Concat(profile.Name!.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(n => n[0]).Take(2))
+        </MudAvatar>
+    }
+    else
+    {
+        <MudAvatar Style="width: 100px; height: 100px;" Variant="Variant.Outlined">
+            <MudImage Src="@GetProfileImage()" Alt="@profile.Name" />
+        </MudAvatar>
+    }
+    <MudSpacer/>
+    <MudText Typo="Typo.h5">@profile.Name</MudText>
+    <MudText Typo="Typo.subtitle1" Color="Color.Secondary">@profile.Title</MudText>
+    <MudText Typo="Typo.body2" Class="mb-2">@profile.About</MudText>
+    <MudDivider Class="my-2" />
+    <MudList Dense="true" T="Profile">
+        @if (!string.IsNullOrWhiteSpace(profile.Email))
+        {
+            <MudListItem Icon="@Icons.Material.Filled.Email">
+                <a href="mailto:@profile.Email">@profile.Email</a>
+            </MudListItem>
+        }
+        @if (!string.IsNullOrWhiteSpace(profile.Phone) && profile.Phone.ToLower() != "none")
+        {
+            <MudListItem Icon="@Icons.Material.Filled.Phone">
+                <a href="tel:@profile.Phone">@profile.Phone</a>
+            </MudListItem>
+        }
+        @if (!string.IsNullOrWhiteSpace(profile.Location))
+        {
+            <MudListItem Icon="@Icons.Material.Filled.LocationOn">
+                @profile.Location
+            </MudListItem>
+        }
+    </MudList>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public Profile profile { get; set; } = new Profile();
+
+    public string ProfileHeight => string.IsNullOrWhiteSpace(profile.About) ? "350px" : "auto";
+
+    public String? GetProfileImage()
+    {
+        var name = profile.Name!;
+        var prefixes = new[] { "Dr. ", "Mr. ", "Ms. ", "Mrs. " };
+        foreach (var prefix in prefixes)
+        {
+            if (name.StartsWith(prefix))
+            {
+                name = name.Substring(prefix.Length);
+                break;
+            }
+        }
+
+        String img = $"assets/profiles/images/{name.Replace(" ", "_")}.jpg";
+        if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", img)))
+        {
+            return img;
+        }
+        else
+        {
+            return null;
+        }
+    }
+}

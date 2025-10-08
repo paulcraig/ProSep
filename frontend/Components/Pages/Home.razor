@@ -1,59 +1,138 @@
 ﻿@page "/"
+@using Frontend.Models
+@using Frontend.Components.Controls
 
-<PageTitle>Home</PageTitle>
+<PageTitle>JBioFramework</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudText Typo="Typo.h5" Class="mb-2">Project Purpose</MudText>
+            <MudText Typo="Typo.body1" Class="mb-4">
+                JBioFramework (JBF) is an open-source suite of analytical simulations of protein structure
+                and function. It provides students with access to tools like 1D electrophoresis,
+                2D electrophoresis, Tandem Mass Spectrometry, chemical drawing, and an upcoming simulation
+                of peptide separation by Reversed Phase Liquid Chromatography (RPLC).
+            </MudText>
+            <MudText Typo="Typo.body1" Class="mb-4">
+                Originally built in Java in 1997, JBF has since been converted into a modern web application
+                with a JavaScript front-end and Python back-end. It is used in biochemistry, bioinformatics,
+                and chemistry education at RIT and beyond.
+            </MudText>
+            <MudText Typo="Typo.h5" Class="mb-2">Commercial Use</MudText>
+            <MudText Typo="Typo.body1" Class="mb-4">
+                Use by individual <strong>students and teachers</strong> is <strong>free of charge</strong>.
+                Educational presentations with <strong>fewer than 50 attendees</strong> are also free,
+                while those with <strong>50 to 200 attendees</strong> require a <strong>$100 license fee</strong>.
+                Presentations with <strong>more than 200 attendees</strong> require a <strong>$500 license fee</strong>.
+                <strong> Online publication</strong> requires a <strong>negotiated commercial license</strong>.
+                <strong> Unauthorized use or distribution</strong> constitutes <strong>piracy</strong> and may result in
+                legal
+                action.
+            </MudText>
+            <MudText Typo="Typo.body1" Class="mb-4">
+                For any inquiries, please contact Dr. Paul Craig at <a
+                    href='mailto:pac8612@rit.edu'>pac8612@rit.edu</a>.
+            </MudText>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudText Typo="Typo.h5" Class="mb-2">Project Sponsors</MudText>
+            @if (sponsors.Count == 0)
+            {
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" Class="my-4" />
+            }
+            else
+            {
+                @foreach (var profile in sponsors)
+                {
+                    <ProfileControl profile="@profile" />
+                }
+            }
+        </MudItem>
+    </MudGrid>
 
-<MudText Typo="Typo.h3" GutterBottom="true">Hello, world!</MudText>
-<MudText Class="mb-8">Welcome to your new app, powered by MudBlazor and the .NET 9 Template!</MudText>
+    <MudText Typo="Typo.h5" Class="mb-2 mt-4">Project Coaches</MudText>
+    @if (coaches.Count == 0)
+    {
+        <MudText Typo="Typo.body1">No coaches available.</MudText>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var profile in coaches)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <ProfileControl profile="@profile" />
+                </MudItem>
+            }
+        </MudGrid>
+    }
 
-<MudAlert Severity="Severity.Normal" ContentAlignment="HorizontalAlignment.Start">
-    You can find documentation and examples on our website here:
-    <MudLink Href="https://mudblazor.com" Target="_blank" Typo="Typo.body2" Color="Color.Primary">
-        <b>www.mudblazor.com</b>
-    </MudLink>
-</MudAlert>
+    <MudText Typo="Typo.h5" Class="mb-2 mt-4">Current Developers</MudText>
+    @if (currentDevelopers.Count == 0)
+    {
+        <MudText Typo="Typo.body1">No current developers.</MudText>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var profile in currentDevelopers)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <ProfileControl profile="@profile" />
+                </MudItem>
+            }
+        </MudGrid>
+    }
 
-<br />
-<MudText Typo="Typo.h5" GutterBottom="true">Interactivity in this Template</MudText>
-<br />
-<MudText Typo="Typo.body2">
-    When you opt for the "Global" Interactivity Location, <br />
-    the render modes are defined in App.razor and consequently apply to all child components.<br />
-    In this case, providers are globally set in the MainLayout.<br />
-    <br />
-    On the other hand, if you choose the "Per page/component" Interactivity Location,<br />
-    it is necessary to include the <br />
-    <br />
-    &lt;MudPopoverProvider /&gt; <br />
-    &lt;MudDialogProvider /&gt; <br />
-    &lt;MudSnackbarProvider /&gt; <br />
-    <br />
-    components on every interactive page.<br />
-    <br />
-    If a render mode is not specified for a page, it defaults to Server-Side Rendering (SSR),<br />
-    similar to this page. While MudBlazor allows pages to be rendered in SSR,<br />
-    please note that interactive features, such as buttons and dropdown menus, will not be functional.
-</MudText>
+    <MudText Typo="Typo.h5" Class="mb-2 mt-4">Past Developers</MudText>
+    @if (pastDevelopers.Count == 0)
+    {
+        <MudText Typo="Typo.body1">No past developers.</MudText>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var profile in pastDevelopers)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <ProfileControl profile="@profile" />
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
 
-<br />
-<MudText Typo="Typo.h5" GutterBottom="true">What's New in Blazor with the Release of .NET 9</MudText>
-<br />
 
-<MudText Typo="Typo.h6" GutterBottom="true">Prerendering</MudText>
-<MudText Typo="Typo.body2" GutterBottom="true">
-    If you're exploring the features of .NET 9 Blazor,<br /> you might be pleasantly surprised to learn that each page is prerendered on the server,<br /> regardless of the selected render mode.<br /><br />
-    This means that you'll need to inject all necessary services on the server,<br /> even when opting for the wasm (WebAssembly) render mode.<br /><br />
-    This prerendering functionality is crucial to ensuring that WebAssembly mode feels fast and responsive,<br /> especially when it comes to initial page load times.<br /><br />
-    For more information on how to detect prerendering and leverage the RenderContext, you can refer to the following link:
-    <MudLink Href="https://github.com/dotnet/aspnetcore/issues/51468#issuecomment-1783568121" Target="_blank" Typo="Typo.body2" Color="Color.Primary">
-        More details
-    </MudLink>
-</MudText>
+@code {
+    private List<Profile> sponsors = new();
+    private List<Profile> coaches = new();
+    private List<Profile> currentDevelopers = new();
+    private List<Profile> pastDevelopers = new();
 
-<br />
-<MudText Typo="Typo.h6" GutterBottom="true">InteractiveAuto</MudText>
-<MudText Typo="Typo.body2">
-    A discussion on how to achieve this can be found here:
-    <MudLink Href="https://github.com/dotnet/aspnetcore/issues/51468#issue-1950424116" Target="_blank" Typo="Typo.body2" Color="Color.Primary">
-        More details
-    </MudLink>
-</MudText>
+    protected override async Task OnInitializedAsync()
+    {
+        var httpClient = new HttpClient();
+        FileStream? fileStream = null;
+        try
+        {
+            fileStream = new FileStream("wwwroot/assets/profiles/profiles.json", FileMode.Open, FileAccess.Read);
+            using StreamReader reader = new StreamReader(fileStream);
+            fileStream = null;
+            var profilesJson = await reader.ReadToEndAsync();
+            var allProfiles = System.Text.Json.JsonSerializer.Deserialize<List<Profile>>(profilesJson) ?? new List<Profile>();
+
+            sponsors = allProfiles.Where(p => p.Role == "Sponsor").ToList();
+            coaches = allProfiles.Where(p => p.Role == "Coach").ToList();
+            currentDevelopers = allProfiles.Where(p => p.Role == "Developer" && p.Current).ToList();
+            pastDevelopers = allProfiles.Where(p => p.Role == "Developer" && !p.Current).ToList();
+        }
+        finally
+        {
+            if (fileStream != null)
+            {
+                await fileStream.DisposeAsync();
+            }
+        }
+    }
+
+}

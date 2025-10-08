@@ -46,3 +46,6 @@ C:\Users\aditya\git\ProSep\frontend\obj\Debug\net9.0\refint\Frontend.dll
 C:\Users\aditya\git\ProSep\frontend\obj\Debug\net9.0\Frontend.pdb
 C:\Users\aditya\git\ProSep\frontend\obj\Debug\net9.0\Frontend.genruntimeconfig.cache
 C:\Users\aditya\git\ProSep\frontend\obj\Debug\net9.0\ref\Frontend.dll
+C:\Users\aditya\git\ProSep\frontend\obj\Debug\net9.0\compressed\fq3t27qkit-1m7k03mwct.gz
+C:\Users\aditya\git\ProSep\frontend\obj\Debug\net9.0\compressed\77kmengmi3-whzofsqj5e.gz
+C:\Users\aditya\git\ProSep\frontend\obj\Debug\net9.0\compressed\b4se2jxxfr-6lbd7cbeei.gz
