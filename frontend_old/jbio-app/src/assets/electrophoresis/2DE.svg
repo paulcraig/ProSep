@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <!-- Gel chamber/container -->
+  <rect x="6" y="6" width="12" height="12" rx="1.5" ry="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/>
+  
+  <!-- 2D separation spots/dots representing protein spots -->
+  <circle cx="8.5" cy="8.5" r="0.9" fill="currentColor" opacity="0.75"/>
+  <circle cx="12" cy="8" r="0.8" fill="currentColor" opacity="0.78"/>
+  <circle cx="15.5" cy="8.5" r="1.0" fill="currentColor" opacity="0.72"/>
+  
+  <circle cx="9" cy="12" r="0.8" fill="currentColor" opacity="0.7"/>
+  <circle cx="12.1" cy="11.5" r="1.0" fill="currentColor" opacity="0.77"/>
+  <circle cx="15.5" cy="12.2" r="0.85" fill="currentColor" opacity="0.74"/>
+  
+  <circle cx="8.7" cy="15" r="0.9" fill="currentColor" opacity="0.73"/>
+  <circle cx="12.3" cy="15.2" r="0.8" fill="currentColor" opacity="0.79"/>
+  <circle cx="15.5" cy="15.5" r="0.9" fill="currentColor" opacity="0.71"/>
+
+</svg>

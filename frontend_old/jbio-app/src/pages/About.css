@@ -1,0 +1,61 @@
+.about-page {
+  background: var(--background);
+  color: var(--text);
+
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem;
+}
+
+/* Intro: project + sponsor */
+.about-intro {
+  display: grid;
+  grid-template-columns: 25rem 1fr;
+  gap: 8rem;
+}
+
+.about-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.about-text p {
+  color: var(--sub-text);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.about-text ul {
+  margin-left: 1.25rem;
+  line-height: 1.6;
+}
+
+.about-sponsor {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.sponsor-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Headings */
+.section-header {
+  color: var(--accent);
+  margin: 0 0 1rem 0;
+  text-align: left;
+}
+
+/* Developers */
+.dev-team {
+  margin-top: 3.75rem;
+}
+
+.dev-grid {
+  display: grid;
+  justify-items: center;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
