@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../../config';
 import './1DElectrophoresis.css';
 
 import blackwire from '../../assets/electrophoresis/blackwire.png';
 import redwire from '../../assets/electrophoresis/redwire.png';
 import blackwirelength from '../../assets/electrophoresis/blackwirelength.png';
 import redwirelength from '../../assets/electrophoresis/redwirelength.png';
+
 
 const bandColors = {
   [["pdb", "6X1Q"]]: "#08c8ae",
@@ -477,9 +479,7 @@ const OneDE = () => {
       formData.append("file", fileToUpload);
 
       try {
-        // Assuming "http://127.0.0.1:8000/1DElectrophoresis/ProteinInfo/File" is your endpoint
-        const response = await fetch('http://34.56.114.201:8000/1DElectrophoresis/ProteinInfo/File', {
-        //const response = await fetch("http://127.0.0.1:8000/1DElectrophoresis/ProteinInfo/File", {
+        const response = await fetch(`${API_URL}/1d/ProteinInfo/File`, {
           method: "POST",
           body: formData,
         });
@@ -524,9 +524,7 @@ const OneDE = () => {
 
     // API call to upload files
     try {
-      // Assuming "http://127.0.0.1:8000/1DElectrophoresis/ProteinInfo/File" is your endpoint
-      //const response = await fetch('http://127.0.0.1:8000/1DElectrophoresis/BatchFileProtein/Batch', {
-      const response = await fetch('http://34.56.114.201:8000/1DElectrophoresis/BatchFileProtein/Batch', {
+      const response = await fetch(`${API_URL}/1d/BatchFileProtein/Batch`, {
         method: 'POST',
         body: formData,
       });
