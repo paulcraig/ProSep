@@ -34,4 +34,4 @@ jobs:
       - name: Run Shellcheck
         uses: Azbagheri/shell-linter@v0.8.0
         with:
-          exlude-paths: ".devcontainer"
+          exclude-paths: ".devcontainer"
