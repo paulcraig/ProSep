@@ -24,4 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     name: python linter and scanner
     steps:
+    - name: Checkout the code
+      uses: actions/checkout@v4.2.2
     - uses: ./.github/workflows/common
