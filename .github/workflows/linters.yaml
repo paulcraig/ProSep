@@ -25,6 +25,12 @@ jobs:
     - name: Checkout the code
       uses: actions/checkout@v4.2.2
     - uses: ./.github/workflows/common
+    - name: Install libraries
+      run: |
+        pip install pylint
+    - name: Analyse with pylint
+      run: |
+        pylint $(git ls-files '*.py')
   shell:
     runs-on: ubuntu-latest
     name: shell linter
