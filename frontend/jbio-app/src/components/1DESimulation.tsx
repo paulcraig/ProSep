@@ -84,7 +84,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     const updateHeight = () => {
       const reservedSpace = 270;
       const availableHeight = window.innerHeight - reservedSpace;
-      setTotalH(Math.max(700, Math.min(availableHeight, 1200)));
+      setTotalH(Math.max(700, availableHeight));
     };
 
     updateHeight();
@@ -595,7 +595,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         </g>
       )
     })
-  }, [ticks, zoom, anchor]);
+  }, [ticks, zoom, anchor, totalH]);
 
 
   const dots = React.useMemo(() => {
@@ -650,7 +650,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     })
 
     return [...wellDots, ...slabDots];
-  }, [acrylamidePct, ticks, zoom, anchor]);
+  }, [acrylamidePct, ticks, zoom, anchor, totalH]);
   
 
   return (
