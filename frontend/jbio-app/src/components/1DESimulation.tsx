@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { API_URL } from '../config';
 import './1DESimulation.css'
 
 import blackWire from '../assets/electrophoresis/blackwire.png'
@@ -10,6 +11,7 @@ import { Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import InsertChartIcon from '@mui/icons-material/InsertChart';
+import UploadIcon from '@mui/icons-material/Upload';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import CloseIcon from '@mui/icons-material/Close'
@@ -67,6 +69,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const [tooltipDragStart, setTooltipDragStart] = useState<{ x: number; y: number } | null>(null);
 
   const [selectedStandards, setSelectedStandards] = useState<typeof standards[number][]>(standards);
+  const [uploadedProteins, setUploadedProteins] = useState<Record<number, { name: string; proteins: typeof standards }>>({});
   const [positions, setPositions] = useState<Record<number, Record<string, number>>>(() =>
     Object.fromEntries(
       Array.from({ length: wellsCount }).map((_, wi) => [
@@ -75,7 +78,20 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     )
   );
 
-  const totalH = 700;
+  const [totalH, setTotalH] = useState(700);
+
+  React.useEffect(() => {
+    const updateHeight = () => {
+      const reservedSpace = 270;
+      const availableHeight = window.innerHeight - reservedSpace;
+      setTotalH(Math.max(700, Math.min(availableHeight, 1200)));
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+  
   const slabW = 575;
   const wellH = 45;
   const wireH = 25;
@@ -95,6 +111,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const bandH = wellH * 0.2;
   
   const simDelay = 250; // ms
+  const maxWells = 6;
 
 
   const getRelativeMobility = (pct: number, MW: number) => {
@@ -169,10 +186,27 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       type Row = [number, number, string, string];
       const rows: Row[] = [];
 
-      for (const [wi, wellProteins] of Object.entries(positions)) {
-        for (const protein of selectedStandards) {
-          const v = wellProteins[protein.id_num];
+      const normalizeColor = (c?: string) => {
+        if (typeof c !== 'string') return '#3462c3';
 
+        if (c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)) return c;
+
+        if (c.startsWith('#')) {
+          const hex = c.slice(1).padEnd(6, '0').slice(0, 6);
+          return `#${hex}`;
+        }
+        return '#3462c3';
+      };
+
+      for (const [wi, wellProteins] of Object.entries(positions)) {
+        const proteins =
+          Number(wi) === 0
+            ? selectedStandards
+            : uploadedProteins?.[Number(wi)]?.proteins || [];
+
+        for (const protein of proteins) {
+          const v = wellProteins[protein.id_num];
+          
           if (v === undefined || v <= 0) continue;
 
           const rf = Number(v) / ticks;
@@ -181,20 +215,20 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           const tip = `
             <div style='padding:10px; line-height:1.5; min-width:150px; font-family:Arial, sans-serif; font-size:14px;'>
               <strong>${protein.name}</strong><br/>
-                Well: ${wi}<br/>
-                Relative Migration: ${rf.toFixed(3)}<br/>
-                Log Molecular Weight: ${logMW.toFixed(2)}<br/>
-                Molecular Weight: ${protein.molecularWeight.toLocaleString()}
+              Well: ${wi}<br/>
+              Relative Migration: ${rf.toFixed(3)}<br/>
+              Log Molecular Weight: ${logMW.toFixed(2)}<br/>
+              Molecular Weight: ${protein.molecularWeight.toLocaleString()}
             </div>
           `;
 
-          rows.push([rf, logMW, `point { fill-color: ${protein.color.slice(0, 7)}; }`, tip]);
+          rows.push([rf, logMW, `point { fill-color: ${normalizeColor(protein.color)}; }`, tip]);
         }
       }
+
       rows.sort((a, b) => a[0] - b[0]);
       return rows;
-
-    }, [positions, selectedStandards, ticks]);
+    }, [positions, selectedStandards, uploadedProteins, ticks]);
 
     React.useEffect(() => {
       if (!open || !ready || !divRef.current) return;
@@ -287,7 +321,11 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             const idx = Number(wi);
             updated[idx] = { ...wellProteins };
 
-            for (const protein of selectedStandards) {
+            const proteinsToAnimate = idx === 0
+              ? selectedStandards
+              : uploadedProteins[idx]?.proteins || [];
+
+            for (const protein of proteinsToAnimate) {
               const current = wellProteins[protein.id_num];
               if (current === undefined) continue;
 
@@ -309,21 +347,61 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     setHasStarted(false);
 
     setPositions(prev => {
-      const next: typeof prev = { ...prev }
-      next[0] = Object.fromEntries(standards.map(p => [p.id_num, 0]));
-
-      for (let wi = 1; wi < wellsCount; wi++) {
-        next[wi] = {};
+      const next: typeof prev = {};
+      for (const [wi, wellProteins] of Object.entries(prev)) {
+        next[Number(wi)] = Object.fromEntries(
+          Object.keys(wellProteins).map(id => [id, 0])
+        );
       }
       return next;
-    })
-  }
+    });
+  };
 
 
   const onClear = () => {
     setSelectedStandards(standards);
-    onReset();
-  }
+    setUploadedProteins({});
+    
+    setPositions(() => ({
+      0: Object.fromEntries(standards.map(p => [p.id_num, 0]))
+    }));
+
+    setHasStarted(false);
+    onStop();
+  };
+
+
+  const onFileUpload = (wellIndex: number, file: File): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch(`${API_URL}/1d/ProteinInfo/File`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (!response.ok) throw new Error('Upload failed');
+
+        const proteins: typeof standards = await response.json();
+
+        setUploadedProteins(prev => ({
+          ...prev,
+          [wellIndex]: { name: file.name, proteins },
+        }));
+
+        setPositions(prev => ({
+          ...prev,
+          [wellIndex]: Object.fromEntries(proteins.map(p => [p.id_num, 0])),
+        }));
+
+        resolve();
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        reject(error);
+      }
+    });
+  };
 
 
   const buildWells = () => {
@@ -352,14 +430,29 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
   const onAddWell = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setWellsCount(w => Math.min(6, w + 1));
+    setWellsCount(w => Math.min(maxWells, w + 1));
   }
 
 
   const onRemoveWell = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setWellsCount(w => Math.max(2, w - 1));
-  }
+
+    if (wellsCount > 2) {
+      setUploadedProteins(prev => {
+        const copy = { ...prev };
+        delete copy[wellsCount - 1];
+        return copy;
+      });
+
+      setPositions(prev => {
+        const copy = { ...prev };
+        delete copy[wellsCount - 1];
+        return copy;
+      });
+
+      setWellsCount(w => w - 1);
+    }
+  };
 
 
   const onToggleProtein = (protein: typeof standards[number]) => {
@@ -398,9 +491,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       const zoomFactor = deltaY < 0 ? 1.1 : 0.9;
 
       setZoom(z => {
-        const newZoom = Math.min(5, Math.max(1, z * zoomFactor));
+        const newZoom = Math.min(50, Math.max(1, z * zoomFactor));
         if (newZoom === z) return z;
-        if (newZoom > z) setAnchor(newAnchor);
+        if (newZoom > z) setAnchor(a => a + (newAnchor - a) * 0.1);
         return newZoom;
       });
     })
@@ -581,7 +674,12 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             },
             { label: 'Plot',  icon: <InsertChartIcon />, onClick: onPlot },
             { label: 'Reset', icon: <RestartAltIcon />,  onClick: onReset },
-            { label: 'Clear', icon: <ClearAllIcon />,    onClick: onClear }
+            { label: 'Clear', icon: <ClearAllIcon />,    onClick: onClear },
+            { 
+              label: 'Upload',
+              icon: <UploadIcon />,
+              onClick: () => document.getElementById('bulk-upload-input')?.click()
+            }
           ]
           .map(btn => (
             <Button
@@ -601,6 +699,36 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         ))}
       </div>
 
+      <input
+        id="bulk-upload-input"
+        type="file"
+        multiple
+        accept=".fasta,.txt"
+        style={{ display: 'none' }}
+        onChange={async (e) => {
+          const files = Array.from(e.target.files || []);
+          if (!files.length) return;
+
+          let fileIdx = 0;
+          let currentCount = wellsCount;
+
+          for (let wi = 1; fileIdx < files.length && wi < maxWells; wi++) {
+            if (wi >= currentCount) {
+              setWellsCount(prev => prev + 1);
+              currentCount++;
+            }
+            if (!uploadedProteins[wi]) {
+              await onFileUpload(wi, files[fileIdx++]);
+            }
+          }
+          if (fileIdx < files.length) {
+            alert(`Only ${fileIdx}/${maxWells} wells were filled.`);
+          }
+
+          e.target.value = '';
+        }}
+      />
+
       {/* Simulation */}
       <div className='gel-container' onClick={() => setTooltipData(null)}>
         <svg
@@ -612,7 +740,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           onMouseUp={onMouseUp}
 
           height={totalH}
-          width={slabW * 1.4} // Yeah... I'll fix this later
+          width={slabW * 1.4}
           viewBox={`-60 0 ${slabW * 1.4} ${totalH}`}
           style={{ cursor: zoom === 1 ? 'default' : isDragging ? 'grabbing' : 'grab' }}
         >
@@ -759,13 +887,59 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               )
             })}
           </g>
+
+          {/* Non-standard Bands */}
+          {Array.from({ length: wellsCount }).map((_, wi) => {
+            if (wi === 0 || !uploadedProteins[wi]) return null;
+
+            return (
+              <g
+                key={`uploaded-well-${wi}`}
+                className='uploaded-well'
+                style={{
+                  opacity: hasStarted ? 1 : 0,
+                  transition: hasStarted ? `opacity ${simDelay / 1000}s ease-in ${simDelay / 1000}s` : 'none'
+                }}
+              >
+                {uploadedProteins[wi].proteins.map((protein) => {
+                  return (
+                    <rect
+                      x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)}
+                      y={Math.max(valueToY(positions[wi]?.[protein.id_num] ?? 0) - (bandH * 1.25), bandMin)}
+                      width={bandW} height={bandH} rx={3} ry={3}
+                      key={`${wi}-${protein.id_num}`}
+                      fill={protein.color || '#888'}
+                      stroke='var(--background)'
+                      strokeWidth={0.5}
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        if (tooltipData?.protein != protein) {
+                          e.stopPropagation();
+                          const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
+                          
+                          setTooltipData({
+                            protein,
+                            x: rect.left + rect.width / 2,
+                            y: rect.top
+                          });
+                          return;
+                        }
+                        setTooltipData(null);
+                      }}
+                    />
+                  )
+                })}
+              </g>
+            );
+          })}
+
           <g className='filename-bands' style={{
             opacity: hasStarted ? 0 : 1,
             transition: 'opacity 0.25s ease-out'
           }}>
             {Array.from({ length: wellsCount }).map((_, wi) => {
               const hasProteins = Object.keys(positions[wi] || {}).length > 0;
-              const label = wi === 0 ? 'Standard Proteins' : `File ${wi}`;
+              const label = wi === 0 ? 'Standard Proteins' : uploadedProteins[wi]?.name || `File ${wi}`;
 
               if (!hasProteins) return null;
               
@@ -780,6 +954,60 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                 >
                   <title>{label}</title>
                 </rect>
+              );
+            })}
+          </g>
+
+          {/* Well Uploads */}
+          <g className='upload-buttons' style={{
+            opacity: hasStarted ? 0 : 1,
+            transition: 'opacity 0.25s ease-out'
+          }}>
+            {Array.from({ length: wellsCount }).map((_, wi) => {
+              if (wi === 0 || uploadedProteins[wi]) return null;
+
+              const centerX = (2 * wi + 1) * wellW + wellW / 2;
+              const centerY = wellH * 1.5;
+
+              return (
+                <g key={`upload-btn-${wi}`}>
+                  <foreignObject
+                    x={centerX - 12} y={centerY - 12}
+                    width={24} height={24}
+                    style={{ overflow: 'visible' }}
+                  >
+                    <label
+                      htmlFor={`file-upload-${wi}`}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <input
+                        type="file"
+                        id={`file-upload-${wi}`}
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) onFileUpload(wi, file);
+                        }}
+                        accept=".fasta,.txt"
+                      />
+                      <IconButton
+                        component="span"
+                        sx={{
+                          backgroundColor: 'var(--highlight)',
+                          color: 'var(--text)',
+                          width: 24, height: 24, padding: 0,
+                          '&:hover': { backgroundColor: 'var(--accent)' },
+                        }}
+                      >
+                        <UploadIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </label>
+                  </foreignObject>
+                </g>
               );
             })}
           </g>
@@ -852,7 +1080,13 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           </div>
           <div>Name: {tooltipData.protein.name}</div>
           <div>Molecular Weight: {tooltipData.protein.molecularWeight.toLocaleString()}</div>
-          <div>Rm Value: {((positions[0]?.[tooltipData.protein.id_num] ?? 0) / ticks * 100).toFixed(2)}%</div>
+          <div>
+            Rm Value: {(() => {
+              const wellIndex = Object.entries(positions).find(([_, proteins]) => proteins.hasOwnProperty(tooltipData.protein.id_num) )?.[0];
+              const value = wellIndex ? positions[Number(wellIndex)]?.[tooltipData.protein.id_num] ?? 0 : 0;
+              return (value / ticks).toFixed(3);
+            })()}
+          </div>
           <div>
             PDB:{' '}
             <a
