@@ -92,7 +92,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
   
-  const slabW = 575;
+  const slabW = 600;
   const wellH = 45;
   const wireH = 25;
   const wireW = 75;
@@ -108,7 +108,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const wellW = slabW / (2 * wellsCount + 1);
 
   const bandW = wellW * 0.8;
-  const bandH = wellH * 0.2;
+  const bandH = wellH * 0.15;
   
   const simDelay = 250; // ms
   const maxWells = 6;
@@ -187,7 +187,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       const rows: Row[] = [];
 
       const normalizeColor = (c?: string) => {
-        if (typeof c !== 'string') return '#3462c3';
+        if (typeof c !== 'string') return '#000';
 
         if (c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)) return c;
 
@@ -195,7 +195,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           const hex = c.slice(1).padEnd(6, '0').slice(0, 6);
           return `#${hex}`;
         }
-        return '#3462c3';
+        return '#000';
       };
 
       for (const [wi, wellProteins] of Object.entries(positions)) {
