@@ -3,7 +3,7 @@ import random, logging
 from typing import Any
 from io import StringIO
 from fastapi import UploadFile
-from utility.protein import Protein
+from backend.utility.protein import Protein
 
 
 logging.basicConfig(level=logging.DEBUG)

@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from fastapi import APIRouter, UploadFile, File
-from logic.two_de_simulation import Simulation_2de
+from backend.logic.two_de_simulation import Simulation_2de
 
 
 router = APIRouter(

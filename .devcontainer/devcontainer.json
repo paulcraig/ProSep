@@ -15,7 +15,7 @@
 	"forwardPorts": [3000],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "export BROWSER=none; cd frontend/jbio-web-app; BROWSER=none npm install && npm start",
+	"postCreateCommand": "export BROWSER=none; cd frontend/jbio-app; BROWSER=none npm install && npm start",
 	"postStartCommand": "uvicorn server:app --reload"
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.

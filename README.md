@@ -7,33 +7,33 @@
 ## Project Sponsor
 - [Dr. Paul Craig](mailto:pac8612@rit.edu)
 
-![PaulPhoto.jpg](frontend%2Fjbio-web-app%2Fsrc%2Fcomponents%2Fabout_images%2FPaulPhoto.jpg)
+<img src="frontend/jbio-app/src/assets/profiles/Paul_Craig.jpg" alt="Paul Craig" width="200"/>
 
 Dr. Paul Craig received his B.S. in Chemistry from Oral Roberts University in 1979, and his Ph.D. in Biological Chemistry from The University of Michigan in 1985. Following a post-doc at Henry Ford Hospital (biophysical chemistry of blood clotting; 1985-1988), he spent five years as an analytical biochemistry at BioQuant, Inc., in Ann Arbor, Michigan before joining RIT in 1993.
 ## Download and Installation:
 ### Git
 
 ```bash
-git clone https://github.com/AmrMualla/RITSimulationofProteinSimulations.git
+git clone https://github.com/paulcraig/ProSep
 ```
 
-Windows:
-```bash
-cd RITSimulationofProteinSimulations\
-```
+#### VSCode
+
+This repository contains a python 3.12 slim image. Ensure you have installed the dev containers extension,
+open the command palette, and either build the container or rebuild it.
+
+#### Manual without image
 
 ```bash
-py -m pip install -r requirements.txt
-```
-
-macOS or Linux:
-```bash
-cd RITSimulationofProteinSimulations/
+cd ProSep
 ```
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
+
+Windows may have python set to be under `py` instead of `python`. If this is the case, simply
+replace all calls to `python` with `py`.
 
 ### Software Requirements
 - Python 3.7 or higher
@@ -43,14 +43,8 @@ pip install -r requirements.txt
 ## Usage for Development
 Navigate to the top level directory by typing in the command line 
 
-Windows:
 ```bash
-cd RITSimulationofProteinSimulations\
-```
-
-macOS or Linux:
-```bash
-cd RITSimulationofProteinSimulations/
+cd ProSep
 ```
 <br/>
 
@@ -59,16 +53,16 @@ Launch the API server by typing in the command line:
 uvicorn server:app --reload
 ```
 
-Navigate to the jbio-web-app subdirectory by typing in the command line 
+Navigate to the jbio-app subdirectory by typing in the command line 
 
-Windows:
 ```bash
-cd frontend\jbio-web-app\
+cd frontend/jbio-app
 ```
 
-macOS or Linux:
+Then install the npm files
+
 ```bash
-cd frontend/jbio-web-app/
+npm install
 ```
 
 <br/>
@@ -80,153 +74,35 @@ npm start
 
 A browser will open with the URL: http://localhost:3000/
 
-![BrowserImage.png](READMEImages%2FBrowserImage.png)
-
 Press the **`1D Electrophoresis`** button on the left.
 
 Follow the instructions listed beneath the simulation to load the desired FASTA files and begin the simulation:
 
-![1DEInstructions.png](READMEImages%2F1DEInstructions.png)
+![1D Instructions](frontend/jbio-app/src/assets/readmes/1DEinstructions.png)
+
+## Tagging Policy
+
+The server picks up changes via semantic versioning. As such, all tags must come
+from the main branch and be tagged semantically.
+
+For example: `v1.1.1` -> `v1.1.2`
 
 ## Testing Usage
-
-### Frontend Guide:
-#### Author: Chase Amador
-
-#### Introduction
-
-This guide will be going over the basics of the Jest tests created in this project, including how to install Jest, create a basic Jest class, and the standards followed creating the existing Jest tests. Jest was a great choice for the team because of the choice to use Node.js and React. Jest synergizes very well with both of these and makes it easy to use.
-
-#### Installation
-
-Installation for Jest is simple with the help of a package manager. Since we are using Node.js with ```npm``` as the package manager, installation is as easy as pasting: 
-
-```bash
-npm install --save-dev jest
-```
-
-once you navigate to 
-
-Windows:
-```bash
-..\RITSimulationofProteinSimulations\frontend\jbio-web-app
-```
-
-macOS or Linux:
-
-```bash
-~/RITSimulationofProteinSimulations/frontend/jbio-web-app
-```
-
-<br/>
-
-To do so, open the terminal, which is usually found under the View tab in most IDEs, and select the Terminal button. It will open up the terminal in the default directory. Then navigate to the desired directory by typing
-
-Windows:
-```bash
-cd frontend\jbio-web-app
-```
-
-macOS or Linux:
-```bash
-cd frontend/jbio-web-app
-```
-
-<br/>
-
-This should put you in the correct directory, so typing 
-
-```bash
-npm install --save-dev jest
-```
-
-in the terminal will install Jest for you and have everything ready to go.
-
-#### Running the Tests
-Once the installation is complete, typing 
-
-```bash
-npm test
-```
-
-will bring up the watch usage buttons which you can use to run the tests. If there is every an error saying:
-
-```bash 
-npm test is not recognized
-```
-
- type: 
-
-```bash
-npm install
-```
-
-again to update the package. Then you should see this:
-
-![FrontendTestingImage1.png](READMEImages%2FFrontendTestingImage1.png)
-
-```a```will run all the test suites.
-
-```f``` will run all the failed tests.
-
-```p``` will let you chose a test suite to test by typing its name.
-
-```t``` will let you chose a specific test to test by typing its name.
-
-```q``` will end the session.
-
-After running a test, it will tell you how many test suites and tests have passed and if they failed, where and why they did. Heres an example output:
-
-![FrontendTestingImage2.png](READMEImages%2FFrontendTestingImage2.png)
-
-#### Jest Test Basics
-If on Windows, the Jest tests are stored in
-
-```bash
-.\\RITSimulationofProteinSimulations\frontend\jbio-web-app\src\components\__tests__
-```
-
-If on macOS or Linux, the Jest tests are stored in
-
-```bash
-~/RITSimulationofProteinSimulations/frontend/jbio-web-app/src/components/__tests__
-```
-
-<br/>
-
-Currently, there is a test class for each frontend component in the project. They all vary depending on the component but all have a similar format that should be used when creating more tests. For starters, these imports are needed for jest tests:
-
-![FrontendTestingImage3.png](READMEImages%2FFrontendTestingImage3.png)
-
-These are pretty standard imports, the first line doesn’t change, it imports React which is what is used for the web app. The second line is the same format, but you will add in methods you use in your tests. Some examples would be 
-
-```render```, ```fireEvent```, ```screen```, and various others. Adding more methods would look like this:
-
-![FrontendTestingImage4.png](READMEImages%2FFrontendTestingImage4.png)
-
-Now for creating tests, the default test will look like this:
-
-![FrontEndTestingImage5.png](READMEImages%2FFrontEndTestingImage5.png)
-
-You can replace the ```'Test name'``` with whatever you want to name the test. Ensure that it is detailed for ease of viewing which test is being run.
 
 ### Backend Guide:
 #### Author: Mack Leonard
 
 Navigate to the top level directory by typing in the command line
 
-Windows:
 ```bash
-cd .\RITSimulationofProteinSimulations\
-py -m unittest backend.Electro1DTests.ProteinTest
+cd ProSep
 ```
 
-macOS or Linux:
-```bash
-cd ~/RITSimulationofProteinSimulations/
-python3 -m unittest backend.Electro1DTests.ProteinTest
-```
+Then execute a test with
 
+```bash
+python -m unittest backend.Electro1DTests.ProteinTest
+```
 
 OR
 
@@ -240,7 +116,21 @@ Analyze results from the tests being run and modify the test or method being tes
 
 - TODO
 
-## Project Team
+## Project Teams
+
+- Fall 2025 to Spring 2026:
+  - Coach:
+    - [Mark Wilson](mailto:mwvse@rit.edu)
+  - Developers:
+    - Luke Knofczynski
+
+    - Zachary Van Horn
+
+    - Shreyas Gadwalker
+
+    - Jacob Fey
+
+    - Aditya Vikram
 
 - Fall 2023 to Spring 2024:
   - Coach:
