@@ -18,9 +18,9 @@ jobs:
       with:
         args: '.'
   # Placeholder for tests
-  python:
+  python-linter:
     runs-on: ubuntu-latest
-    name: python linter and scanner
+    name: python linter
     steps:
     - name: Checkout the code
       uses: actions/checkout@v4.2.2
@@ -31,6 +31,19 @@ jobs:
     - name: Analyse with pylint
       run: |
         pylint $(git ls-files '*.py')
+  python-test:
+    runs-on: ubuntu-latest
+    name: Pytest
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v4.2.2
+    - uses: ./.github/workflows/common
+    - name: Install pytest
+      run: |
+        pip install pytest
+    - name: Run tests
+      run: |
+        pytest
   shell:
     runs-on: ubuntu-latest
     name: shell linter
