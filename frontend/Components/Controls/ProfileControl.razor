@@ -34,7 +34,7 @@
         @if (!string.IsNullOrWhiteSpace(profile.Location))
         {
             <MudListItem Icon="@Icons.Material.Filled.LocationOn">
-                @profile.Location
+                <a href="https://www.openstreetmap.org/search?query=@profile.Location" target="_blank" rel="noopener noreferrer">@profile.Location</a>
             </MudListItem>
         }
     </MudList>
