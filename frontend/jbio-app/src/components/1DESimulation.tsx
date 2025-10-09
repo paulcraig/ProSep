@@ -84,7 +84,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     const updateHeight = () => {
       const reservedSpace = 270;
       const availableHeight = window.innerHeight - reservedSpace;
-      setTotalH(Math.max(700, availableHeight));
+      setTotalH(Math.max(500, availableHeight));
     };
 
     updateHeight();
