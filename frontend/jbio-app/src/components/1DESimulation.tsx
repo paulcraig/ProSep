@@ -216,12 +216,12 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           const logMW = Number(Math.log10(protein.molecularWeight).toFixed(2));
 
           const tip = `
-            <div style='padding:10px; line-height:1.5; min-width:150px; font-family:Arial, sans-serif; font-size:14px;'>
-              <strong>${protein.name}</strong><br/>
-              Well: ${wi}<br/>
-              Relative Migration: ${rf.toFixed(3)}<br/>
-              Log Molecular Weight: ${logMW.toFixed(2)}<br/>
-              Molecular Weight: ${protein.molecularWeight.toLocaleString()}
+            <div style='padding:10px; line-height:1.5; min-width:240px; font-family:Arial, sans-serif; font-size:14px;'>
+              <strong>${Number(wi) === 0 ? 'Standard Proteins' : uploadedProteins?.[Number(wi)]?.name || `File ${wi}`}</strong><br/>
+              ${protein.name}<br/><br/>
+              <strong>Relative Migration:</strong> ${rf.toFixed(3)}<br/>
+              <strong>Log Molecular Weight:</strong> ${logMW.toFixed(2)}<br/>
+              <strong>Molecular Weight:</strong> ${protein.molecularWeight.toLocaleString()}
             </div>
           `;
 
