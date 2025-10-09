@@ -846,7 +846,17 @@ const TwoDE = () => {
                   className="twoDE-input"
                   disabled={simulationState !== 'ready'} // Disable during simulation
                 />
- 
+                <input
+                  type="range"
+                  id="ph-min-slider"
+                  min="0"
+                  max="14"
+                  step="0.1"
+                  value={phRange.min}
+                  onChange={handlePhSliderChange}
+                  className="twoDE-range"
+                  disabled={simulationState !== 'ready'} // Disable during simulation
+                />
                 <input
                   type="range"
                   id="ph-max-slider"
@@ -858,19 +868,6 @@ const TwoDE = () => {
                   className="twoDE-range"
                   disabled={simulationState !== 'ready'} // Disable during simulation
                 />
-
-                <input
-                  type="range"
-                  id="ph-max-slider"
-                  min="0"
-                  max="14"
-                  step="0.1"
-                  value={phRange.max}
-                  onChange={handlePhSliderChange}
-                  className="twoDE-range"
-                  disabled={simulationState !== 'ready'} // Disable during simulation
-                />
-
                 <input
                   type="number"
                   min="0"
