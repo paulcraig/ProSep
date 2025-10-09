@@ -25,3 +25,11 @@ jobs:
     - name: Checkout the code
       uses: actions/checkout@v4.2.2
     - uses: ./.github/workflows/common
+  shell:
+    runs-on: ubuntu-latest
+    name: shell linter
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4.2.2
+      - name: Run Shellcheck
+        uses: Azbagheri/shell-linter@v0.8.0
