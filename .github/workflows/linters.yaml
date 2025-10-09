@@ -29,6 +29,7 @@ jobs:
       run: |
         pip install pylint
     - name: Analyse with pylint
+      shell: bash
       run: |
         pylint $(git ls-files '*.py')
   shell:
