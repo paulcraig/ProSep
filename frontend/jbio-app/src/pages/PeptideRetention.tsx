@@ -1,0 +1,160 @@
+import React, { useState } from 'react';
+import { TextField, IconButton, Button, Chip, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Card, CardHeader, CardContent, Alert } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { API_URL } from '../config';
+
+type PredictionResult = {
+    peptide: string;
+    smiles: string;
+    log_sum_aa: number;
+    log_vdw_vol: number;
+    clog_p: number;
+    predicted_tr: number;
+};
+
+const PeptideRetention: React.FC = () => {
+    const [newPeptide, setNewPeptide] = useState<string>('');
+    const [peptides, setPeptides] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [results, setResults] = useState<PredictionResult[]>([]);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    
+    const addPeptide = () => {
+        if (newPeptide.trim() && !peptides.includes(newPeptide)) {
+            setPeptides([...peptides, newPeptide]);
+            setNewPeptide('');
+        }
+    }
+    const removePeptide = (peptide: string) => {
+        setPeptides(peptides.filter(p => p !== peptide));
+    }
+    const handleKeyUp = (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter') {
+            addPeptide();
+        }
+    }
+    const predictAll = async () => {
+        if (!peptides.length) return;
+        
+        setIsLoading(true);
+        setErrorMessage(null);
+        setResults([]);
+
+            try {
+                console.log(`${API_URL}/pr/predict?peptides=${encodeURIComponent(peptides.join(','))}`);
+                const response = await fetch(`${API_URL}/pr/predict?peptides=${encodeURIComponent(peptides.join(','))}`, {method: 'GET'})
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.statusText}`);
+                }
+                const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                setResults(data);
+            } catch (error: any) {
+                setErrorMessage(`Error: ${error.message}`);
+            }
+        
+        setIsLoading(false);
+    }
+    const exportCsv = () => {
+        let csv = 'Peptide,Predicted tR (min),SMILES,log SumAA,log VDW Vol,clogP\n';
+        results.forEach(result => {
+            csv += `${result.peptide},${result.predicted_tr.toFixed(2)},${result.smiles},${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(4)},${result.clog_p.toFixed(4)}\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'predictions.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    
+    return (
+        <div style={{ padding: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                <TextField
+
+                    label="Peptide Sequence"
+                    variant="outlined"
+                    value={newPeptide}
+                    onChange={(e) => setNewPeptide(e.target.value)}
+                    onKeyUp={handleKeyUp}
+                    style={{ marginRight: '1rem', flexGrow: 1 }}
+                />
+                <IconButton color="secondary" onClick={addPeptide} disabled={!newPeptide.trim()}>
+                    <AddIcon />
+                </IconButton>
+            </div>
+            
+            {peptides.length > 0 && (
+                <div style={{ marginBottom: '1rem' }}>
+                    <div>Peptides to predict:</div>
+                    {peptides.map(peptide => (
+                        <Chip
+                            key={peptide}
+                            label={peptide}
+                            onDelete={() => removePeptide(peptide)}
+                            style={{ margin: '0.25rem' }}
+                        />
+                    ))}
+                </div>
+            )}
+            
+            <Button variant="contained" color="primary" onClick={predictAll} disabled={isLoading || peptides.length === 0}>
+                {isLoading ? 'Predicting...' : 'Predict All'}
+            </Button>
+            
+            {isLoading && <CircularProgress style={{ marginLeft: '1rem' }} />}
+            
+            {results.length > 0 && (
+                <Card style={{ marginTop: '2rem' }}>
+                    <CardHeader
+                        title="Prediction Results"
+                        action={
+                            <Button variant="text" color="primary" onClick={exportCsv}>
+                                Export CSV
+                            </Button>
+                        }
+                    />
+                    <CardContent>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Peptide</TableCell>
+                                    <TableCell>Predicted tR (min)</TableCell>
+                                    <TableCell>SMILES</TableCell>
+                                    <TableCell>log SumAA</TableCell>
+                                    <TableCell>log VDW Vol</TableCell>
+                                    <TableCell>clogP</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {results.map((result, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{result.peptide}</TableCell>
+                                        <TableCell>{result.predicted_tr.toFixed(2)}</TableCell>
+                                        <TableCell>{result.smiles}</TableCell>
+                                        <TableCell>{result.log_sum_aa.toFixed(4)}</TableCell>
+                                        <TableCell>{result.log_vdw_vol.toFixed(4)}</TableCell>
+                                        <TableCell>{result.clog_p.toFixed(4)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
+            
+            {errorMessage && (
+                <Alert severity="error" style={{ marginTop: '1rem' }}>
+                    {errorMessage}
+                </Alert>
+            )}
+        </div>
+    );
+};
+
+export default PeptideRetention;
