@@ -68,6 +68,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const [isDraggingTooltip, setIsDraggingTooltip] = useState(false);
   const [tooltipDragStart, setTooltipDragStart] = useState<{ x: number; y: number } | null>(null);
 
+  const [draggedWell, setDraggedWell] = useState<number | null>(null);
+  const [dragOverWell, setDragOverWell] = useState<number | null>(null);
+
   const [selectedStandards, setSelectedStandards] = useState<typeof standards[number][]>(standards);
   const [uploadedProteins, setUploadedProteins] = useState<Record<number, { name: string; proteins: typeof standards }>>({});
   const [positions, setPositions] = useState<Record<number, Record<string, number>>>(() =>
@@ -108,7 +111,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const wellW = slabW / (2 * wellsCount + 1);
 
   const bandW = wellW * 0.8;
-  const bandH = wellH * 0.15;
+  const bandH = wellH * 0.2;
   
   const simDelay = 250; // ms
   const maxWells = 6;
@@ -361,6 +364,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const onClear = () => {
     setSelectedStandards(standards);
     setUploadedProteins({});
+    setTooltipData(null);
     
     setPositions(() => ({
       0: Object.fromEntries(standards.map(p => [p.id_num, 0]))
@@ -464,6 +468,63 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   }
 
 
+  const onDragStart = (wellIndex: number) => {
+    if (wellIndex === 0) return;
+    setDraggedWell(wellIndex);
+  };
+
+
+  const onDragOver = (e: React.DragEvent, wellIndex: number) => {
+    e.preventDefault();
+    if (wellIndex === 0) return;
+    setDragOverWell(wellIndex);
+  };
+
+
+  const onDragLeave = () => {
+    setDragOverWell(null);
+  };
+
+
+  const onDrop = (e: React.DragEvent, targetWell: number) => {
+    e.preventDefault();
+    if (draggedWell === null || draggedWell === targetWell || targetWell === 0) {
+      setDraggedWell(null);
+      setDragOverWell(null);
+      return;
+    }
+
+    setUploadedProteins(prev => {
+      const newUploaded = { ...prev };
+      const temp = newUploaded[draggedWell];
+      newUploaded[draggedWell] = newUploaded[targetWell];
+      if (temp) {
+        newUploaded[targetWell] = temp;
+      } else {
+        delete newUploaded[targetWell];
+      }
+      return newUploaded;
+    });
+
+    setPositions(prev => {
+      const newPositions = { ...prev };
+      const temp = newPositions[draggedWell];
+      newPositions[draggedWell] = newPositions[targetWell];
+      newPositions[targetWell] = temp;
+      return newPositions;
+    });
+
+    setDraggedWell(null);
+    setDragOverWell(null);
+  };
+
+  
+  const onDragEnd = () => {
+    setDraggedWell(null);
+    setDragOverWell(null);
+  };
+
+
   const onWheel = (e: React.WheelEvent<SVGSVGElement>) => {
     e.preventDefault();
     if (rafRef.current) return;
@@ -501,6 +562,12 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
 
   const onMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    const currentTarget = e.currentTarget as SVGSVGElement;
+    const eventTarget = e.target as Node;
+
+    const container = currentTarget.querySelector('.acrylamide-slab');
+    if (!container || !container.contains(eventTarget)) return;
+
     setIsDragging(true);
     setwellWastY(e.clientY);
   }
@@ -908,7 +975,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                       y={Math.max(valueToY(positions[wi]?.[protein.id_num] ?? 0) - (bandH * 1.25), bandMin)}
                       width={bandW} height={bandH} rx={3} ry={3}
                       key={`${wi}-${protein.id_num}`}
-                      fill={protein.color || '#888'}
+                      fill={protein.color || 'var(--accent)'}
                       stroke='var(--background)'
                       strokeWidth={0.5}
                       style={{ cursor: 'pointer' }}
@@ -935,7 +1002,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
           <g className='filename-bands' style={{
             opacity: hasStarted ? 0 : 1,
-            transition: 'opacity 0.25s ease-out'
+            transition: 'opacity 0.25s ease-out',
+            pointerEvents: hasStarted ? 'none' : 'auto'
           }}>
             {Array.from({ length: wellsCount }).map((_, wi) => {
               const hasProteins = Object.keys(positions[wi] || {}).length > 0;
@@ -943,17 +1011,46 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
               if (!hasProteins) return null;
               
+              const isDragging = draggedWell === wi;
+              const isDropTarget = dragOverWell === wi && draggedWell !== null && draggedWell !== wi;
+              const canDrag = wi !== 0 && !!uploadedProteins[wi];
+              
               return (
-                <rect
-                  key={`filename-band-${wi}`}
-                  x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)} y={wellH * 1.65}
-                  width={bandW} height={bandH} rx={3} ry={3}
-                  fill='var(--highlight)'
-                  stroke='var(--accent)'
-                  strokeWidth={0.5}
-                >
-                  <title>{label}</title>
-                </rect>
+                <g key={`filename-band-${wi}`}>
+                  <foreignObject
+                    x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)} y={wellH * 1.65}
+                    width={bandW} height={bandH}
+                    style={{ overflow: 'visible' }}
+                  >
+                    <div
+                      draggable={canDrag}
+                      onDragStart={() => onDragStart(wi)}
+                      onDragOver={(e) => onDragOver(e, wi)}
+                      onDragLeave={onDragLeave}
+                      onDrop={(e) => onDrop(e, wi)}
+                      onDragEnd={onDragEnd}
+                      style={{
+                        width: '100%', height: '100%',
+                        cursor: canDrag ? 'grab' : 'default',
+                        opacity: isDragging ? 0.5 : 1,
+                        transition: 'opacity 0.2s'
+                      }}
+                      title={label}
+                    />
+                  </foreignObject>
+                  <rect
+                    x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)}
+                    y={wellH * 1.65}
+                    width={bandW}
+                    height={bandH}
+                    rx={3}
+                    ry={3}
+                    fill={isDropTarget ? 'var(--accent)' : 'var(--highlight)'}
+                    stroke={isDropTarget ? 'var(--text)' : 'var(--accent)'}
+                    strokeWidth={isDropTarget ? 2 : 0.5}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                </g>
               );
             })}
           </g>
