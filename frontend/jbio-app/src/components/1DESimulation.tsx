@@ -5,7 +5,7 @@ import './1DESimulation.css'
 import blackWire from '../assets/electrophoresis/blackwire.png'
 import redWire from '../assets/electrophoresis/redwire.png'
 
-import { Select, MenuItem, Button, Chip } from '@mui/material'
+import { Select, MenuItem, Button, Chip, Tooltip } from '@mui/material'
 import { Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 
 import StopIcon from '@mui/icons-material/Stop';
@@ -718,7 +718,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
     return [...wellDots, ...slabDots];
   }, [acrylamidePct, ticks, zoom, anchor, totalH]);
-  
+
 
   return (
     <div className='gel-wrapper'>
@@ -1022,29 +1022,54 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                     width={bandW} height={bandH}
                     style={{ overflow: 'visible' }}
                   >
-                    <div
-                      draggable={canDrag}
-                      onDragStart={() => onDragStart(wi)}
-                      onDragOver={(e) => onDragOver(e, wi)}
-                      onDragLeave={onDragLeave}
-                      onDrop={(e) => onDrop(e, wi)}
-                      onDragEnd={onDragEnd}
-                      style={{
-                        width: '100%', height: '100%',
-                        cursor: canDrag ? 'grab' : 'default',
-                        opacity: isDragging ? 0.5 : 1,
-                        transition: 'opacity 0.2s'
-                      }}
-                      title={label}
-                    />
+                  <Tooltip
+                    title={label}
+                    slotProps={{
+                      tooltip: {
+                        sx: { // This needs to be fixed later (I'm crunchin to finish on time)
+                          backgroundColor: '#282b30',
+                          color: '#f6f6f6',
+                          fontSize: '12px',
+                          fontWeight: 'normal',
+                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)'
+                        },
+                      },
+                    }}
+                  >
+                      <div
+                        draggable={canDrag}
+                        onDragStart={() => onDragStart(wi)}
+                        onDragOver={(e) => onDragOver(e, wi)}
+                        onDragLeave={onDragLeave}
+                        onDrop={(e) => onDrop(e, wi)}
+                        onDragEnd={onDragEnd}
+                        style={{
+                          width: '100%', height: '100%',
+                          cursor: canDrag ? 'grab' : 'default',
+                          opacity: isDragging ? 0.5 : 1,
+                          transition: 'opacity 0.2s'
+                        }}
+                        onClick={(e) => {
+                          if (e.detail === 2 && wi !== 0) {
+                            e.stopPropagation();
+                            setUploadedProteins(prev => {
+                              const next = { ...prev };
+                              delete next[wi];
+                              return next;
+                            });
+                            setPositions(prev => {
+                              const next = { ...prev };
+                              delete next[wi];
+                              return next;
+                            });
+                          }
+                        }}
+                      />
+                    </Tooltip>
                   </foreignObject>
                   <rect
-                    x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)}
-                    y={wellH * 1.65}
-                    width={bandW}
-                    height={bandH}
-                    rx={3}
-                    ry={3}
+                    x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)} y={wellH * 1.65}
+                    width={bandW} height={bandH} rx={3} ry={3}
                     fill={isDropTarget ? 'var(--accent)' : 'var(--highlight)'}
                     stroke={isDropTarget ? 'var(--text)' : 'var(--accent)'}
                     strokeWidth={isDropTarget ? 2 : 0.5}
