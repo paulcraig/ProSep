@@ -43,7 +43,7 @@ jobs:
         pip install pytest
     - name: Run tests
       run: |
-        pytest
+        pytest backend/tests
   shell:
     runs-on: ubuntu-latest
     name: shell linter
