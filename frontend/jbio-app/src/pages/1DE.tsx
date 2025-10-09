@@ -33,12 +33,14 @@ function OneDE() {
           <li>Add or remove wells as needed.</li>
           <li>Select wells to upload FASTA files.</li>
           <li>Select or deselect protein standards.</li>
+          <li>Remove uploaded files by double-clicking</li>
           <li>Choose the voltage setting (50 / 100 / 150 / 200 V).</li>
           <li>Choose the acrylamide concentration (7.5 / 10 / 12 / 15%).</li>
         </ol>
         <ul style={{ lineHeight: 1.5, marginBottom: '1rem' }}>
           <li>Click <strong>Start</strong> to begin the run.</li>
           <li>Click <strong>Stop</strong> to end the run manually.</li>
+          <li>Click <strong>Clear</strong> to clear all uploaded files.</li>
           <li>Click <strong>Reset</strong> to return bands to their starting positions.</li>
         </ul>
 
