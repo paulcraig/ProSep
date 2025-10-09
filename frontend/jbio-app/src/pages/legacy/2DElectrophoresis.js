@@ -858,6 +858,19 @@ const TwoDE = () => {
                   className="twoDE-range"
                   disabled={simulationState !== 'ready'} // Disable during simulation
                 />
+
+                <input
+                  type="range"
+                  id="ph-max-slider"
+                  min="0"
+                  max="14"
+                  step="0.1"
+                  value={phRange.max}
+                  onChange={handlePhSliderChange}
+                  className="twoDE-range"
+                  disabled={simulationState !== 'ready'} // Disable during simulation
+                />
+
                 <input
                   type="number"
                   min="0"
@@ -1017,7 +1030,7 @@ const TwoDE = () => {
                     {(selectedDot || hoveredDot).Link !== "N/A" ? (<a href={(selectedDot || hoveredDot).Link}> {(selectedDot || hoveredDot).Link} </a>) : ("N/A")}</div>
 
                     <div>MW: {(selectedDot || hoveredDot).mw.toLocaleString()} Da</div>
-                    <div>pH: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
+                    <div>pI: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
 
                     {(selectedDot || hoveredDot).sequence && (
                       <div style={{ marginTop: '4px' }}>
