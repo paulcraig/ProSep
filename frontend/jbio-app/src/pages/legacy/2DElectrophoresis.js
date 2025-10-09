@@ -38,6 +38,12 @@ const TwoDE = () => {
   const PH_STEP = 2;
   const MAX_DISTANCE_TRAVELED = 6; // Maximum distance traveled in cm
 
+  // Shreyes: these decide the max labels for the axes, i used 0 and 1 as the starting axes
+  const [minMW, setMinMW] = useState(0);
+  const [maxMW, setMaxMW] = useState(1);
+
+
+
   // Function to start running the IEF (first dimension), sets simulation 
   // state to 'ief-running' and calls the 'simulate-ief backend API to
   // run the IEF and then changes the frontend accordingly
@@ -398,6 +404,19 @@ const TwoDE = () => {
       canvasRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
+  // Dynamically compute min and max molecular weight (MW) from the loaded dots (proteins)
+  useEffect(() => {
+    if (dots && dots.length > 0) {
+      // Filter out invalid or missing mw values
+      const mws = dots
+        .map(p => Number(p.mw))
+        .filter(mw => !isNaN(mw) && mw > 0);
+      if (mws.length > 0) {
+        setMinMW(Math.min(...mws));
+        setMaxMW(Math.max(...mws));
+      }
+    }
+  }, [dots]);
 
   // React hook to handle all the different changes that may happen to the simulation
   // and draws makes sure that everything is drawn as it should be
@@ -448,6 +467,8 @@ const TwoDE = () => {
       ctx.strokeStyle = '#444';
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '12px Arial';
+      ctx.fillText(`${Math.round(maxMW)} Da`, 60, 170 - 10);
+      ctx.fillText(`${Math.round(minMW)} Da`, 60, canvas.height - 60);
 
       // Draw SDS-PAGE area separator
       if (simulationState === 'ief-complete' || simulationState === 'sds-running' || simulationState === 'complete') {
@@ -465,7 +486,7 @@ const TwoDE = () => {
             ctx.moveTo(50, y);
             ctx.lineTo(canvas.width - 50, y);
             ctx.stroke();
-            const mwValue = Math.pow(10, Math.log10(1000000) - ((y - 170) / (canvas.height - 220)) * (Math.log10(1000000) - Math.log10(1000)));
+            const mwValue = Math.pow(10,Math.log10(maxMW) - ((y - 170) / (canvas.height - 220)) * (Math.log10(maxMW) - Math.log10(minMW)));
             ctx.fillStyle = '#FFFFFF';
 
             // Vertical text for MW (PPS1-105)
@@ -632,7 +653,7 @@ const TwoDE = () => {
     };
 
     draw();
-  }, [dots, hoveredDot, selectedDot, simulationState, simulationProgress, phRange, yAxisMode, acrylamidePercentage]);
+  }, [dots, hoveredDot, selectedDot, simulationState, simulationProgress, phRange, yAxisMode, acrylamidePercentage, minMW, maxMW]);
 
 
 
