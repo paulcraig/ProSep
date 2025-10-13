@@ -37,7 +37,7 @@ jobs:
     steps:
     - name: Checkout the code
       uses: actions/checkout@v4.2.2
-    - uses: ./.github/workflows/common/action.yaml
+    - uses: ./.github/workflows/common
     - name: Install pytest
       run: |
         pip install pytest
