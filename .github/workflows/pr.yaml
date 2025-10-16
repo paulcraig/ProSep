@@ -14,9 +14,9 @@ jobs:
         uses: actions/checkout@v4.2.2
       - name: Enforce PR has Description
         run: |
-          PR_DESCRIPTION=${{github.event.pull_request.body}}
+          PR_DESCRIPTION="${{github.event.pull_request.body}}"
           NON_EMPTY="^(?!\s*$).+"
-          if [[ "$PR_DESCRIPTION" =~ $NON_EMPTY ]]; then
+          if [[ $PR_DESCRIPTION =~ $NON_EMPTY ]]; then
             echo "PR has description"
           else
             echo "PR description is empty"
