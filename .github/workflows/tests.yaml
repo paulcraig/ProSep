@@ -1,7 +1,5 @@
 name: Test
 on:
-  push:
-    branches: ["main", "runner"]
   pull_request:
     branches: ["main"]
 jobs:
