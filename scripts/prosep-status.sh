@@ -4,7 +4,6 @@ set -euo pipefail
 REPO_DIR="/shared/ProSep"
 STATE_FILE="/var/www/.deployed_tag"
 FRONTEND_URL="http://protein-separation-sim.se.rit.edu/"
-BACKEND_PROCESS="uvicorn backend.server:app"
 WWW_DIR="/var/www/html"
 
 REPAIR=false
@@ -69,9 +68,8 @@ if ! $REPAIR; then
 
   # ---> Backend <--- #
   
-  if pgrep -f "$BACKEND_PROCESS" >/dev/null; then
-    PID=$(pgrep -f "$BACKEND_PROCESS" | head -n1)
-    echo "Backend: RUNNING @PID $PID"
+  if systemctl is-active --quiet prosep-backend.service; then
+    echo "Backend: RUNNING (systemd)"
   else
     echo "Backend: NOT RUNNING"
   fi
@@ -143,15 +141,14 @@ if ! systemctl is-active --quiet apache2; then
 fi
 
 # Backend:
-if ! pgrep -f "$BACKEND_PROCESS" >/dev/null; then
+if systemctl is-active --quiet prosep-backend.service; then
   show_repair_header
   echo "Attempting Backend restart..."
   
-  pkill -f "uvicorn" || true
-  nohup python3 -m uvicorn server:app --host 127.0.0.1 --port 8000 > uvicorn.log 2>&1 &
+  sudo systemctl restart prosep-backend.service
   sleep 2
   
-  if pgrep -f "$BACKEND_PROCESS" >/dev/null; then
+  if systemctl is-active --quiet prosep-backend.service; then
     echo "Backend restart: SUCCESS"
   else
     echo "Backend restart: FAILED"
