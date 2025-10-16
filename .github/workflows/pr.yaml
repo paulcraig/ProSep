@@ -13,7 +13,7 @@ jobs:
           # Ensure jq installed
           sudo apt-get install jq --no-install-recommends
 
-          PR_NAME=$(jq -r ".pull_request.title" "GITHUB_EVENT_PATH")
+          PR_NAME=${{github.event.pull_request.title}}
           NAME_REGEX="^([a-zA-Z-]*)/.*$"
 
           if [[ "$PR_NAME" =~ $NAME_REGEX ]]; then
