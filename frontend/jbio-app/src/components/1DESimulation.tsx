@@ -485,6 +485,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const onReset = () => {
     onStop();
     setHasStarted(false);
+    setZoom(1);
 
     setPositions(prev => {
       const next: typeof prev = {};
@@ -502,6 +503,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     setSelectedStandards(standards);
     setUploadedProteins({});
     setTooltipData(null);
+    setZoom(1);
     
     setPositions(() => ({
       0: Object.fromEntries(standards.map(p => [p.id_num, 0]))
