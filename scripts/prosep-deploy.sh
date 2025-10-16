@@ -57,10 +57,8 @@ done
 
 # ---> Restart Only Mode <--- #
 if [[ "$RESTART" == true ]]; then
-  echo "Restarting frontend/backend..."
-  pkill -f "uvicorn" || true
-  echo "Starting FastAPI backend..."
-  nohup python3 -m uvicorn backend.server:app --host 127.0.0.1 --port 8000 > uvicorn.log 2>&1 & # TODO: Switch to service.
+  echo "Restarting backend and Apache..."
+  sudo systemctl restart prosep-backend.service
   sudo systemctl reload apache2
   echo "Restart complete"
   exit 0
@@ -116,11 +114,8 @@ rm -rf "$TMP_DIR"
 echo "Installing Python requirements..."
 python3 -m pip install -r requirements.txt
 
-echo "Stopping OLD backend (if any)..."
-pkill -f "uvicorn" || true
-
 echo "Starting backend..."
-nohup python3 -m uvicorn backend.server:app --host 127.0.0.1 --port 8000 > uvicorn.log 2>&1 & # TODO: Switch to service.
+sudo systemctl restart prosep-backend.service
 
 # ---> Finalize <--- #
 echo "$TARGET_TAG" | sudo tee "$STATE_FILE" >/dev/null
