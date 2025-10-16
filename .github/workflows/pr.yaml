@@ -1,0 +1,25 @@
+name: PR Enforcement
+on: 
+  pull_request:
+
+jobs:
+  check_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up workspace
+        uses: actions/checkout@v4.2.2
+      - name: Validate name
+        run: |
+          # Ensure jq installed
+          sudo apt-get install jq --no-install-recommends
+
+          PR_NAME=$(jq -r ".pull_request.title" "GITHUB_EVENT_PATH")
+          NAME_REGEX="^([a-zA-Z-]*)/.*$"
+
+          if [[ "$PR_NAME" =~ $NAME_REGEX ]]; then
+            echo "PR Matches Regex"
+          else
+            echo "PR does not match pattern ([bug|fix|etc]/branch-name)"
+            exit 1
+          fi
+        
