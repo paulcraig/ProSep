@@ -854,7 +854,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     })
 
     return [...wellDots, ...slabDots];
-  }, [acrylamidePct, ticks, zoom, anchor, totalH]);
+  }, [acrylamidePct, ticks, zoom, anchor, totalH, wellsCount]);
 
 
   return (
