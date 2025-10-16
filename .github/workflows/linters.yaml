@@ -27,10 +27,10 @@ jobs:
     - uses: ./.github/workflows/common
     - name: Install libraries
       run: |
-        pip install pylint
+        pip install ruff
     - name: Analyse with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        ruff check backend/
   python-test:
     runs-on: ubuntu-latest
     name: Pytest
