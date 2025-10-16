@@ -67,7 +67,7 @@ const TwoDE = () => {
     };
 
     // Call the backend API
-    axios.post(`${API_URL}/2d/simulate-ief`, data)
+    axios.post(`http://localhost:8000/2d/simulate-ief`, data)
       .then(response => {
         // Get the simulation results
         const simulationResults = response.data;
@@ -130,7 +130,7 @@ const TwoDE = () => {
     };
 
     // Call the backend API
-    axios.post(`${API_URL}/2d/simulate-sds`, data)
+    axios.post(`http://localhost:8000/2d/simulate-sds`, data)
       .then(response => {
         // Get the simulation results
         const simulationResults = response.data;
@@ -184,7 +184,7 @@ const TwoDE = () => {
 
     try {
       // Upload to backend for processing
-      const response = await axios.post(`${API_URL}/2d/parse-fasta`, formData, {
+      const response = await axios.post(`http://127.0.0.1:8000/2d/parse-fasta`, formData, {
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(percentCompleted);

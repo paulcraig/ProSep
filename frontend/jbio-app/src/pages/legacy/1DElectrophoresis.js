@@ -479,7 +479,7 @@ const OneDE = () => {
       formData.append("file", fileToUpload);
 
       try {
-        const response = await fetch(`${API_URL}/1d/ProteinInfo/File`, {
+        const response = await fetch(`http://localhost:8000/1d/ProteinInfo/File`, {
           method: "POST",
           body: formData,
         });
@@ -524,7 +524,7 @@ const OneDE = () => {
 
     // API call to upload files
     try {
-      const response = await fetch(`${API_URL}/1d/BatchFileProtein/Batch`, {
+      const response = await fetch(`http://localhost:8000/1d/BatchFileProtein/Batch`, {
         method: 'POST',
         body: formData,
       });
@@ -783,6 +783,3 @@ const OneDE = () => {
 
 
 export default OneDE;
-
-
-

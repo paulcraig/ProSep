@@ -5,7 +5,7 @@ from io import StringIO
 from typing import Any, Dict, List
 
 from Bio import SeqIO
-from utility.protein import Protein
+from core.protein import Protein
 
 
 class Simulation_2de():
