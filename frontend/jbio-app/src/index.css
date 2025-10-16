@@ -21,6 +21,7 @@ code {
   --sub-text: #c5c5c5;
   
   --accent: #7289da;
+  --sub-accent: #323848;
   --highlight: #7289da24;
 }
 
@@ -32,6 +33,7 @@ code {
   --sub-text: #1e293b;
 
   --accent: #4f6edb;
+  --sub-accent: #e5e7ef;
   --highlight: #9ba3c343;
 }
 
@@ -43,4 +45,8 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+li {
+  color: var(--sub-text);
 }

@@ -1,0 +1,92 @@
+.gel-wrapper {
+  display: inline-block;
+  margin: 2rem;
+}
+
+.gel-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gel-svg {
+  display: block;
+  overflow: visible;
+}
+
+.gel-fill {
+  fill: var(--sub-background);
+  stroke: none;
+}
+
+.gel-border {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  stroke-width: 0.25rem;
+}
+
+.label {
+  font-size: 1.1rem;
+  color: var(--text);
+  text-align: center;
+}
+
+.noselect {
+  -webkit-user-select: none; /* Safari */
+  user-select: none;
+}
+
+.axis text {
+  font-size: 14px;
+  user-select: none;
+}
+
+.axis line {
+  shape-rendering: crispEdges;
+}
+
+.well-btn circle {
+  fill: var(--highlight);
+  transition: fill 0.15s ease-in-out;
+}
+
+.well-btn:hover circle {
+  fill: var(--accent);
+}
+
+.protein-tooltip {
+  box-shadow: 0 4px 4px var(--background);
+  background-color: var(--sub-accent);
+  color: var(--sub-text);
+
+  border: 3px solid var(--accent);
+  border-radius: 6px;
+
+  position: fixed;
+  z-index: 2;
+  padding: 12px;
+  font-size: 14px;
+  min-width: 240px;
+}
+
+.protein-tooltip-title {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--accent);
+}
+
+.protein-tooltip a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.protein-tooltip a:hover {
+  text-decoration: underline;
+}
+
+/* .gel-wrapper, .gel-container, .toolbar, .chips {
+  border: 1px solid red;
+} */
