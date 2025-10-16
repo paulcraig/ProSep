@@ -12,15 +12,14 @@ jobs:
     steps:
       - name: Set up workspace
         uses: actions/checkout@v4.2.2
-      - name: Validate name
+      - name: Enforce PR has Description
         run: |
-          PR_NAME=${{github.event.pull_request.title}}
-          NAME_REGEX="^([a-zA-Z-]*)/.*$"
-
-          if [[ "$PR_NAME" =~ $NAME_REGEX ]]; then
-            echo "PR Matches Regex"
+          PR_DESCRIPTION=${{github.event.pull_request.body}}
+          NON_EMPTY="^(?!\s*$).+"
+          if [[ "$PR_DESCRIPTION" =~ $NON_EMPTY ]]; then
+            echo "PR has description"
           else
-            echo "PR does not match pattern ([bug|fix|etc]/branch-name)"
+            echo "PR description is empty"
             exit 1
           fi
         
