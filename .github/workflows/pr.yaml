@@ -16,7 +16,7 @@ jobs:
         run: |
           PR_DESCRIPTION="${{github.event.pull_request.body}}"
           NON_EMPTY="^(?!\s*$).+"
-          if [[ $PR_DESCRIPTION =~ $NON_EMPTY ]]; then
+          if [[ $PR_DESCRIPTION =~ $NON_EMPTY ]] || [[ -z $PR_DESCRIPTION ]]; then
             echo "PR description is empty"
             exit 1
           else
