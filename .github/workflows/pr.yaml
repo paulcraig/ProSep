@@ -1,6 +1,10 @@
 name: PR Enforcement
 on: 
   pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
 
 jobs:
   check_pr:
