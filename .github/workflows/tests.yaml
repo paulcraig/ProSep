@@ -1,0 +1,20 @@
+name: Test
+on:
+  push:
+    branches: ["main", "runner"]
+  pull_request:
+    branches: ["main"]
+jobs:
+  python-test:
+    runs-on: ubuntu-latest
+    name: Pytest
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v4.2.2
+    - uses: ./.github/workflows/common
+    - name: Install pytest
+      run: |
+        pip install pytest
+    - name: Run tests
+      run: |
+        pytest backend/tests

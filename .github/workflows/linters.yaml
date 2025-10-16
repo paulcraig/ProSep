@@ -1,4 +1,4 @@
-name: Test and Scan
+name: Scan
 on:
   push:
     branches: [ main, runner ]
@@ -17,7 +17,6 @@ jobs:
       uses: ajinabraham/njsscan-action@master
       with:
         args: '.'
-  # Placeholder for tests
   python-linter:
     runs-on: ubuntu-latest
     name: python linter
@@ -31,19 +30,6 @@ jobs:
     - name: Analyse with pylint
       run: |
         ruff check backend/
-  python-test:
-    runs-on: ubuntu-latest
-    name: Pytest
-    steps:
-    - name: Checkout the code
-      uses: actions/checkout@v4.2.2
-    - uses: ./.github/workflows/common
-    - name: Install pytest
-      run: |
-        pip install pytest
-    - name: Run tests
-      run: |
-        pytest backend/tests
   shell:
     runs-on: ubuntu-latest
     name: shell linter
