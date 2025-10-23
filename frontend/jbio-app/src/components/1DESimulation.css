@@ -29,7 +29,7 @@
 }
 
 .label {
-  font-size: 1.1rem;
+  font-size: var(--font-size-small);
   color: var(--text);
   text-align: center;
 }
@@ -40,7 +40,7 @@
 }
 
 .axis text {
-  font-size: 14px;
+  font-size: var(--font-size-small);
   user-select: none;
 }
 
@@ -68,7 +68,7 @@
   position: fixed;
   z-index: 2;
   padding: 12px;
-  font-size: 14px;
+  font-size: var(--font-size-small);
   min-width: 240px;
 }
 
@@ -76,6 +76,7 @@
   font-weight: bold;
   margin-bottom: 0.5rem;
   color: var(--accent);
+  font-size: var(--font-size-small);
 }
 
 .protein-tooltip a {

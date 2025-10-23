@@ -39,7 +39,7 @@ interface ElectrophoresisProps {
 
 const OneDESim: React.FC<ElectrophoresisProps> = ({
   ticks = 6,
-  wells = 3,
+  wells = 5,
   voltage = 100,
   acrylamide = 7.5,
 }) => {
@@ -82,10 +82,15 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   );
 
   const [totalH, setTotalH] = useState(700);
+  const chipsRef = React.useRef<HTMLDivElement>(null);
+  const toolbarRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const updateHeight = () => {
-      const reservedSpace = 270;
+      const toolbarHeight = toolbarRef.current?.offsetHeight || 0; // This jank needs to be fixed...
+      const chipsHeight = chipsRef.current?.offsetHeight || 0;
+      const reservedSpace = toolbarHeight + chipsHeight + 200;
+      
       const availableHeight = window.innerHeight - reservedSpace;
       setTotalH(Math.max(700, availableHeight));
     };
@@ -95,7 +100,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
   
-  const slabW = 600;
+  const slabW = 600 + ((wellsCount - 3) / 7) * 600;
   const wellH = 45;
   const wireH = 25;
   const wireW = 75;
@@ -114,7 +119,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const bandH = wellH * 0.2;
   
   const simDelay = 250; // ms
-  const maxWells = 6;
+  const maxWells = 11;
 
 
   const getRelativeMobility = (pct: number, MW: number) => {
@@ -384,7 +389,6 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                 display: 'flex',
                 justifyContent: 'center',
                 marginTop: '1rem',
-                fontSize: '14px',
                 gap: '2rem',
               }}
             >
@@ -801,7 +805,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         </g>
       )
     })
-  }, [ticks, zoom, anchor, totalH]);
+  }, [ticks, zoom, anchor, totalH, wellsCount]);
 
 
   const dots = React.useMemo(() => {
@@ -863,6 +867,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     <div className='gel-wrapper'>
       {/* Toolbar */}
       <div
+        ref={toolbarRef}
         style={{
           display: 'flex',
           justifyContent: 'center',
@@ -936,7 +941,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       />
 
       {/* Simulation */}
-      <div className='gel-container' onClick={() => setTooltipData(null)}>
+      <div className='gel-container' onClick={() => setTooltipData(null)} >
         <svg
           className='gel-svg'
           onWheel={onWheel}
@@ -946,19 +951,19 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           onMouseUp={onMouseUp}
 
           height={totalH}
-          width={slabW * 1.4}
-          viewBox={`-60 0 ${slabW * 1.4} ${totalH}`}
+          width={slabW + 200}
+          viewBox={`-60 0 ${slabW + 200} ${totalH}`}
           style={{ cursor: zoom === 1 ? 'default' : isDragging ? 'grabbing' : 'grab' }}
         >
           <line
             x1={slabW + wireW + wireO} y1={wellH}
-            x2={slabW + wireW + wireO} y2={(totalH / 2) - 20}
+            x2={slabW + wireW + wireO} y2={(totalH / 2.05) - 20}
             stroke='#191919'
             strokeWidth='0.75rem'
             strokeLinecap='round'
           />
           <line
-            x1={slabW + wireW + wireO} y1={(totalH / 2) + 20}
+            x1={slabW + wireW + wireO} y1={(totalH / 1.95) + 20}
             x2={slabW + wireW + wireO} y2={anodeT + wellH}
             stroke='#ff3636'
             strokeWidth='0.75rem'
@@ -966,32 +971,35 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           />
           <g>
             <line
-              x1={slabW + wireW + wireO - 20} y1={(totalH / 2) - 20}
-              x2={slabW + wireW + wireO + 20} y2={(totalH / 2) - 20}
+              x1={slabW + wireW + wireO - 20} y1={(totalH / 2.05) - 20}
+              x2={slabW + wireW + wireO + 20} y2={(totalH / 2.05) - 20}
               stroke='#191919'
               strokeWidth='0.75rem'
             />
             <line
               x1={slabW + wireW + wireO - 40}
-              y1={(totalH / 2) + 20}
+              y1={(totalH / 1.95) + 20}
               x2={slabW + wireW + wireO + 40}
-              y2={(totalH / 2) + 20}
+              y2={(totalH / 1.95) + 20}
               stroke='#ff3636'
               strokeWidth='0.75rem'
             />
             <foreignObject
-              x={slabW + wireW + wireO - 48} y={totalH / 2 - 14}
-              width={96} height={28}
+              x={slabW + wireW + wireO - 24} y={totalH / 2 - 16}
+              width={200} height={32}
             >
               <Select
                 variant='standard'
+                disableUnderline
                 value={voltageAmt}
                 onChange={(e) => setVoltageAmt(Number(e.target.value))}
                 sx={{
                   fontWeight: 'bold',
                   color: 'var(--text)',
-                  paddingLeft: '1.75rem',
-                  '& .MuiSelect-icon': { color: 'var(--text)' }
+                  textAlign: 'center',
+                  '& .MuiSelect-icon': { color: 'var(--text)' },
+                  '& .MuiSelect-select': { textAlign: 'center' },
+                  width: 'fit-content', minWidth: 0
                 }}
               >
                 {[50, 100, 150, 200].map(v => ( <MenuItem key={v} value={v}>{v}V</MenuItem> ))}
@@ -1017,15 +1025,17 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             strokeWidth='0.25rem'
           />
 
-          <foreignObject x={0} y={anodeT + wellH - 12} width={160} height={24}>
+          <foreignObject x={0} y={anodeT + wellH - 16} width={200} height={32}>
             <Select
               variant='standard'
+              disableUnderline
               value={acrylamidePct}
               onChange={(e) => setAcrylamidePct(Number(e.target.value))}
               sx={{
                 fontWeight: 'bold',
                 color: 'var(--sub-text)',
                 '& .MuiSelect-icon': { color: 'var(--sub-text)' },
+                display: 'flex', alignItems: 'center', width: 'fit-content', minWidth: 0
               }}
             >
               {[7.5,10,12,15].map(a => ( <MenuItem key={a} value={a}>Acrylamide {a}%</MenuItem> ))}
@@ -1168,7 +1178,6 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                         sx: { // This needs to be fixed later (I'm crunchin to finish on time)
                           backgroundColor: '#282b30',
                           color: '#f6f6f6',
-                          fontSize: '12px',
                           fontWeight: 'normal',
                           boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)'
                         },
@@ -1276,14 +1285,17 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       </div>
 
       {/* Proteins */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        paddingLeft: '3.75rem',
-        gap: '0.5rem',
-        width: slabW
-      }}>
+      <div
+        ref={chipsRef}
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          paddingLeft: '3.75rem',
+          gap: '0.5rem',
+          width: slabW
+        }}
+      >
         {standards.map(protein => {
           const isSelected = selectedStandards.some(p => p.id_num === protein.id_num)
           return (
@@ -1293,7 +1305,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               onClick={() => onToggleProtein(protein)}
               sx={{
                 backgroundColor: isSelected ? protein.color : 'var(--highlight)',
-                color: 'var(--text)',
+                color: 'white',
                 fontWeight: 'bold'
               }}
             />
