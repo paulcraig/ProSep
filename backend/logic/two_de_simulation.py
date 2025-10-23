@@ -5,7 +5,7 @@ from io import StringIO
 from typing import Any, Dict, List
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from Bio import SeqIO
-from utility.protein import Protein
+from backend.utility.protein import Protein
 
 
 class Simulation_2de():

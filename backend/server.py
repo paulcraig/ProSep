@@ -2,8 +2,9 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import api.one_de_routes as one_de_routes
-import api.two_de_routes as two_de_routes
+import backend.api.one_de_routes as one_de_routes
+import backend.api.two_de_routes as two_de_routes
+import backend.api.peptide_retention_routes as peptide_retention_routes
 
 
 
@@ -52,6 +53,7 @@ app.add_middleware(
 # Routers
 app.include_router(one_de_routes.router)
 app.include_router(two_de_routes.router)
+app.include_router(peptide_retention_routes.router)
 
 ''' 
 NOTE FOR FUTURE DEVELOPERS:

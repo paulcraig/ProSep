@@ -9,11 +9,22 @@
 
 /* Intro: project + sponsor */
 .about-intro {
-  display: grid;
-  grid-template-columns: 25rem 1fr;
-  gap: 8rem;
+  display: flex;
+    flex-wrap: wrap;
+  gap: 4rem;
+  align-items: start;
 }
 
+.about-intro>section {
+  flex: 1 0 25rem;
+}
+
+@media (max-width: 30em) {
+  .about-intro {
+    flex-direction: column;
+    gap: 2rem;
+  }
+}
 .about-text {
   display: flex;
   flex-direction: column;
@@ -28,11 +39,6 @@
 .about-text ul {
   margin-left: 1.25rem;
   line-height: 1.6;
-}
-
-.about-sponsor {
-  display: flex;
-  justify-content: flex-start;
 }
 
 .sponsor-block {
@@ -51,11 +57,13 @@
 /* Developers */
 .dev-team {
   margin-top: 3.75rem;
+  display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .dev-grid {
   display: grid;
-  justify-items: center;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: 1rem;
 }
