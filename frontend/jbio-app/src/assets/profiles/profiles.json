@@ -1,0 +1,157 @@
+ [
+        {
+            "name": "Dr. Paul Craig",
+            "title": "Professor of Biochemistry, RIT",
+            "role": "Sponsor",
+            "current": true,  
+            "about": "Dr. Paul Craig earned his B.S. in Chemistry from Oral Roberts University in 1979 and his Ph.D. in Biological Chemistry from the University of Michigan in 1985. After a post-doc at Henry Ford Hospital, studying blood clotting, he worked five years as an analytical biochemist at BioQuant in Ann Arbor before joining RIT in 1993.\n\nToday, he teaches advanced under/graduate student-directed research in biology, chemistry, and biochemistry, and sponsors JBioFramework, offering domain expertise and project guidance.",
+            "email": "pac8612@rit.edu",
+            "phone": "(585) 475-6145",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Mark Wilson",
+            "title": "Team Coach",
+            "role": "Coach",
+            "current": true,
+            "about": "Technical Guidance",
+            "email": "mwilson1962@gmail.com",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Zachary Van Horn",
+            "title": "Project Leader",
+            "role": "Developer",
+            "current": true,
+            "email": "zjv4576@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Shreyes Gadwalkar",
+            "title": "Head of Communications",
+            "role": "Developer",
+            "current": true,
+            "email": "ssg9922@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Luke Knofczynski",
+            "title": "Technical Lead",
+            "role": "Developer",
+            "current": true,
+            "email": "ldk7811@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Aditya Vikram",
+            "title": "Scrum Master",
+            "role": "Developer",
+            "current": true,
+            "email": "av9242@rit.edu",
+            "phone": "(585) 410-7894",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Jacob Fay",
+            "title": "Testing Lead",
+            "role": "Developer",
+            "current": true,
+            "email": "jpf5643@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Toula Elwell",
+            "title": "Project Leader",
+            "role": "Developer",
+            "current": false,
+            "email": "tae9467@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Jackson Murphy",
+            "title": "Head of Communications",
+            "role": "Developer",
+            "current": false,
+            "email": "jmm5915@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Castor Grey",
+            "title": "Technical Lead",
+            "role": "Developer",
+            "current": false,
+            "email": "lcb7105@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Cameron Miele",
+            "title": "Scrum Master",
+            "role": "Developer",
+            "current": false,
+            "email": "clm1886@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Bryson VerDow",
+            "title": "Testing Lead",
+            "role": "Developer",
+            "current": false,
+            "email": "bjv7412@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Landon Heatly",
+            "title": "Project Leader",
+            "role": "Developer",
+            "current": false,
+            "email": "lbh1442@rit.edu",
+            "phone": "(203) 832-9841",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Beck Anderson",
+            "title": "Head of Communications",
+            "role": "Developer",
+            "current": false,
+            "email": "bea1935@rit.edu",
+            "phone": "(716) 640-2894",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Amr Mualla",
+            "title": "Technical Lead",
+            "role": "Developer",
+            "current": false,
+            "email": "am3576@rit.edu",
+            "phone": "(347) 631-7359",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Mack Leonard",
+            "title": "Scrum Master",
+            "role": "Developer",
+            "current": false,
+            "email": "mml2034@rit.edu",
+            "phone": "(203) 731-9620",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Chase Amador",
+            "title": "Testing Lead",
+            "role": "Developer",
+            "current": false,
+            "email": "cma6320@rit.edu",
+            "phone": "(203) 725-4442",
+            "location": "Rochester, NY"
+        }
+]
