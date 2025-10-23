@@ -1,4 +1,97 @@
-/* * {
+.peptide-retention-page {
+    background: var(--background);
     color: var(--text);
-    background-color: var(--background);
-} */
+    padding: 1rem;
+    min-height: 100vh;
+}
+
+.input-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.peptide-input {
+    margin-right: 1rem;
+    flex-grow: 1;
+}
+
+.peptide-input .MuiInputBase-input {
+    color: var(--text) !important;
+}
+
+.peptides-list {
+    margin-bottom: 1rem;
+}
+
+.peptides-list div:first-child {
+    color: var(--sub-text);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.predict-button {
+    margin-bottom: 1rem;
+    background-color: var(--accent) !important;
+    color: var(--text) !important;
+}
+
+.predict-button:disabled {
+    background-color: var(--sub-accent) !important;
+    color: var(--sub-text) !important;
+    border: 0.125rem solid var(--sub-background);
+}
+
+.results-card .MuiTable-root {
+    background: var(--sub-background);
+    color: var(--text);
+}
+
+.results-card .MuiTableHead-root {
+    background: var(--highlight);
+}
+
+.results-card .MuiTableHead-root .MuiTableCell-root {
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.results-card .MuiTableBody-root .MuiTableCell-root {
+    color: var(--text);
+    border-bottom: 1px solid var(--sub-text);
+}
+
+.results-card .MuiTableRow-root:hover {
+    background: var(--highlight);
+}
+
+.results-card {
+    margin-top: 2rem;
+    background-color: var(--sub-background) !important;
+    border: 0.25rem solid var(--accent);
+    color: var(--text);
+}
+
+.results-card .MuiCardHeader-title {
+    color: var(--accent);
+    font-weight: bold;
+}
+
+/* Error alert */
+.error-alert {
+    margin-top: 1rem;
+    background: var(--sub-accent);
+    color: var(--text);
+border: 0.125rem solid var(--accent);
+}
+
+.peptide-chip {
+    margin: 0.25rem;
+    color: var(--text) !important;
+    background-color: var(--accent) !important;
+}
+
+.loading-spinner {
+    margin-left: 1rem;
+}
