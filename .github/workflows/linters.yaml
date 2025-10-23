@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend/app
+        working-directory: frontend/jbio-app
     name: ESLint + Prettier
     steps:
     - name: Checkout repository
