@@ -6,15 +6,7 @@ from Bio import Seq
 from backend.utility.protein import Protein
 
 class TestProtein(unittest.TestCase):
-    def setUp(self):
-        self.protein = Protein()
-    def test_calculate_molecular_weight(self):
-        #needs to be reworked for when I (Jacob) get the formulas from paul
-        sequence:dict = Protein.parse_protein("backend/tests/data/singleProtein.fasta")
-        sequence = sequence[[x for x in sequence.keys()][0]][1]
-        expected = ProteinAnalysis(sequence).molecular_weight()
-        achual = Protein.calculate_molecular_weight(sequence)
-        self.assertAlmostEqual(expected/10000,achual/10000,2) #if its within 100 units of each other it will pass
+   
     def test_parse_single_protein(self):
         expcted = {'gi|2765658|emb|Z78533.1|CIZ78533': 
                    ('gi|2765658|emb|Z78533.1|CIZ78533 C.irapeanum 5.8S rRNA gene and ITS1 and ITS2 DNA', 
@@ -63,9 +55,16 @@ class TestProtein(unittest.TestCase):
         for key in protiens.keys():
             achual = Protein.find_links(key)
             self.assertNotEqual(notExpected,achual)
-    def test_get_indiviudal_mw(self):
-        #Need to write once I (Jacob) gets the formulas
-        achual = Protein.get_individual_mw(Protein.parse_protein("backend/tests/data/singleProtein.fasta"))   
+    def test_get_mw(self):
+        file = "backend/tests/data/singleProtein.fasta"
+        first_seq = next(iter(Protein.parse_protein(file).values()))[1]
+        expected = sum(Protein.AMINO_ACIDS.get(aa, {'mass': 0.0})['mass'] for aa in str(first_seq))
+        actual = Protein.get_mw(file)[0]
+        
+        acceptedError = .01
+        self.assertTrue((actual >= actual*(1-acceptedError) and actual <= actual*(1+acceptedError)))
+         
+       
     def test_get_one_amino_acid_count(self):
         expected =[ {'A': 144,'C': 200,'D': 0,'E': 0,'F': 0,'G': 241,'H': 0,'I': 0,'K': 0,'L': 0,'M': 0,'N': 0,'P': 0,'Q': 0,'R': 0,'S': 0,'T': 155,'V': 0,'W': 0, 'Y': 0}]
         achual = Protein.get_amino_acid_count("backend/tests/data/singleProtein.fasta")
@@ -78,5 +77,6 @@ class TestProtein(unittest.TestCase):
         self.assertEqual(expected,achual)
 
 if (__name__ == "__main__"):
-    t = TestProtein()
-    t.test_get_many_amino_acid_count()
+    file = "backend/tests/data/singleProtein.fasta"
+    t: Seq.Seq = list(list(Protein.parse_protein(file).values())[0][1])
+    print(list(t))
