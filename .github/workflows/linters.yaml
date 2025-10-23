@@ -25,7 +25,7 @@ jobs:
     - name: Install libraries
       run: |
         pip install ruff
-    - name: Analyse with pylint
+    - name: Analyse with ruff
       run: |
         ruff check backend/
   shell:
