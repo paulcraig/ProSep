@@ -58,12 +58,9 @@ const TwoDE = () => {
     const GRID_STROKE = '#444';
     const MAIN_FONT = '12px Arial';
     const SMALL_FONT = '10px Arial';
-    const BOTTOM_TEXT_X = 20;
-    const BOTTOM_TEXT_Y_OFFSET = 55;
 
     const SDS_TOP_MARGIN = 170;
     const SDS_BOTTOM_MARGIN = 50;
-    const MAX_DISTANCE = MAX_DISTANCE_TRAVELED; // already defined higher up
 
     const PROGRESS_BG = '#666';
     const PROGRESS_FILL = '#4CAF50';
@@ -244,6 +241,8 @@ const TwoDE = () => {
           setUploadProgress(percentCompleted);
         }
       });
+
+      console.log(response.data, "RESPONSE DATA FROM FASTA UPLOAD")
 
       // Add new proteins to the existing dots
       setDots(prevDots => [...prevDots, ...response.data]);
@@ -564,11 +563,11 @@ const handleCanvasMouseMove = (event) => {
           ctx.translate(15, bottomY + 5);
           ctx.fillText(`${minMW.toLocaleString()} Da.`, 0, 0);
           ctx.restore();
-          
+
         } else {
           // Distance traveled axis
-          for (let i = 0; i <= MAX_DISTANCE; i++) {
-            const y = topMargin + (i / MAX_DISTANCE) * usableHeight;
+          for (let i = 0; i <= MAX_DISTANCE_TRAVELED; i++) {
+            const y = topMargin + (i / MAX_DISTANCE_TRAVELED) * usableHeight;
             ctx.beginPath();
             ctx.moveTo(leftMargin, y);
             ctx.lineTo(canvas.width - rightMargin, y);
@@ -862,7 +861,7 @@ const handleCanvasMouseMove = (event) => {
               Upload FASTA
               <input
                 type="file"
-                accept=".fasta,.fa"
+                accept=".fasta,.fa,.faa,.FAA"
                 multiple
                 onChange={handleFileInputChange}
                 style={{ display: 'none' }}
