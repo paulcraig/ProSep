@@ -54,29 +54,40 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const [lastY, setwellWastY] = useState<number | null>(null);
   const rafRef = React.useRef<number | null>(null);
 
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
   const [isRunning, setIsRunning] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const timerRef = React.useRef<number | null>(null);
 
   const [showChart, setShowChart] = useState(false);
   const [tooltipData, setTooltipData] = useState<{
-    protein: typeof standards[number];
+    protein: (typeof standards)[number];
     x: number;
     y: number;
   } | null>(null);
 
   const [isDraggingTooltip, setIsDraggingTooltip] = useState(false);
-  const [tooltipDragStart, setTooltipDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [tooltipDragStart, setTooltipDragStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   const [draggedWell, setDraggedWell] = useState<number | null>(null);
   const [dragOverWell, setDragOverWell] = useState<number | null>(null);
 
-  const [selectedStandards, setSelectedStandards] = useState<typeof standards[number][]>(standards);
-  const [uploadedProteins, setUploadedProteins] = useState<Record<number, { name: string; proteins: typeof standards }>>({});
-  const [positions, setPositions] = useState<Record<number, Record<string, number>>>(() =>
+  const [selectedStandards, setSelectedStandards] =
+    useState<(typeof standards)[number][]>(standards);
+  const [uploadedProteins, setUploadedProteins] = useState<
+    Record<number, { name: string; proteins: typeof standards }>
+  >({});
+  const [positions, setPositions] = useState<
+    Record<number, Record<string, number>>
+  >(() =>
     Object.fromEntries(
       Array.from({ length: wellsCount }).map((_, wi) => [
-        wi, wi === 0 ? Object.fromEntries(standards.map(p => [p.id_num, 0])) : {}
+        wi,
+        wi === 0 ? Object.fromEntries(standards.map((p) => [p.id_num, 0])) : {},
       ])
     )
   );
@@ -90,17 +101,25 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       const toolbarHeight = toolbarRef.current?.offsetHeight || 0; // This jank needs to be fixed...
       const chipsHeight = chipsRef.current?.offsetHeight || 0;
       const reservedSpace = toolbarHeight + chipsHeight + 200;
-      
+
       const availableHeight = window.innerHeight - reservedSpace;
       setTotalH(Math.max(700, availableHeight));
     };
 
     updateHeight();
-    window.addEventListener('resize', updateHeight);
-    return () => window.removeEventListener('resize', updateHeight);
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
   }, []);
-  
-  const slabW = 600 + ((wellsCount - 3) / 7) * 600;
+
+  React.useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isLarge = windowWidth > 1400;
+  const baseW = isLarge ?  windowWidth * 0.3 : windowWidth * 0.5;
+  const slabW = baseW + ((wellsCount - 3) / 7) * baseW;
   const wellH = 45;
   const wireH = 25;
   const wireW = 75;
@@ -805,7 +824,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         </g>
       )
     })
-  }, [ticks, zoom, anchor, totalH, wellsCount]);
+  }, [ticks, zoom, anchor, totalH, wellsCount, windowWidth]);
 
 
   const dots = React.useMemo(() => {
