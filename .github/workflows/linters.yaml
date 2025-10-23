@@ -15,6 +15,26 @@ jobs:
       uses: ajinabraham/njsscan-action@master
       with:
         args: '.'
+  eslint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/app
+    name: ESLint + Prettier
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4.2.2
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Install dependencies
+      run: npm ci
+    - name: Run ESLint
+      run: npm run lint
+    - name: Check Prettier formatting
+      run: npx prettier --check src
+      continue-on-error: true
   python-linter:
     runs-on: ubuntu-latest
     name: python linter
