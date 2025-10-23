@@ -39,7 +39,7 @@ interface ElectrophoresisProps {
 
 const OneDESim: React.FC<ElectrophoresisProps> = ({
   ticks = 6,
-  wells = 3,
+  wells = 5,
   voltage = 100,
   acrylamide = 7.5,
 }) => {
@@ -1305,7 +1305,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               onClick={() => onToggleProtein(protein)}
               sx={{
                 backgroundColor: isSelected ? protein.color : 'var(--highlight)',
-                color: 'var(--text)',
+                color: 'white',
                 fontWeight: 'bold'
               }}
             />
