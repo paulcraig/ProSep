@@ -1,5 +1,6 @@
 :root {
   font-size: clamp(14px, 0.7vw, 24px);
+  --font-size-small: clamp(12px, 0.7vw, 16px);
 }
 
 body {

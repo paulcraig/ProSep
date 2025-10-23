@@ -7,24 +7,35 @@ function OneDE() {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        flexWrap: 'wrap',
+        flexWrap: 'nowrap',
         gap: '2rem',
-        padding: '0 2rem'
+        padding: '0 2rem',
       }}
     >
-      <div style={{ flex: '0 1 auto', minWidth: 'fit-content', maxWidth: '1550px' }}>
-        <OneDESim />
-      </div>
       <div
         style={{
-          flex: '0 0 auto',
-          width: '500px',
+          flex: '1 1 70%',
+          minWidth: '700px',
+          maxWidth: '1550px'
+        }}
+      >
+        <OneDESim />
+      </div>
+
+      <div
+        style={{
+          flex: '0 1 30%',
+          minWidth: '450px',
+          maxWidth: '600px',
           border: '4px solid var(--accent)',
           background: 'var(--sub-background)',
           borderRadius: '8px',
           padding: '1.5rem',
           boxSizing: 'border-box',
-          marginBottom: '2rem'
+          marginBottom: '2rem',
+          marginRight: '2rem',
+          whiteSpace: 'nowrap',
+          overflowX: 'auto'
         }}
       >
         <h2 className='section-header' id='1de-page-instructions'>
