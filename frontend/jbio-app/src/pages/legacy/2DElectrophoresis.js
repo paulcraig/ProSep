@@ -83,7 +83,7 @@ const TwoDE = () => {
 
   //Shreyes: pan and zoom states
   const [isPanning, setIsPanning] = useState(false);
-
+  const [lastMouse, setLastMouse] = useState({ x: 0, y: 0 });
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
 
@@ -795,6 +795,34 @@ const handleCanvasMouseMove = (event) => {
         <div className="twoDE-controls-col" >
           <div className="twoDE-controls-row">
             {/* First dimension button */}
+
+            <label
+              className="twoDE-button icon"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }}
+              onMouseOver={buttonHoverEffect}
+              onMouseOut={buttonLeaveEffect}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Upload FASTA
+              <input
+                type="file"
+                accept=".fasta,.fa,.faa,.FAA"
+                multiple
+                onChange={handleFileInputChange}
+                style={{ display: 'none' }}
+              />
+            </label>
+
             <button
               className="twoDE-button"
               style={{
@@ -840,33 +868,7 @@ const handleCanvasMouseMove = (event) => {
               </svg>
               Reset
             </button>
-            {/* Label for Upload FASTA button */}
-            <label
-              className="twoDE-button icon"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                cursor: 'pointer'
-              }}
-              onMouseOver={buttonHoverEffect}
-              onMouseOut={buttonLeaveEffect}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              Upload FASTA
-              <input
-                type="file"
-                accept=".fasta,.fa,.faa,.FAA"
-                multiple
-                onChange={handleFileInputChange}
-                style={{ display: 'none' }}
-              />
-            </label>
+
             {/* Upload FASTA button */}
             <button
               className="twoDE-button icon" onClick={toggleYAxisMode}onMouseOver={buttonHoverEffect}onMouseOut={buttonLeaveEffect}>
@@ -1052,7 +1054,6 @@ const handleCanvasMouseMove = (event) => {
               onMouseDown={(e) => {setIsPanning(true)}}
               onMouseUp={() => setIsPanning(false)}
               onMouseMove={handleCanvasMouseMove}
-              style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
             />
 
 
