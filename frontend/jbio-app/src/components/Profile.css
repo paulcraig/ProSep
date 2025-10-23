@@ -28,6 +28,7 @@
 
 .profile-card.large {
   width: 25rem;
+  min-width: 25rem;
 }
 
 /* Photo */
