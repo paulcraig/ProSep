@@ -38,11 +38,57 @@ const TwoDE = () => {
   const PH_STEP = 2;
   const MAX_DISTANCE_TRAVELED = 6; // Maximum distance traveled in cm
 
+  //All the constants for drawing the canvas
+    const CANVAS_BG_COLOR = '#111111';
+    const LOADING_ZONE_COLOR = '#333333';
+    const LOADING_ZONE_X = 30;
+    const LOADING_ZONE_Y = 280;
+    const LOADING_ZONE_SIZE = 40;
+
+    const LEFT_MARGIN = 50;
+    const RIGHT_MARGIN = 50;
+    const TOP_MARGIN_IEF = 50;
+    const IEF_BAND_HEIGHT = 100;
+    const PH_GRADIENT_Y = 30;
+    const PH_GRADIENT_HEIGHT = 10;
+    const ACID_COLOR = '#FF6B6B';
+    const NEUTRAL_COLOR = '#4ECDC4';
+    const BASIC_COLOR = '#45B7D1';
+
+    const GRID_STROKE = '#444';
+    const MAIN_FONT = '12px Arial';
+    const SMALL_FONT = '10px Arial';
+    const BOTTOM_TEXT_X = 20;
+    const BOTTOM_TEXT_Y_OFFSET = 55;
+
+    const SDS_TOP_MARGIN = 170;
+    const SDS_BOTTOM_MARGIN = 50;
+    const MAX_DISTANCE = MAX_DISTANCE_TRAVELED; // already defined higher up
+
+    const PROGRESS_BG = '#666';
+    const PROGRESS_FILL = '#4CAF50';
+    const PROGRESS_Y_OFFSET = 20;
+    const PROGRESS_HEIGHT = 4;
+
+    const DOT_RADIUS = 5;
+    const DOT_HOVER_RADIUS = 8;
+    const HIGHLIGHT_STROKE = '#FFFFFF';
+    const HIGHLIGHT_LINEWIDTH = 2;
+    const PULSE_RADIUS = 12;
+    const PULSE_STROKE = 'rgba(255, 255, 255, 0.5)';
+
+    const BAND_HEIGHT = 40;
+
+
   // Shreyes: these decide the max labels for the axes, i used 0 and 1 as the starting axes
   const [minMW, setMinMW] = useState(0);
   const [maxMW, setMaxMW] = useState(1);
 
+  //Shreyes: pan and zoom states
+  const [isPanning, setIsPanning] = useState(false);
 
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
 
   // Function to start running the IEF (first dimension), sets simulation 
   // state to 'ief-running' and calls the 'simulate-ief backend API to
@@ -137,7 +183,9 @@ const TwoDE = () => {
 
     // Call the backend API
     axios.post(`${API_URL}/2d/simulate-sds`, data)
+
       .then(response => {
+        console.log("SDS RESPONSE DATA:", response.data);
         // Get the simulation results
         const simulationResults = response.data;
         const totalSteps = simulationResults.length;
@@ -267,40 +315,48 @@ const TwoDE = () => {
 
   // Handler for when the mouse cursor moves on the canvas (simulation)
   // and checks if it is hovering over a dot on the simulation
-  const handleCanvasMouseMove = (event) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    setMousePos({ x: event.clientX, y: event.clientY });
+const handleCanvasMouseMove = (event) => {
+  const canvas = canvasRef.current;
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
 
-    if (!selectedDot) {
-      const hoveredDot = dots.find(dot => {
-        const dx = x - dot.x;
-        const dy = y - dot.y;
+  setMousePos({ x: event.clientX, y: event.clientY });
+
+    if (isPanning) {
+    const dx = event.movementX;
+    const dy = event.movementY;
+    setOffset(prev => ({
+      x: prev.x + dx,
+      y: prev.y + dy
+    }));
+    return; // skip hover detection while panning
+    }
+
+  // --- Hover detection (only when not panning) ---
+  if (!selectedDot) {
+    const hoveredDot = dots.find(dot => {
+        let mappedX = dot.x;
+        let mappedY = dot.y;
+
+        if (['sds-running', 'complete'].includes(simulationState)) {
+          // Map SDS dot to canvas coordinates
+          mappedX = LEFT_MARGIN + ((dot.pH - MIN_PH) / (MAX_PH - MIN_PH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN);
+          const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
+          mappedY = SDS_TOP_MARGIN + ((maxMW - dot.mw) / (maxMW - minMW)) * usableHeight;
+        }
+
+        // Apply zoom & offset
+        const screenX = mappedX * zoom + offset.x;
+        const screenY = mappedY * zoom + offset.y;
+
+        const dx = x - screenX;
+        const dy = y - screenY;
         return Math.sqrt(dx * dx + dy * dy) < 10;
       });
-      setHoveredDot(hoveredDot);
-    }
-  };
-
-  // Handler for when the mouse cursor clicks on a dot on the simulation, which
-  // brings up that proteins information popup
-  const handleCanvasClick = (event) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const clickedDot = dots.find(dot => {
-      const dx = x - dot.x;
-      const dy = y - dot.y;
-      return Math.sqrt(dx * dx + dy * dy) < 10;
-    });
-
-    setSelectedDot(clickedDot);
-    setHoveredDot(null);
-  };
+    setHoveredDot(hoveredDot);
+  }
+};
 
   // Handler for when the mouse course clicks on the document, which closes
   // the selected proteins information popup if clicked outside of the
@@ -353,6 +409,7 @@ const TwoDE = () => {
   // Toggle Y-axis mode
   const toggleYAxisMode = () => {
     setYAxisMode(prev => prev === 'mw' ? 'distance' : 'mw');
+    // setproteinLocation
   };
 
   // Toggle protein list collapse state
@@ -368,14 +425,6 @@ const TwoDE = () => {
       document.removeEventListener('click', handleDocumentClick);
     };
   }, [selectedDot]);
-
-  // Handler for when the mouse cursor leaves the canvas
-  // causes any hoveredDot to be not hovered anymore
-  const handleCanvasMouseLeave = () => {
-    if (!selectedDot) {
-      setHoveredDot(null);
-    }
-  };
 
   // Handler for when a new file is uploaded over an old one
   const handleFileInputChange = async (e) => {
@@ -425,87 +474,106 @@ const TwoDE = () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
+    // Clear initially
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     // The function that handles drawing everything on the simulation
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#111111';
+
+      // Background
+      ctx.fillStyle = CANVAS_BG_COLOR;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // No title on the canvas per requirement
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'left';
 
       // Draw loading zone indicator when in ready state
       if (simulationState === 'ready') {
-        ctx.fillStyle = '#333333';
-        ctx.fillRect(30, 280, 40, 40);
+        ctx.fillStyle = LOADING_ZONE_COLOR;
+        ctx.fillRect(LOADING_ZONE_X, LOADING_ZONE_Y, LOADING_ZONE_SIZE, LOADING_ZONE_SIZE);
       }
 
-      // Draw IEF Gel and pH gradient
+      // Draw IEF Gel and pH gradient when not ready
       if (simulationState !== 'ready') {
-        // Draw IEF band/gel
+        // IEF band/gel
         ctx.fillStyle = '#222222';
-        ctx.fillRect(50, 50, canvas.width - 100, 100); // IEF band area
+        ctx.fillRect(LEFT_MARGIN, TOP_MARGIN_IEF, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), IEF_BAND_HEIGHT);
 
-        // Draw pH gradient visualization above IEF band
-        const gradient = ctx.createLinearGradient(50, 0, canvas.width - 50, 0);
-        gradient.addColorStop(0, '#FF6B6B');   // Acidic
-        gradient.addColorStop(0.5, '#4ECDC4'); // Neutral
-        gradient.addColorStop(1, '#45B7D1');   // Basic
+        // pH gradient visualization above IEF band
+        const gradient = ctx.createLinearGradient(LEFT_MARGIN, 0, canvas.width - RIGHT_MARGIN, 0);
+        gradient.addColorStop(0, ACID_COLOR);   // Acidic
+        gradient.addColorStop(0.5, NEUTRAL_COLOR); // Neutral
+        gradient.addColorStop(1, BASIC_COLOR);   // Basic
 
         ctx.fillStyle = gradient;
-        ctx.fillRect(50, 30, canvas.width - 100, 10);
+        ctx.fillRect(LEFT_MARGIN, PH_GRADIENT_Y, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), PH_GRADIENT_HEIGHT);
 
-        // Draw pH labels
+        // pH range labels (small)
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = '10px Arial';
-        ctx.fillText(MIN_PH.toFixed(1), 45, 25);
-        ctx.fillText(MAX_PH.toFixed(1), canvas.width - 50, 25);
+        ctx.font = SMALL_FONT;
+        ctx.fillText(MIN_PH.toFixed(1), LEFT_MARGIN - 5, PH_GRADIENT_Y - 5);
+        ctx.fillText(MAX_PH.toFixed(1), canvas.width - RIGHT_MARGIN - 5, PH_GRADIENT_Y - 5);
       }
 
       // Draw Grid
-      ctx.strokeStyle = '#444';
+      ctx.strokeStyle = GRID_STROKE;
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '12px Arial';
-      ctx.fillText(`${Math.round(maxMW)} Da`, 60, 170 - 10);
-      ctx.fillText(`${Math.round(minMW)} Da`, 60, canvas.height - 60);
+      ctx.font = MAIN_FONT;
 
-      // Draw SDS-PAGE area separator
+      // Draw SDS-PAGE area separator when appropriate
       if (simulationState === 'ief-complete' || simulationState === 'sds-running' || simulationState === 'complete') {
         ctx.fillStyle = '#222222';
-        ctx.fillRect(50, 170, canvas.width - 100, canvas.height - 220);
+        ctx.fillRect(LEFT_MARGIN, SDS_TOP_MARGIN, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN);
       }
 
-      // Draw axes based on simulation state
-      if (simulationState === 'ief-complete' || simulationState === 'sds-running' || simulationState === 'complete') {
-        // Y-Axis Labels based on selected mode
+      // Draw axes when in SDS stages
+      if (['sds-running', 'complete'].includes(simulationState)) {
+        const topMargin = SDS_TOP_MARGIN;
+        const bottomMargin = SDS_BOTTOM_MARGIN;
+        const leftMargin = LEFT_MARGIN;
+        const rightMargin = RIGHT_MARGIN;
+        const usableHeight = canvas.height - topMargin - bottomMargin;
+
+        // Y-Axis Labels (MW or Distance)
         if (yAxisMode === 'mw') {
-          // MW Axis Labels - now vertical on left side (PPS1-105)
-          for (let y = 170; y <= canvas.height - 50; y += 100) {
+          for (let y = topMargin; y <= canvas.height - bottomMargin; y += 100) {
             ctx.beginPath();
-            ctx.moveTo(50, y);
-            ctx.lineTo(canvas.width - 50, y);
+            ctx.moveTo(leftMargin, y);
+            ctx.lineTo(canvas.width - rightMargin, y);
             ctx.stroke();
-            const mwValue = Math.pow(10,Math.log10(maxMW) - ((y - 170) / (canvas.height - 220)) * (Math.log10(maxMW) - Math.log10(minMW)));
             ctx.fillStyle = '#FFFFFF';
 
-            // Vertical text for MW (PPS1-105)
+            // Map Y → MW: top (y=topMargin) => maxMW, bottom => minMW
+            const t = (y - topMargin) / usableHeight; // 0..1 top→bottom
+            const mwValue = Math.round(maxMW - t * (maxMW - minMW));
+
             ctx.save();
             ctx.translate(15, y + 5);
-            ctx.fillText(`${Math.round(mwValue / 1000) * 1000} Da`, 0, 0);
+            ctx.fillText(`${mwValue.toLocaleString()} Da.`, 0, 0);
             ctx.restore();
           }
+
+          const bottomY = canvas.height - bottomMargin;
+          ctx.beginPath();
+          ctx.moveTo(leftMargin, bottomY);
+          ctx.lineTo(canvas.width - rightMargin, bottomY);
+          ctx.stroke();
+
+          ctx.save();
+          ctx.translate(15, bottomY + 5);
+          ctx.fillText(`${minMW.toLocaleString()} Da.`, 0, 0);
+          ctx.restore();
+          
         } else {
-          // Distance Traveled Axis Labels - now vertical on left side (PPS1-105)
-          for (let i = 0; i <= MAX_DISTANCE_TRAVELED; i++) {
-            const y = 170 + (i / MAX_DISTANCE_TRAVELED) * (canvas.height - 220);
+          // Distance traveled axis
+          for (let i = 0; i <= MAX_DISTANCE; i++) {
+            const y = topMargin + (i / MAX_DISTANCE) * usableHeight;
             ctx.beginPath();
-            ctx.moveTo(50, y);
-            ctx.lineTo(canvas.width - 50, y);
+            ctx.moveTo(leftMargin, y);
+            ctx.lineTo(canvas.width - rightMargin, y);
             ctx.stroke();
             ctx.fillStyle = '#FFFFFF';
-
-            // Vertical text for distance (PPS1-105)
             ctx.save();
             ctx.translate(25, y + 5);
             ctx.fillText(`${i} cm`, 0, 0);
@@ -513,25 +581,24 @@ const TwoDE = () => {
           }
         }
 
-        // pH Axis Labels
+        // pH Axis vertical gridlines and labels
         for (let pH = MIN_PH; pH <= MAX_PH; pH += PH_STEP) {
           const x = getPHPosition(pH, canvas.width);
           ctx.beginPath();
-          ctx.moveTo(x, 170);
-          ctx.lineTo(x, canvas.height - 50);
+          ctx.moveTo(x, topMargin);
+          ctx.lineTo(x, canvas.height - bottomMargin);
           ctx.stroke();
           ctx.fillStyle = '#FFFFFF';
-
           ctx.fillText(pH.toFixed(1), x - 10, canvas.height - 30);
         }
       }
 
-      // Draw axis labels - now vertical (PPS1-105)
+      // Draw PH axis label (now centered at bottom)
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
       ctx.fillText('pH', canvas.width / 2, canvas.height - 10);
 
-      // Vertical MW/Distance label (PPS1-105)
+      // Vertical MW/Distance label
       ctx.save();
       ctx.translate(10, canvas.height / 2);
       ctx.rotate(-Math.PI / 2);
@@ -541,108 +608,96 @@ const TwoDE = () => {
 
       // Draw progress indicator during IEF
       if (simulationState === 'ief-running') {
-        ctx.fillStyle = '#666';
-        ctx.fillRect(50, canvas.height - 20, canvas.width - 100, 4);
-        ctx.fillStyle = '#4CAF50';
-        ctx.fillRect(50, canvas.height - 20, (canvas.width - 100) * simulationProgress, 4);
+        ctx.fillStyle = PROGRESS_BG;
+        ctx.fillRect(LEFT_MARGIN, canvas.height - PROGRESS_Y_OFFSET, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), PROGRESS_HEIGHT);
+        ctx.fillStyle = PROGRESS_FILL;
+        ctx.fillRect(LEFT_MARGIN, canvas.height - PROGRESS_Y_OFFSET, (canvas.width - (LEFT_MARGIN + RIGHT_MARGIN)) * simulationProgress, PROGRESS_HEIGHT);
       }
 
       // Draw Bands and Dots
       dots.forEach(dot => {
-        // Highlight effect for selected protein in canvas (PPS1-107)
         const isHighlighted = dot === selectedDot;
         const isHovered = dot === hoveredDot;
 
         ctx.fillStyle = dot.color;
 
-        // If the simulation is in the 'ready' state, which is before
-        // anything has been run or when everything has been reset
         if (simulationState === 'ready') {
-          // Draw dots in loading zone
+          // Loading zone dots
           ctx.beginPath();
-          ctx.arc(dot.x, dot.y, (isHighlighted || isHovered) ? 8 : 5, 0, Math.PI * 2);
+
+          const screenX = dot.x * zoom + offset.x;
+          const screenY = dot.y * zoom + offset.y;
+          ctx.arc(screenX, screenY, DOT_RADIUS * zoom, 0, Math.PI * 2);
+
+          
+
+          // ctx.arc(dot.x, dot.y, (isHighlighted || isHovered) ? DOT_HOVER_RADIUS : DOT_RADIUS, 0, Math.PI * 2);
           ctx.fill();
 
-          // Add glow effect for selected protein (PPS1-107)
           if (isHighlighted) {
-            ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = HIGHLIGHT_STROKE;
+            ctx.lineWidth = HIGHLIGHT_LINEWIDTH;
             ctx.stroke();
 
-            // Add pulsing highlight effect
             ctx.beginPath();
-            ctx.arc(dot.x, dot.y, 12, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.arc(dot.x, dot.y, PULSE_RADIUS, 0, Math.PI * 2);
+            ctx.strokeStyle = PULSE_STROKE;
             ctx.stroke();
           } else if (isHovered) {
-            ctx.strokeStyle = '#FFFFFF';
+            ctx.strokeStyle = HIGHLIGHT_STROKE;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
-          // If the simulation is in the IEF (first dimension) stage of the simulation,
-          // either still running or complete
         } else if (simulationState === 'ief-running' || simulationState === 'ief-complete') {
           if (dot.condensing) {
-            // Draw small dot during condensing phase
             ctx.beginPath();
-            ctx.arc(dot.x, dot.y, 5, 0, Math.PI * 2);
+            ctx.arc(dot.x, dot.y, DOT_RADIUS, 0, Math.PI * 2);
             ctx.fill();
 
-            // Add highlight for selected protein
             if (isHighlighted) {
-              ctx.strokeStyle = '#FFFFFF';
-              ctx.lineWidth = 2;
+              ctx.strokeStyle = HIGHLIGHT_STROKE;
+              ctx.lineWidth = HIGHLIGHT_LINEWIDTH;
               ctx.stroke();
             }
           } else {
-            // Draw vertical bands in IEF
-            const bandHeight = 40; // Fixed height for bands
-            ctx.fillRect(
-              dot.x - dot.bandWidth / 2,
-              dot.y - bandHeight / 2,
-              dot.bandWidth,
-              bandHeight
-            );
+            // Vertical bands in IEF
+            ctx.fillRect(dot.x - dot.bandWidth / 2,dot.y - BAND_HEIGHT / 2,dot.bandWidth,BAND_HEIGHT);
 
             if (isHighlighted || isHovered) {
-              ctx.strokeStyle = '#FFFFFF';
-              ctx.lineWidth = isHighlighted ? 2 : 1;
-              ctx.strokeRect(
-                dot.x - dot.bandWidth / 2,
-                dot.y - bandHeight / 2,
-                dot.bandWidth,
-                bandHeight
-              );
+              ctx.strokeStyle = HIGHLIGHT_STROKE;
+              ctx.lineWidth = isHighlighted ? HIGHLIGHT_LINEWIDTH : 1;
+              ctx.strokeRect(dot.x - dot.bandWidth / 2,dot.y - BAND_HEIGHT / 2,dot.bandWidth,BAND_HEIGHT);
 
-              // Additional highlight for selected protein
               if (isHighlighted) {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.strokeStyle = PULSE_STROKE;
                 ctx.lineWidth = 1;
                 ctx.strokeRect(
                   dot.x - dot.bandWidth / 2 - 3,
-                  dot.y - bandHeight / 2 - 3,
-                  dot.bandWidth + 6,
-                  bandHeight + 6
-                );
+                  dot.y - BAND_HEIGHT / 2 - 3,dot.bandWidth + 6,BAND_HEIGHT + 6);
               }
             }
           }
-          // Otherwise do this
         } else {
-          // Draw dots for SDS-PAGE
+          // SDS-PAGE dots mapped to pH (x) and MW (y)
+          const x = LEFT_MARGIN + ((dot.pH - MIN_PH) / (MAX_PH - MIN_PH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN);
+
+          const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
+          const y = SDS_TOP_MARGIN + ((maxMW - dot.mw) / (maxMW - minMW)) * usableHeight;
+
           ctx.beginPath();
-          ctx.arc(dot.x, dot.y, (isHighlighted || isHovered) ? 8 : 5, 0, Math.PI * 2);
+          ctx.arc(x, y, (isHighlighted || isHovered) ? DOT_HOVER_RADIUS : DOT_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = dot.color;
           ctx.fill();
+
           if (isHighlighted || isHovered) {
-            ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = isHighlighted ? 2 : 1;
+            ctx.strokeStyle = HIGHLIGHT_STROKE;
+            ctx.lineWidth = isHighlighted ? HIGHLIGHT_LINEWIDTH : 1;
             ctx.stroke();
 
-            // Additional pulsing effect for selected dot
             if (isHighlighted) {
               ctx.beginPath();
-              ctx.arc(dot.x, dot.y, 12, 0, Math.PI * 2);
-              ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+              ctx.arc(x, y, PULSE_RADIUS, 0, Math.PI * 2);
+              ctx.strokeStyle = PULSE_STROKE;
               ctx.stroke();
             }
           }
@@ -732,6 +787,8 @@ const TwoDE = () => {
   };
 
   // The actual component that is returned to render for the TwoDE
+  const activeDot = selectedDot || hoveredDot;
+
   return (
     <div>
       <div className='simulatorBoxTwoDE'>
@@ -813,22 +870,13 @@ const TwoDE = () => {
             </label>
             {/* Upload FASTA button */}
             <button
-              className="twoDE-button icon"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px'
-              }}
-              onClick={toggleYAxisMode}
-              onMouseOver={buttonHoverEffect}
-              onMouseOut={buttonLeaveEffect}
-            >
+              className="twoDE-button icon" onClick={toggleYAxisMode}onMouseOver={buttonHoverEffect}onMouseOut={buttonLeaveEffect}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M8 3v18M3 8h10M3 16h10M16 3v18M16 8h5M16 16h5" />
               </svg>
               {yAxisMode === 'mw' ? 'Show Distance' : 'Show MW'}
-            </button>
+              {/* YAXIS BUTTON ABOVE ME */}
+            </button> 
           </div>
 
           {/* pH Range Slider, disabled during simulation */}
@@ -998,15 +1046,16 @@ const TwoDE = () => {
               )}
 
               {/* The actual graph part of the simulation, including the popups for protein informatiopn */}
-              <canvas
-                ref={canvasRef}
-                width={800}
-                height={600}
-                className="twoDE-canvas"
-                onMouseMove={handleCanvasMouseMove}
-                onMouseLeave={handleCanvasMouseLeave}
-                onClick={handleCanvasClick}
-              />
+             <canvas
+              ref={canvasRef}
+              width={800}
+              height={600}
+              onMouseDown={(e) => {setIsPanning(true)}}
+              onMouseUp={() => setIsPanning(false)}
+              onMouseMove={handleCanvasMouseMove}
+              style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+            />
+
 
               {/* Protein information popup - show for both canvas clicks and list clicks */}
               
@@ -1019,24 +1068,25 @@ const TwoDE = () => {
                     top: mousePos.y + 10
                   }}
                 >
-                  <h4>{(selectedDot || hoveredDot).display_name}</h4>
+                  <h4>{activeDot?.display_name}</h4>
                   <div className="meta">
 
                   <div>
                     Link:{" "}
-                    {(selectedDot || hoveredDot).Link !== "N/A" ? (<a href={(selectedDot || hoveredDot).Link}> {(selectedDot || hoveredDot).Link} </a>) : ("N/A")}</div>
+                    {activeDot?.Link && activeDot.Link !== "N/A" ? (<a href={activeDot.Link}>{activeDot.Link}</a>) : ("N/A")}
 
-                    <div>MW: {(selectedDot || hoveredDot).mw.toLocaleString()} Da</div>
-                    <div>pI: {(selectedDot || hoveredDot).pH.toFixed(2)}</div>
+                    <div>MW: {activeDot?.mw != null ? activeDot.mw.toLocaleString() : 'N/A'} Da</div>
+                    <div>pI: {activeDot?.pH != null ? activeDot.pH.toFixed(2) : 'N/A'}</div>
 
-                    {(selectedDot || hoveredDot).sequence && (
+                    {activeDot?.sequence && (
                       <div style={{ marginTop: '4px' }}>
                         <div style={{ fontWeight: 500 }}>Sequence Preview:</div>
                         <div className="sequence-preview">
-                          {(selectedDot || hoveredDot).sequence.substring(0, 50)}...
+                          {activeDot.sequence.substring(0, 50)}...
                         </div>
                       </div>
                     )}
+                  </div>
                   </div>
                 </div>
               )}
