@@ -31,7 +31,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Run ESLint
-      run: npm run lint
+      run: npx eslint .
     - name: Check Prettier formatting
       run: npx prettier --check src
       continue-on-error: true
