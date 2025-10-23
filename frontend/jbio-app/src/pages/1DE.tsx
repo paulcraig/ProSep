@@ -8,16 +8,17 @@ function OneDE() {
         justifyContent: 'center',
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: '2rem'
+        gap: '2rem',
+        padding: '0 2rem'
       }}
     >
-      <div style={{ flex: '1 1 400px', minWidth: '800px', maxWidth: '850px' }}>
+      <div style={{ flex: '0 1 auto', minWidth: 'fit-content', maxWidth: '1550px' }}>
         <OneDESim />
       </div>
       <div
         style={{
-          flex: '1 1 300px',
-          maxWidth: '500px',
+          flex: '0 0 auto',
+          width: '500px',
           border: '4px solid var(--accent)',
           background: 'var(--sub-background)',
           borderRadius: '8px',

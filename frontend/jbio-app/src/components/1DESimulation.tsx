@@ -95,7 +95,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
   
-  const slabW = 600;
+  const slabW = 600 + ((wellsCount - 3) / 7) * 600;
   const wellH = 45;
   const wireH = 25;
   const wireW = 75;
@@ -114,7 +114,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const bandH = wellH * 0.2;
   
   const simDelay = 250; // ms
-  const maxWells = 6;
+  const maxWells = 11;
 
 
   const getRelativeMobility = (pct: number, MW: number) => {
@@ -801,7 +801,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         </g>
       )
     })
-  }, [ticks, zoom, anchor, totalH]);
+  }, [ticks, zoom, anchor, totalH, wellsCount]);
 
 
   const dots = React.useMemo(() => {
@@ -946,8 +946,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           onMouseUp={onMouseUp}
 
           height={totalH}
-          width={slabW * 1.4}
-          viewBox={`-60 0 ${slabW * 1.4} ${totalH}`}
+          width={slabW + 200}
+          viewBox={`-60 0 ${slabW + 200} ${totalH}`}
           style={{ cursor: zoom === 1 ? 'default' : isDragging ? 'grabbing' : 'grab' }}
         >
           <line
