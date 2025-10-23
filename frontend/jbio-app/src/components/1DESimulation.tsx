@@ -85,7 +85,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
   React.useEffect(() => {
     const updateHeight = () => {
-      const reservedSpace = 270;
+      const reservedSpace = 275;
       const availableHeight = window.innerHeight - reservedSpace;
       setTotalH(Math.max(700, availableHeight));
     };
@@ -980,8 +980,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               strokeWidth='0.75rem'
             />
             <foreignObject
-              x={slabW + wireW + wireO - 48} y={totalH / 2 - 14}
-              width={96} height={28}
+              x={slabW + wireW + wireO - 56} y={totalH / 2 - 14}
+              width={112} height={28}
             >
               <Select
                 variant='standard'
@@ -990,7 +990,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                 sx={{
                   fontWeight: 'bold',
                   color: 'var(--text)',
-                  paddingLeft: '1.75rem',
+                  paddingLeft: '2rem',
                   '& .MuiSelect-icon': { color: 'var(--text)' }
                 }}
               >
@@ -1017,7 +1017,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             strokeWidth='0.25rem'
           />
 
-          <foreignObject x={0} y={anodeT + wellH - 12} width={160} height={24}>
+          <foreignObject x={0} y={anodeT + wellH - 12} width={180} height={24}>
             <Select
               variant='standard'
               value={acrylamidePct}
