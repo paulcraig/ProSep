@@ -10,13 +10,14 @@
 /* Intro: project + sponsor */
 .about-intro {
   display: flex;
-    flex-wrap: wrap;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 4rem;
-  align-items: start;
 }
 
-.about-intro>section {
-  flex: 1 0 25rem;
+.sponsor-section {
+  flex: 0 0 auto;
 }
 
 @media (max-width: 30em) {
@@ -25,7 +26,10 @@
     gap: 2rem;
   }
 }
+
 .about-text {
+  flex: 1 1 0;
+  min-width: 25rem;
   display: flex;
   flex-direction: column;
 }
