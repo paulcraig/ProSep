@@ -116,7 +116,7 @@ const TwoDE = () => {
     };
 
     // Call the backend API
-    axios.post(`http://localhost:8000/2d/simulate-ief`, data)
+    axios.post(`${API_URL}/2d/simulate-ief`, data)
       .then(response => {
         // Get the simulation results
         const simulationResults = response.data;
