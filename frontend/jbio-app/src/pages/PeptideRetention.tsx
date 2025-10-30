@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { TextField, IconButton, Button, Chip, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Card, CardHeader, CardContent, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { API_URL } from '../config';
 import "./PeptideRetention.css";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 type PredictionResult = {
   peptide: string;
@@ -101,6 +105,32 @@ const PeptideRetention: React.FC = () => {
     };
     reader.readAsText(file);
   };
+  const generateChromatogramData = () => {
+    const scalingFactor = 6.5;
+    const xVals = Array.from({ length: 3000 }, (_, i) => (i / 3000) * 100);
+    const chromatogram = new Array(xVals.length).fill(0);
+
+    results.forEach((result) => {
+      const rt = result.predicted_tr * scalingFactor;
+      const height = result.peptide.length * 10;
+      xVals.forEach((x, i) => {
+        chromatogram[i] += height * Math.exp(-Math.pow(x - rt, 2) / (2 * Math.pow(0.35, 2)));
+      });
+    });
+
+    return {
+      labels: xVals,
+      datasets: [
+        {
+          label: 'Chromatogram',
+          data: chromatogram,
+          borderColor: 'rgba(75,192,192,1)',
+          borderWidth: 2,
+          fill: false,
+        },
+      ],
+    };
+  };
 
   return (
     <div className="peptide-retention-page">
@@ -187,6 +217,13 @@ const PeptideRetention: React.FC = () => {
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {results.length > 0 && (
+        <div className="chromatogram-section">
+          <h2>Chromatogram Plot</h2>
+          <Line data={generateChromatogramData()} options={{ responsive: true, plugins: { legend: { position: 'top' } } }} />
+        </div>
       )}
 
       {errorMessage && (
