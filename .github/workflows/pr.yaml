@@ -1,10 +1,7 @@
 name: PR Enforcement
 on: 
   pull_request:
-    types:
-      - opened
-      - edited
-      - reopened
+    branches: ["main"]
 
 jobs:
   check_pr:
