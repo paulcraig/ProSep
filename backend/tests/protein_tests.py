@@ -1,7 +1,6 @@
 import unittest
 
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
-from Bio import SeqIO
 from Bio import Seq
 from backend.utility.protein import Protein
 
