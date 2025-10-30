@@ -3,10 +3,20 @@ import { TextField, IconButton, Button, Chip, CircularProgress, Table, TableBody
 import AddIcon from '@mui/icons-material/Add';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { API_URL } from '../config';
+import annotationPlugin from "chartjs-plugin-annotation";
+import { API_URL } from "../config";
 import "./PeptideRetention.css";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  annotationPlugin
+);
 
 type PredictionResult = {
   peptide: string;
@@ -107,28 +117,56 @@ const PeptideRetention: React.FC = () => {
   };
   const generateChromatogramData = () => {
     const scalingFactor = 6.5;
-    const xVals = Array.from({ length: 3000 }, (_, i) => (i / 3000) * 100);
+    const xVals = Array.from({ length: 500 }, (_, i) => (i / 499) * 100);
     const chromatogram = new Array(xVals.length).fill(0);
+    const noise = Array.from(
+      { length: xVals.length },
+      () => (Math.random() - 0.5)
+    );
+    const annotations: any = {};
 
-    results.forEach((result) => {
+    let maxChrom = 0;
+
+    results.forEach((result, index) => {
+      const peptide = result.peptide.replace(/-NH2/g, "").replace(/Ac-/g, "");
+      const aaCount = peptide.length;
       const rt = result.predicted_tr * scalingFactor;
-      const height = result.peptide.length * 10;
+      const height = aaCount * 10;
       xVals.forEach((x, i) => {
-        chromatogram[i] += height * Math.exp(-Math.pow(x - rt, 2) / (2 * Math.pow(0.35, 2)));
+        chromatogram[i] +=
+          height * Math.exp(-Math.pow(x - rt, 2) / (2 * Math.pow(0.35, 2)));
       });
+      if (height > 20) {
+        annotations[`peak-${index}`] = {
+          type: "label",
+          xValue: rt*5,
+          yValue: height + 3,
+          content: peptide,
+          font: { size: 8, weight: 'bold' },
+          rotation: 30,
+          position: "center",
+        };
+      }
+    });
+
+    chromatogram.forEach((val, i) => {
+      chromatogram[i] = Math.max(0, val + noise[i]);
+      if (chromatogram[i] > maxChrom) maxChrom = chromatogram[i];
     });
 
     return {
       labels: xVals,
       datasets: [
         {
-          label: 'Chromatogram',
+          label: "Chromatogram",
           data: chromatogram,
-          borderColor: 'rgba(75,192,192,1)',
+          borderColor: "blue",
           borderWidth: 2,
           fill: false,
         },
       ],
+      max: maxChrom,
+      annotations: annotations,
     };
   };
 
@@ -231,13 +269,56 @@ const PeptideRetention: React.FC = () => {
       {results.length > 0 && (
         <div className="chromatogram-section">
           <h2>Chromatogram</h2>
-          <Line
-            data={generateChromatogramData()}
-            options={{
-              responsive: true,
-              plugins: { legend: { position: "top" } },
-            }}
-          />
+          {(() => {
+            const chromatogramData = generateChromatogramData();
+            return (
+              <Line
+                data={chromatogramData}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { display: false },
+                    annotation: {
+                      annotations: chromatogramData.annotations,
+                    },
+                  },
+                  elements: {
+                    point: {
+                      radius: 0,
+                    },
+                  },
+                  scales: {
+                    x: {
+                      title: {
+                        display: true,
+                        text: "Retention Time (min)",
+                      },
+                      min: 0,
+                      max: 100,
+                      grid: {
+                        display: true,
+                      },
+                      ticks: {
+                        maxTicksLimit: 6,
+                        callback: (value) => Number(value).toFixed(0),
+                      },
+                    },
+                    y: {
+                      title: {
+                        display: true,
+                        text: "Relative Intensity",
+                      },
+                      min: 0,
+                      max: chromatogramData.max + 10,
+                      grid: {
+                        display: true,
+                      },
+                    },
+                  },
+                }}
+              />
+            );
+          })()}
         </div>
       )}
 
