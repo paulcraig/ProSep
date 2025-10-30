@@ -102,7 +102,30 @@ border: 0.125rem solid var(--accent);
 }
 
 .chromatogram-section {
-    border-radius: 10px;
-    padding: 1rem;
     background-color: var(--sub-background);
+    position: relative;
+    }
+    
+    .disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
+    .table-container {
+        position: relative;
+    }
+    
+    .loading-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    .chromatogram-loading-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
 }

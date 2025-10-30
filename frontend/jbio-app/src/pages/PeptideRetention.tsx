@@ -1,8 +1,32 @@
-import React, { useState } from 'react';
-import { TextField, IconButton, Button, Chip, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Card, CardHeader, CardContent, Alert } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import React, { useState } from "react";
+import {
+  TextField,
+  IconButton,
+  Button,
+  Chip,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Card,
+  CardHeader,
+  CardContent,
+  Alert,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { API_URL } from "../config";
 import "./PeptideRetention.css";
@@ -121,7 +145,7 @@ const PeptideRetention: React.FC = () => {
     const chromatogram = new Array(xVals.length).fill(0);
     const noise = Array.from(
       { length: xVals.length },
-      () => (Math.random() - 0.5)
+      () => Math.random() - 0.5
     );
     const annotations: any = {};
 
@@ -139,10 +163,10 @@ const PeptideRetention: React.FC = () => {
       if (height > 20) {
         annotations[`peak-${index}`] = {
           type: "label",
-          xValue: rt*5,
+          xValue: rt * 5,
           yValue: height + 3,
           content: peptide,
-          font: { size: 8, weight: 'bold' },
+          font: { size: 8, weight: "bold", color: "var(--text)" },
           rotation: 30,
           position: "center",
         };
@@ -160,7 +184,7 @@ const PeptideRetention: React.FC = () => {
         {
           label: "Chromatogram",
           data: chromatogram,
-          borderColor: "blue",
+          borderColor: results.length === 0 ? "transparent" : "#42a5f5",
           borderWidth: 2,
           fill: false,
         },
@@ -169,6 +193,8 @@ const PeptideRetention: React.FC = () => {
       annotations: annotations,
     };
   };
+
+  const exportGraphSVG = () => {};
 
   return (
     <div className="peptide-retention-page">
@@ -223,20 +249,23 @@ const PeptideRetention: React.FC = () => {
         <input type="file" accept=".txt,.csv" hidden onChange={loadFromFile} />
       </Button>
 
-      {isLoading && <CircularProgress className="loading-spinner" />}
-
-      {results.length > 0 && (
-        <Card className="results-card">
-          <CardHeader
-            title="Prediction Results"
-            action={
-              <Button variant="text" color="primary" onClick={exportCsv}>
-                Export CSV
-              </Button>
-            }
-          />
-          <CardContent>
-            <Table>
+      <Card className="results-card">
+        <CardHeader
+          title="Prediction Results"
+          action={
+            <Button
+              variant="text"
+              color="primary"
+              onClick={exportCsv}
+              disabled={results.length === 0}
+            >
+              Export CSV
+            </Button>
+          }
+        />
+        <CardContent>
+          <div className="table-container">
+            <Table className={results.length === 0 ? "disabled" : ""}>
               <TableHead>
                 <TableRow className="results-header">
                   <TableCell>Peptide</TableCell>
@@ -262,65 +291,89 @@ const PeptideRetention: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      )}
+            {isLoading && <CircularProgress className="loading-overlay" />}
+          </div>
 
-      {results.length > 0 && (
-        <div className="chromatogram-section">
-          <h2>Chromatogram</h2>
-          {(() => {
-            const chromatogramData = generateChromatogramData();
-            return (
-              <Line
-                data={chromatogramData}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: false },
-                    annotation: {
-                      annotations: chromatogramData.annotations,
-                    },
-                  },
-                  elements: {
-                    point: {
-                      radius: 0,
-                    },
-                  },
-                  scales: {
-                    x: {
-                      title: {
-                        display: true,
-                        text: "Retention Time (min)",
-                      },
-                      min: 0,
-                      max: 100,
-                      grid: {
-                        display: true,
-                      },
-                      ticks: {
-                        maxTicksLimit: 6,
-                        callback: (value) => Number(value).toFixed(0),
+          <div
+            className={`chromatogram-section ${
+              results.length === 0 ? "disabled" : ""
+            }`}
+          >
+            <CardHeader
+              title="Chromatogram"
+              action={
+                <Button
+                  variant="text"
+                  color="primary"
+                  onClick={exportGraphSVG}
+                  disabled={results.length === 0}
+                >
+                  Export SVG
+                </Button>
+              }
+            />
+            {isLoading && (
+              <CircularProgress className="chromatogram-loading-overlay" />
+            )}
+            {(() => {
+              const chromatogramData = generateChromatogramData();
+              return (
+                <Line
+                  data={chromatogramData}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: { display: false },
+                      annotation: {
+                        annotations: chromatogramData.annotations,
                       },
                     },
-                    y: {
-                      title: {
-                        display: true,
-                        text: "Relative Intensity",
-                      },
-                      min: 0,
-                      max: chromatogramData.max + 10,
-                      grid: {
-                        display: true,
+                    elements: {
+                      point: {
+                        radius: 0,
                       },
                     },
-                  },
-                }}
-              />
-            );
-          })()}
-        </div>
-      )}
+                    scales: {
+                      x: {
+                        title: {
+                          display: true,
+                          text: "Retention Time (min)",
+                          color: "var(--text)",
+                        },
+                        min: 0,
+                        max: 100,
+                        grid: {
+                          display: true,
+                        },
+                        ticks: {
+                          maxTicksLimit: 6,
+                          callback: (value) => Number(value).toFixed(0),
+                          color: "var(--text)",
+                        },
+                      },
+                      y: {
+                        title: {
+                          display: true,
+                          text: "Relative Intensity",
+                          color: "var(--text)",
+                        },
+                        min: 0,
+                        max: chromatogramData.max + 10,
+                        grid: {
+                          display: true,
+                        },
+                        ticks: {
+                          color: "var(--text)",
+                        },
+                      },
+                    },
+                  }}
+                />
+              );
+            })()}
+          </div>
+        </CardContent>
+      </Card>
 
       {errorMessage && (
         <Alert severity="error" className="error-alert">
