@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   TextField,
   Button,
@@ -61,6 +61,7 @@ const PeptideRetention: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [results, setResults] = useState<PredictionResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const chartRef = useRef<any>(null);
 
   const addPeptide = () => {
     if (newPeptide.trim() && !peptides.includes(newPeptide)) {
@@ -165,7 +166,7 @@ const PeptideRetention: React.FC = () => {
           height * Math.exp(-Math.pow(x - rt, 2) / (2 * Math.pow(0.35, 2)));
       });
       if (height > 20) {
-        annotations[`peak-${index}`] = {
+        annotations[`peak-label-${index}`] = {
           type: "label",
           xValue: rt * 5,
           yValue: height + 3,
@@ -173,6 +174,12 @@ const PeptideRetention: React.FC = () => {
           font: { size: 8, weight: "bold", color: "var(--text)" },
           rotation: 30,
           position: "center",
+        };
+        annotations[`peak-point-${index}`] = {
+          type: "point",
+          xValue: rt * 5,
+          yValue: height,
+          radius: 5,
         };
       }
     });
@@ -188,9 +195,8 @@ const PeptideRetention: React.FC = () => {
         {
           label: "Chromatogram",
           data: chromatogram,
-          borderColor: results.length === 0 ? "transparent" : "#42a5f5",
+          borderColor: results.length === 0 ? "transparent" : "black",
           borderWidth: 2,
-          fill: false,
         },
       ],
       max: maxChrom,
@@ -198,7 +204,15 @@ const PeptideRetention: React.FC = () => {
     };
   };
 
-  const exportGraphSVG = () => {};
+  const exportChromatogram = () => {
+    if (chartRef.current) {
+      const base64Image = chartRef.current.toBase64Image();
+      const a = document.createElement("a");
+      a.href = base64Image;
+      a.download = "chromatogram.png";
+      a.click();
+    }
+  };
 
   return (
     <div className="peptide-retention-page">
@@ -265,9 +279,8 @@ const PeptideRetention: React.FC = () => {
           title="Prediction Results"
           action={
             <Button
-              className="predict-button"
               variant="contained"
-              component="label"
+              className="predict-button"
               onClick={exportCsv}
               disabled={results.length === 0}
               startIcon={<DownloadOutlined />}
@@ -313,15 +326,13 @@ const PeptideRetention: React.FC = () => {
           title="Chromatogram"
           action={
             <Button
-              variant="text"
-              color="primary"
-              component="label"
+              variant="contained"
               startIcon={<DownloadOutlined />}
               className="predict-button"
-              onClick={exportGraphSVG}
+              onClick={exportChromatogram}
               disabled={results.length === 0}
             >
-              Export SVG
+              Export As Image
             </Button>
           }
         />
@@ -339,6 +350,11 @@ const PeptideRetention: React.FC = () => {
               var textColor = "#000";
               return (
                 <Line
+                  ref={(chart) => {
+                    if (chart) {
+                      chartRef.current = chart;
+                    }
+                  }}
                   style={{
                     backgroundColor: "#fff",
                     padding: "30px",
@@ -355,7 +371,7 @@ const PeptideRetention: React.FC = () => {
                     },
                     elements: {
                       point: {
-                        radius: 0,
+                        radius: 0.5,
                       },
                     },
                     scales: {
@@ -383,7 +399,7 @@ const PeptideRetention: React.FC = () => {
                           color: textColor,
                         },
                         min: 0,
-                        max: chromatogramData.max + 10,
+                        max: chromatogramData.max + 25,
                         grid: {
                           display: true,
                         },

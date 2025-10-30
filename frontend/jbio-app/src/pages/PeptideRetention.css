@@ -75,6 +75,7 @@
     background-color: var(--sub-background) !important;
     border: 0.25rem solid var(--accent);
     color: var(--text);
+    width: 99%;
 }
 
 .results-card .MuiCardHeader-title {
@@ -103,6 +104,7 @@ border: 0.125rem solid var(--accent);
 .chromatogram-section {
     background-color: var(--sub-background);
     margin-top: 20px;
+    width: 100%;
 }
     
 .disabled {
