@@ -35,6 +35,9 @@
 .pr-label {
     color: "white" !important;
     margin: 0 !important;
+    max-width: 100px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 .predict-button:disabled {
