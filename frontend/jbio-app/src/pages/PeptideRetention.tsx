@@ -85,6 +85,18 @@ const PeptideRetention: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
+  const loadFromFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      const loadedPeptides = content.split(',').map((peptide) => peptide.trim());
+      setPeptides((prevPeptides) => Array.from(new Set([...prevPeptides, ...loadedPeptides])));
+    };
+    reader.readAsText(file);
+  };
 
   return (
     <div className="peptide-retention-page">
@@ -176,6 +188,22 @@ const PeptideRetention: React.FC = () => {
           {errorMessage}
         </Alert>
       )}
+
+      <div className="file-upload-section">
+        <Button
+          variant="contained"
+          component="label"
+          className="load-file-button"
+        >
+          Load from File
+          <input
+            type="file"
+            accept=".txt,.csv"
+            hidden
+            onChange={loadFromFile}
+          />
+        </Button>
+      </div>
     </div>
   );
 };
