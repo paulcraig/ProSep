@@ -62,7 +62,7 @@ class TestProtein(unittest.TestCase):
         actual = Protein.get_mw(file)[0]
         
         acceptedError = .01
-        self.assertTrue((actual >= actual*(1-acceptedError) and actual <= actual*(1+acceptedError)))
+        self.assertTrue((actual >= expected*(1-acceptedError) and actual <= expected*(1+acceptedError)))
          
        
     def test_get_one_amino_acid_count(self):
