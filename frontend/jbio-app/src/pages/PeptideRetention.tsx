@@ -92,8 +92,12 @@ const PeptideRetention: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      const loadedPeptides = content.split(',').map((peptide) => peptide.trim());
-      setPeptides((prevPeptides) => Array.from(new Set([...prevPeptides, ...loadedPeptides])));
+      const loadedPeptides = content
+        .split(",")
+        .map((peptide) => peptide.trim());
+      setPeptides((prevPeptides) =>
+        Array.from(new Set([...prevPeptides, ...loadedPeptides]))
+      );
     };
     reader.readAsText(file);
   };
@@ -157,7 +161,7 @@ const PeptideRetention: React.FC = () => {
           <CardContent>
             <Table>
               <TableHead>
-                <TableRow className='results-header'>
+                <TableRow className="results-header">
                   <TableCell>Peptide</TableCell>
                   <TableCell>Predicted tR (min)</TableCell>
                   <TableCell>SMILES</TableCell>
@@ -169,7 +173,9 @@ const PeptideRetention: React.FC = () => {
               <TableBody>
                 {results.map((result, index) => (
                   <TableRow key={index}>
-                    <TableCell><b>{result.peptide}</b></TableCell>
+                    <TableCell>
+                      <b>{result.peptide}</b>
+                    </TableCell>
                     <TableCell>{result.predicted_tr.toFixed(2)}</TableCell>
                     <TableCell>{result.smiles}</TableCell>
                     <TableCell>{result.log_sum_aa.toFixed(4)}</TableCell>
