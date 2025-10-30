@@ -33,7 +33,12 @@
 .predict-button {
     margin-bottom: 1rem;
     background-color: var(--accent) !important;
-    color: var(--text) !important;
+    color: "white" !important;
+}
+
+.pr-label {
+    color: "white" !important;
+    margin: 0 !important;
 }
 
 .predict-button:disabled {
@@ -88,10 +93,16 @@ border: 0.125rem solid var(--accent);
 
 .peptide-chip {
     margin: 0.25rem;
-    color: var(--text) !important;
-    background-color: var(--accent) !important;
+    background-color: var(--sub-accent) !important;
+    margin-right: 10px !important;
 }
 
 .loading-spinner {
     margin-left: 1rem;
+}
+
+.chromatogram-section {
+    border-radius: 10px;
+    padding: 1rem;
+    background-color: var(--sub-background);
 }

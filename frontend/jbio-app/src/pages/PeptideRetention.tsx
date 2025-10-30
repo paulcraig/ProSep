@@ -159,7 +159,7 @@ const PeptideRetention: React.FC = () => {
           {peptides.map((peptide) => (
             <Chip
               key={peptide}
-              label={peptide}
+              label={<div className="pr-label">{peptide}</div>}
               onDelete={() => removePeptide(peptide)}
               className="peptide-chip"
             />
@@ -174,6 +174,15 @@ const PeptideRetention: React.FC = () => {
         className="predict-button"
       >
         {isLoading ? "Predicting..." : "Predict All"}
+      </Button>
+      <Button
+        variant="contained"
+        component="label"
+        className="predict-button"
+        style={{ float: "right" }}
+      >
+        Load from File
+        <input type="file" accept=".txt,.csv" hidden onChange={loadFromFile} />
       </Button>
 
       {isLoading && <CircularProgress className="loading-spinner" />}
@@ -221,8 +230,14 @@ const PeptideRetention: React.FC = () => {
 
       {results.length > 0 && (
         <div className="chromatogram-section">
-          <h2>Chromatogram Plot</h2>
-          <Line data={generateChromatogramData()} options={{ responsive: true, plugins: { legend: { position: 'top' } } }} />
+          <h2>Chromatogram</h2>
+          <Line
+            data={generateChromatogramData()}
+            options={{
+              responsive: true,
+              plugins: { legend: { position: "top" } },
+            }}
+          />
         </div>
       )}
 
@@ -231,22 +246,6 @@ const PeptideRetention: React.FC = () => {
           {errorMessage}
         </Alert>
       )}
-
-      <div className="file-upload-section">
-        <Button
-          variant="contained"
-          component="label"
-          className="load-file-button"
-        >
-          Load from File
-          <input
-            type="file"
-            accept=".txt,.csv"
-            hidden
-            onChange={loadFromFile}
-          />
-        </Button>
-      </div>
     </div>
   );
 };
