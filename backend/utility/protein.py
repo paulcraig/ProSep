@@ -1,6 +1,8 @@
-import re, httpx
+import re
+import httpx
 
-from typing import Dict, List
+from typing import Dict
+from typing import List
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from Bio import SeqIO
 

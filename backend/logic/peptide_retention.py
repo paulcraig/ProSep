@@ -33,7 +33,7 @@ class PeptideRetentionPredictor:
             seq = correct_pdb_atoms(seq)
             mol = Molecule(seq).get_molecule(fmt='ROMol')
             return Chem.MolToSmiles(mol, isomericSmiles=True)
-        except Exception as e:
+        except Exception:
             return None
 
     def log_sum_aa(peptide):

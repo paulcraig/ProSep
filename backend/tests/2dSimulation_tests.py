@@ -1,6 +1,5 @@
 import unittest
 
-from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from two_de_simulation import Simulation_2de
 class Test_2d_Simulation(unittest.TestCase):
     def test_parse_fasta_content(self):
