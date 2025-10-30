@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   TextField,
-  IconButton,
   Button,
   Chip,
   CircularProgress,
@@ -30,6 +29,11 @@ import {
 import annotationPlugin from "chartjs-plugin-annotation";
 import { API_URL } from "../config";
 import "./PeptideRetention.css";
+import {
+  CheckCircle,
+  DownloadOutlined,
+  FileOpenOutlined,
+} from "@mui/icons-material";
 
 ChartJS.register(
   CategoryScale,
@@ -201,20 +205,25 @@ const PeptideRetention: React.FC = () => {
       <div className="input-section">
         <TextField
           className="peptide-input"
-          label="Peptide Sequence"
-          variant="outlined"
+          label="Enter Peptide Sequence"
+          variant="filled"
+          size="small"
           value={newPeptide}
           onChange={(e) => setNewPeptide(e.target.value)}
           onKeyUp={handleKeyUp}
-          sx={{ input: { color: "var(--text)" }, label: { color: "var(--text)" }}}
+          focused
+          sx={{
+            input: { color: "var(--text)" },
+            label: { color: "var(--text)" },
+          }}
         />
-        <IconButton
-          color="primary"
+        <Button
           onClick={addPeptide}
           disabled={!newPeptide.trim()}
+          className="predict-button"
         >
           <AddIcon />
-        </IconButton>
+        </Button>
       </div>
 
       {peptides.length > 0 && (
@@ -236,6 +245,7 @@ const PeptideRetention: React.FC = () => {
         onClick={predictAll}
         disabled={isLoading || peptides.length === 0}
         className="predict-button"
+        startIcon={<CheckCircle />}
       >
         {isLoading ? "Predicting..." : "Predict All"}
       </Button>
@@ -244,6 +254,7 @@ const PeptideRetention: React.FC = () => {
         component="label"
         className="predict-button"
         style={{ float: "right" }}
+        startIcon={<FileOpenOutlined />}
       >
         Load from File
         <input type="file" accept=".txt,.csv" hidden onChange={loadFromFile} />
@@ -254,10 +265,12 @@ const PeptideRetention: React.FC = () => {
           title="Prediction Results"
           action={
             <Button
-              variant="text"
-              color="primary"
+              className="predict-button"
+              variant="contained"
+              component="label"
               onClick={exportCsv}
               disabled={results.length === 0}
+              startIcon={<DownloadOutlined />}
             >
               Export CSV
             </Button>
@@ -293,32 +306,44 @@ const PeptideRetention: React.FC = () => {
             </Table>
             {isLoading && <CircularProgress className="loading-overlay" />}
           </div>
-
+        </CardContent>
+      </Card>
+      <Card className="results-card">
+        <CardHeader
+          title="Chromatogram"
+          action={
+            <Button
+              variant="text"
+              color="primary"
+              component="label"
+              startIcon={<DownloadOutlined />}
+              className="predict-button"
+              onClick={exportGraphSVG}
+              disabled={results.length === 0}
+            >
+              Export SVG
+            </Button>
+          }
+        />
+        <CardContent>
           <div
             className={`chromatogram-section ${
               results.length === 0 ? "disabled" : ""
             }`}
           >
-            <CardHeader
-              title="Chromatogram"
-              action={
-                <Button
-                  variant="text"
-                  color="primary"
-                  onClick={exportGraphSVG}
-                  disabled={results.length === 0}
-                >
-                  Export SVG
-                </Button>
-              }
-            />
             {isLoading && (
               <CircularProgress className="chromatogram-loading-overlay" />
             )}
             {(() => {
               const chromatogramData = generateChromatogramData();
+              var textColor = "#000";
               return (
                 <Line
+                  style={{
+                    backgroundColor: "#fff",
+                    padding: "30px",
+                    borderRadius: "8px",
+                  }}
                   data={chromatogramData}
                   options={{
                     responsive: true,
@@ -338,7 +363,7 @@ const PeptideRetention: React.FC = () => {
                         title: {
                           display: true,
                           text: "Retention Time (min)",
-                          color: "var(--text)",
+                          color: textColor,
                         },
                         min: 0,
                         max: 100,
@@ -348,14 +373,14 @@ const PeptideRetention: React.FC = () => {
                         ticks: {
                           maxTicksLimit: 6,
                           callback: (value) => Number(value).toFixed(0),
-                          color: "var(--text)",
+                          color: textColor,
                         },
                       },
                       y: {
                         title: {
                           display: true,
                           text: "Relative Intensity",
-                          color: "var(--text)",
+                          color: textColor,
                         },
                         min: 0,
                         max: chromatogramData.max + 10,
@@ -363,7 +388,7 @@ const PeptideRetention: React.FC = () => {
                           display: true,
                         },
                         ticks: {
-                          color: "var(--text)",
+                          color: textColor,
                         },
                       },
                     },

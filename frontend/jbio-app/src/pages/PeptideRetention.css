@@ -102,29 +102,29 @@ border: 0.125rem solid var(--accent);
 
 .chromatogram-section {
     background-color: var(--sub-background);
+    margin-top: 20px;
+}
+    
+.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.table-container {
     position: relative;
-    }
-    
-    .disabled {
-        opacity: 0.5;
-        pointer-events: none;
-    }
-    
-    .table-container {
-        position: relative;
-    }
-    
-    .loading-overlay {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-    
-    .chromatogram-loading-overlay {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 10;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.chromatogram-loading-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
 }
