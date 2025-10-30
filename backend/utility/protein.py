@@ -1,5 +1,5 @@
 import re, httpx
-
+import time
 from typing import Dict, List
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from Bio import SeqIO
@@ -79,59 +79,48 @@ class Protein():
 
     @staticmethod
     def calculate_molecular_weight(sequence: str) -> float:
-        return sum(Protein.AMINO_ACIDS.get(aa, {'mass': 0})['mass'] for aa in sequence)
+        analyzed = ProteinAnalysis(sequence)
+        return analyzed.molecular_weight()
     
 
     @staticmethod
     def calculate_theoretical_pi(sequence: str) -> float:
-        counts = {}
-        for aa in sequence:
-            if aa in Protein.AMINO_ACIDS and Protein.AMINO_ACIDS[aa]['pKa'] > 0:
-                counts[aa] = counts.get(aa, 0) + 1
-
-        total_pka = sum(Protein.AMINO_ACIDS[aa]['pKa'] * count for aa, count in counts.items())
-        total_count = sum(counts.values())
-        return total_pka / total_count if total_count > 0 else 7.0
+        analyzed = ProteinAnalysis(sequence)
+        return analyzed.isoelectric_point()
     
 
     @staticmethod
-    def find_links(list_of_ids: List[str], use_uniparc_fallback: bool = True):
+    def find_links(list_of_ids: List[str]) -> Dict[str, str]:
         UNIPROT_URL = "https://www.uniprot.org/uniprotkb"
-        PDB_URL = "https://data.rcsb.org/rest/v1/core/entry"
+        PDB_URL = "https://www.rcsb.org/structure"
         NCBI_URL = "https://www.ncbi.nlm.nih.gov/protein"
 
         protein_links = {}
 
-        with httpx.Client() as client:
-            for pid in list_of_ids:
-                protein_links[pid] = None  # default in case of no links
+        for pid in list_of_ids:
+            pid = pid.strip()
+            protein_links[pid] = None
 
-                # NCBI
-                if pid.replace(".", "").isdigit() or pid.startswith(("NP_", "XP_", "CAA", "AFP")):
-                    r = client.get(
-                        f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=protein&id={pid}&retmode=json"
-                    )
-                    if r.status_code == 200:
-                        protein_links[pid] = f"{NCBI_URL}/{pid}"
-                        continue
+            # NCBI (using Biopython)
+            if pid.replace(".", "").isdigit() or pid.startswith(("NP_", "XP_", "CAA", "AFP")):
+                try:
+                    protein_links[pid] = f"{NCBI_URL}/{pid}"
+                    time.sleep(0.34)  # ~3 requests/sec limit
+                    continue
+                except Exception:
+                    pass
 
-                # PDB
-                if len(pid) == 4 and pid.isalnum():
-                    r = client.get(f"{PDB_URL}/{pid}")
-                    if r.status_code == 200:
-                        protein_links[pid] = f"https://www.rcsb.org/structure/{pid}"
-                        continue
+            # PDB
+            if len(pid) == 4 and pid.isalnum():
+                protein_links[pid] = f"{PDB_URL}/{pid}"
+                continue
 
-                # UniProt
-                if pid.isalnum() and not pid.replace(".", "").isdigit():
-                    r = client.get(f"{UNIPROT_URL}/{pid}")
-                    if r.status_code == 200:
-                        protein_links[pid] = f"{UNIPROT_URL}/{pid}"
-                    elif use_uniparc_fallback:
-                        protein_links[pid] = f"https://www.uniprot.org/uniparc/{pid}"
+            # UniProt
+            if pid.isalnum() and not pid.replace(".", "").isdigit():
+                protein_links[pid] = f"{UNIPROT_URL}/{pid}"
+                continue
 
-        return protein_links
-    
+        return protein_links    
 
     @staticmethod
     def extract_protein_info(header: str) -> Dict[str, str]:

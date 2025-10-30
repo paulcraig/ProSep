@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import './2DElectrophoresis.extracted.css';
 import { API_URL } from '../../config';
 import axios from 'axios';
+import { ReactComponent as WaveAnimation } from '../../assets/loader/wave-animation.svg';
 
 
 const TwoDE = () => {
@@ -239,7 +240,10 @@ const TwoDE = () => {
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(percentCompleted);
+          console.log(progressEvent, "PROGRESS EVENT ESTIMATED");
         }
+
+        
       });
 
       console.log(response.data, "RESPONSE DATA FROM FASTA UPLOAD")
@@ -1028,7 +1032,9 @@ const handleCanvasMouseMove = (event) => {
               {isUploading && (
                 <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <div style={{ marginBottom: '8px', fontSize: '14px' }}>Uploading FASTA...</div>
-                  <div className="twoDE-progress"><CircularProgress progress={uploadProgress} /></div>
+                      <div className="twoDE-progress">
+                        <WaveAnimation style={{ width: '150px', height: '40px' }} />
+                      </div>
                 </div>
               )}
             </div>
@@ -1055,6 +1061,14 @@ const handleCanvasMouseMove = (event) => {
               onMouseUp={() => setIsPanning(false)}
               onMouseMove={handleCanvasMouseMove}
             />
+
+              {['sds-running', 'complete'].includes(simulationState) && (
+                <div className='zoom-handler-buttons'
+                  style={{position: 'absolute',top: 10,right: 10,display: 'flex',flexDirection: 'column',gap: '4px',background: 'rgba(20, 20, 20, 0)',borderRadius: '8px',padding: '4px', paddingTop: '160px'}}>
+                  <button className="plus-button" onClick={() => setZoom((z) => Math.min(z * 1.1, 5))}>+</button>
+                  <button className="minus-button" onClick={() => setZoom((z) => Math.max(z / 1.1, 0.5))}> - </button>
+                </div>
+              )}
 
 
               {/* Protein information popup - show for both canvas clicks and list clicks */}
