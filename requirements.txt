@@ -10,4 +10,3 @@ pandas
 scikit-learn
 rdkit
 git+https://github.com/Boehringer-Ingelheim/pyPept.git
-
