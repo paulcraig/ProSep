@@ -16,10 +16,6 @@
     flex-grow: 1;
 }
 
-.peptide-input .MuiInputBase-input {
-    color: var(--text) !important;
-}
-
 .peptides-list {
     margin-bottom: 1rem;
 }

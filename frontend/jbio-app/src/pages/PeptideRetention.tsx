@@ -206,7 +206,7 @@ const PeptideRetention: React.FC = () => {
           value={newPeptide}
           onChange={(e) => setNewPeptide(e.target.value)}
           onKeyUp={handleKeyUp}
-          color="primary"
+          sx={{ input: { color: "var(--text)" }, label: { color: "var(--text)" }}}
         />
         <IconButton
           color="primary"
