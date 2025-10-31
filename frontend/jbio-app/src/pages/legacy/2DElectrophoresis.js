@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import './2DElectrophoresis.extracted.css';
 import { API_URL } from '../../config';
 import axios from 'axios';
-import { ReactComponent as WaveAnimation } from '../../assets/loader/wave-animation.svg';
+import waveAnimation from '../../assets/loader/wave-animation.svg';
 
 
 const TwoDE = () => {
@@ -232,21 +232,11 @@ const TwoDE = () => {
       formData.append('files', files[i]);
     }
 
-      console.log(API_URL + "API URL IS HERE")
+      console.log(API_URL + " API URL IS HERE " + waveAnimation)
 
     try {
       // Upload to backend for processing
-      const response = await axios.post(`${API_URL}/2d/parse-fasta`, formData, {
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-          console.log(progressEvent, "PROGRESS EVENT ESTIMATED");
-        }
-
-        
-      });
-
-      console.log(response.data, "RESPONSE DATA FROM FASTA UPLOAD")
+      const response = await axios.post(`${API_URL}/2d/parse-fasta`, formData);
 
       // Add new proteins to the existing dots
       setDots(prevDots => [...prevDots, ...response.data]);
@@ -1028,12 +1018,34 @@ const handleCanvasMouseMove = (event) => {
                 ))}
               </div>
 
-              {/* Upload Progress Indicator */}
+
               {isUploading && (
                 <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <div style={{ marginBottom: '8px', fontSize: '14px' }}>Uploading FASTA...</div>
                       <div className="twoDE-progress">
-                        <WaveAnimation style={{ width: '150px', height: '40px' }} />
+                        {/* This svg did not work but this weird line worked idk don't touch this lol */}
+                        <svg width="60" height="30" viewBox="0 0 100 50">
+                        <line x1="10" y1="25" x2="10" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <animate attributeName="y1" values="25;10;25" dur="1s" begin="0s" repeatCount="indefinite"/>
+                        <animate attributeName="y2" values="25;40;25" dur="1s" begin="0s" repeatCount="indefinite"/>
+                        </line>
+                        <line x1="30" y1="25" x2="30" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <animate attributeName="y1" values="25;10;25" dur="1s" begin="0.2s" repeatCount="indefinite"/>
+                        <animate attributeName="y2" values="25;40;25" dur="1s" begin="0.2s" repeatCount="indefinite"/>
+                        </line>
+                        <line x1="50" y1="25" x2="50" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <animate attributeName="y1" values="25;10;25" dur="1s" begin="0.4s" repeatCount="indefinite"/>
+                        <animate attributeName="y2" values="25;40;25" dur="1s" begin="0.4s" repeatCount="indefinite"/>
+                        </line>
+                        <line x1="70" y1="25" x2="70" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <animate attributeName="y1" values="25;10;25" dur="1s" begin="0.6000000000000001s" repeatCount="indefinite"/>
+                        <animate attributeName="y2" values="25;40;25" dur="1s" begin="0.6000000000000001s" repeatCount="indefinite"/>
+                        </line>
+                        <line x1="90" y1="25" x2="90" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <animate attributeName="y1" values="25;10;25" dur="1s" begin="0.8s" repeatCount="indefinite"/>
+                        <animate attributeName="y2" values="25;40;25" dur="1s" begin="0.8s" repeatCount="indefinite"/>
+                        </line>
+                        </svg>
                       </div>
                 </div>
               )}
