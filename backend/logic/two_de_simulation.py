@@ -1,9 +1,10 @@
-import math, re
+import math
+import re
 
 import numpy as np
 from io import StringIO
 from typing import Any, Dict, List
-
+from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from Bio import SeqIO
 from backend.utility.protein import Protein
 
@@ -143,12 +144,12 @@ class Simulation_2de():
     @staticmethod
     def parse_fasta_content(content: str) -> List[Dict[str, Any]]:
         sequences = []
-        fasta_io = StringIO(content)
-        for record in SeqIO.parse(fasta_io, "fasta"):
+        file = StringIO(content)
+        for record in SeqIO.parse(file, "fasta"):
             header = str(record.description)
             sequence = str(record.seq)
-            print(sequence)
-            mw = Protein.calculate_molecular_weight(sequence)
+            mw = ProteinAnalysis(sequence).molecular_weight()
+            
             pH = Protein.calculate_theoretical_pi(sequence)
 
             info = Protein.extract_protein_info(header)
@@ -182,3 +183,6 @@ class Simulation_2de():
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 10
         distance = max_distance_traveled * (1 - normalized_mw) * acrylamide_factor
         return 170 + (distance / (max_distance_traveled * acrylamide_factor)) * (canvas_height - 220)
+if (__name__ == '__main__'):
+    print(Simulation_2de().parse_fasta_content("tests\data\singleProtein.fasta"))
+    

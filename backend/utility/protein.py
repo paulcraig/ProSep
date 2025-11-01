@@ -1,6 +1,8 @@
-import re, httpx
+import re
+import httpx
 
-from typing import Dict, List
+from typing import Dict
+from typing import List
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from Bio import SeqIO
 
@@ -59,13 +61,7 @@ class Protein():
 
     # Utilizes the ProteinAnalysis object to get a sequence of amino acids and finds the number of amino acids
     # @return: the number of amino acids from fasta file given by user
-    @staticmethod
-    def get_individual_mw(parsed_protein, record_id):
-        protein = parsed_protein.get(record_id)
-        individual_mw = ProteinAnalysis(protein[1]).molecular_weight()
-        return individual_mw
-
-
+    
     @staticmethod
     def get_amino_acid_count(file):
         amino_acid_list = []
@@ -84,14 +80,8 @@ class Protein():
 
     @staticmethod
     def calculate_theoretical_pi(sequence: str) -> float:
-        counts = {}
-        for aa in sequence:
-            if aa in Protein.AMINO_ACIDS and Protein.AMINO_ACIDS[aa]['pKa'] > 0:
-                counts[aa] = counts.get(aa, 0) + 1
-
-        total_pka = sum(Protein.AMINO_ACIDS[aa]['pKa'] * count for aa, count in counts.items())
-        total_count = sum(counts.values())
-        return total_pka / total_count if total_count > 0 else 7.0
+        
+        return ProteinAnalysis(sequence).isoelectric_point()
     
 
     @staticmethod
