@@ -59,13 +59,7 @@ class Protein():
 
     # Utilizes the ProteinAnalysis object to get a sequence of amino acids and finds the number of amino acids
     # @return: the number of amino acids from fasta file given by user
-    @staticmethod
-    def get_individual_mw(parsed_protein, record_id):
-        protein = parsed_protein.get(record_id)
-        individual_mw = ProteinAnalysis(protein[1]).molecular_weight()
-        return individual_mw
-
-
+    
     @staticmethod
     def get_amino_acid_count(file):
         amino_acid_list = []

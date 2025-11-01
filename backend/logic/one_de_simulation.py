@@ -1,4 +1,5 @@
-import random, logging
+import random
+import logging
 
 from typing import Any
 from io import StringIO
