@@ -18,6 +18,9 @@
 
 .peptides-list {
     margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+
 }
 
 .peptides-list div:first-child {
@@ -27,7 +30,7 @@
 }
 
 .predict-button {
-    margin-bottom: 1rem;
+    height: 3rem;
     background-color: var(--accent) !important;
     color: "white" !important;
 }
@@ -35,9 +38,10 @@
 .pr-label {
     color: "white" !important;
     margin: 0 !important;
-    max-width: 100px !important;
+    max-width: 140px !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    font-weight: 600 !important;
 }
 
 .predict-button:disabled {

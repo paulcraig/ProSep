@@ -30,10 +30,16 @@ import annotationPlugin from "chartjs-plugin-annotation";
 import { API_URL } from "../config";
 import "./PeptideRetention.css";
 import {
+  Cancel,
   CheckCircle,
+  CloseOutlined,
+  CropSquareSharp,
+  DeleteOutline,
   DownloadOutlined,
   FileOpenOutlined,
+  X,
 } from "@mui/icons-material";
+import { pink } from "@mui/material/colors";
 
 ChartJS.register(
   CategoryScale,
@@ -235,22 +241,30 @@ const PeptideRetention: React.FC = () => {
           onClick={addPeptide}
           disabled={!newPeptide.trim()}
           className="predict-button"
+          variant="contained"
+          startIcon={<AddIcon />}
         >
-          <AddIcon />
+          Add
         </Button>
       </div>
 
       {peptides.length > 0 && (
-        <div className="peptides-list">
-          <div>Peptides to predict:</div>
-          {peptides.map((peptide) => (
-            <Chip
-              key={peptide}
-              label={<div className="pr-label">{peptide}</div>}
-              onDelete={() => removePeptide(peptide)}
-              className="peptide-chip"
-            />
-          ))}
+        <div>
+          <div><b>Peptides to predict:</b></div>
+          <div className="peptides-list">
+            {peptides.map((peptide) => (
+              <Chip
+                key={peptide}
+                label={<div className="pr-label">{peptide}</div>}
+                onDelete={() => removePeptide(peptide)}
+                className="peptide-chip"
+                sx={{
+                '& .MuiChip-deleteIcon': {
+                  color: '#a26363',
+                },}}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -317,7 +331,6 @@ const PeptideRetention: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
-            {isLoading && <CircularProgress className="loading-overlay" />}
           </div>
         </CardContent>
       </Card>
@@ -359,10 +372,13 @@ const PeptideRetention: React.FC = () => {
                     backgroundColor: "#fff",
                     padding: "30px",
                     borderRadius: "8px",
+                    minHeight: "450px",
+                    width: "100%"
                   }}
                   data={chromatogramData}
                   options={{
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                       legend: { display: false },
                       annotation: {
