@@ -102,41 +102,43 @@ class Simulation_2de():
     
 
     @staticmethod
-    def parse_fasta(sequences,new_proteins):
-            # Collect all IDs from this file
-        id_list = [seq['header'].split("|")[1] for seq in sequences]
+    def parse_fasta(sequences, new_proteins):
+        def extract_id(header: str) -> str:
+            parts = header.split("|")
+            if len(parts) > 1:
+                return parts[1].strip()
+            match = re.search(r'([A-Z]{1,3}_?\d+\.\d+|[A-Z0-9]{4,10})', header)
+            return match.group(0) if match else header.strip()
 
-        # Fetch links for all IDs in this file
+        id_list = [extract_id(seq['header']) for seq in sequences]
+
         links_dict = Protein.find_links(id_list)
 
         for seq in sequences:
-            pid = seq['header'].split("|")[1]
-            display_name = seq['header'].split("|")[-1]
+            pid = extract_id(seq['header'])
+            display_name = seq['header'].split("|")[-1].strip() if "|" in seq['header'] else pid
 
-            # Extract UniProt ID if present
-            uniprot_match = re.search(
-                r'[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}',
-                seq['header']
-            )
+            uniprot_match = re.search(r'[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}', seq['header'])
             uniprotId = uniprot_match.group(0) if uniprot_match else "N/A"
 
-            protein_info = {}
-            protein_info['name'] = seq['name']
-            protein_info['fullName'] = seq['name']
-            protein_info['organism'] = seq['organism']
-            protein_info['uniprotId'] = uniprotId
-            protein_info['mw'] = seq['mw']
-            protein_info['pH'] = seq['pH']
-            protein_info['color'] = Simulation_2de.COLOR_PALETTE[len(new_proteins) % len(Simulation_2de.COLOR_PALETTE)]
-            protein_info['sequence'] = seq['sequence']
-            protein_info['x'] = 50
-            protein_info['y'] = 300
-            protein_info['currentpH'] = 7
-            protein_info['velocity'] = 0
-            protein_info['settled'] = False
-            protein_info['ID'] = pid
-            protein_info['Link'] = links_dict.get(pid) or "N/A"
-            protein_info['display_name'] = display_name
+            protein_info = {
+                'name': seq.get('name', display_name),
+                'fullName': seq.get('name', display_name),
+                'organism': seq.get('organism', 'Unknown organism'),
+                'uniprotId': uniprotId,
+                'mw': seq.get('mw'),
+                'pH': seq.get('pH'),
+                'color': Simulation_2de.COLOR_PALETTE[len(new_proteins) % len(Simulation_2de.COLOR_PALETTE)],
+                'sequence': seq.get('sequence', ''),
+                'x': 50,
+                'y': 300,
+                'currentpH': 7,
+                'velocity': 0,
+                'settled': False,
+                'ID': pid,
+                'Link': links_dict.get(pid, "N/A"),
+                'display_name': display_name
+            }
 
             new_proteins.append(protein_info.copy())
 
@@ -174,7 +176,10 @@ class Simulation_2de():
     def get_mw_position(mw, canvas_height, acrylamide_percentage, min_mw = 1000, max_mw = 1000000):
         log_mw = math.log10(min(max(mw, min_mw), max_mw))
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 15
-        return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(min_mw))) * (canvas_height - 220) * acrylamide_factor
+        try:
+            return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(min_mw))) * (canvas_height - 220) * acrylamide_factor
+        except ZeroDivisionError:
+            return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(max_mw))) * (canvas_height - 220) * acrylamide_factor
 
 
     @staticmethod
@@ -182,7 +187,4 @@ class Simulation_2de():
         normalized_mw = (math.log10(min(max(mw, min_mw), max_mw)) - math.log10(min_mw)) / (math.log10(max_mw) - math.log10(min_mw))
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 10
         distance = max_distance_traveled * (1 - normalized_mw) * acrylamide_factor
-        return 170 + (distance / (max_distance_traveled * acrylamide_factor)) * (canvas_height - 220)
-if (__name__ == '__main__'):
-    print(Simulation_2de().parse_fasta_content("tests\data\singleProtein.fasta"))
-    
+        return 170 + (d

@@ -84,37 +84,24 @@ class Protein():
     
 
     @staticmethod
-    def find_links(list_of_ids: List[str]) -> Dict[str, str]:
-        UNIPROT_URL = "https://www.uniprot.org/uniprotkb"
-        PDB_URL = "https://www.rcsb.org/structure"
-        NCBI_URL = "https://www.ncbi.nlm.nih.gov/protein"
-
-        protein_links = {}
-
+    def find_links(list_of_ids: List[str]) -> dict:
+        """
+        Finds external database links based on identifier patterns.
+        """
+        links = {}
         for pid in list_of_ids:
-            pid = pid.strip()
-            protein_links[pid] = None
-
-            # NCBI (using Biopython)
-            if pid.replace(".", "").isdigit() or pid.startswith(("NP_", "XP_", "CAA", "AFP")):
-                try:
-                    protein_links[pid] = f"{NCBI_URL}/{pid}"
-                    time.sleep(0.34)  # ~3 requests/sec limit
-                    continue
-                except Exception:
-                    pass
-
-            # PDB
-            if len(pid) == 4 and pid.isalnum():
-                protein_links[pid] = f"{PDB_URL}/{pid}"
-                continue
-
-            # UniProt
-            if pid.isalnum() and not pid.replace(".", "").isdigit():
-                protein_links[pid] = f"{UNIPROT_URL}/{pid}"
-                continue
-
-        return protein_links    
+            # Handle UniProt IDs
+            if re.match(r'^[OPQ][0-9][A-Z0-9]{3}[0-9]$', pid) or re.match(r'^[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9])+$', pid):
+                links[pid] = f"https://www.uniprot.org/uniprotkb/{pid}"
+            # Handle 4-character PDB IDs
+            elif re.match(r'^[0-9A-Za-z]{4}$', pid):
+                links[pid] = f"https://www.rcsb.org/structure/{pid}"
+            # Handle NCBI/GenBank IDs
+            elif re.match(r'^[A-Z]{2,3}_\d+\.\d+$', pid) or pid.startswith(("CAA", "AAF", "XP_", "NP_")):
+                links[pid] = f"https://www.ncbi.nlm.nih.gov/protein/{pid}"
+            else:
+                links[pid] = "N/A"
+        return links    
 
     @staticmethod
     def extract_protein_info(header: str) -> Dict[str, str]:
