@@ -20,10 +20,8 @@ const TwoDE = () => {
   const [simulationState, setSimulationState] = useState('ready'); // 'ready', 'ief-running', 'ief-complete', 'sds-running', 'complete'
   const [simulationProgress, setSimulationProgress] = useState(0);
 
-  // States for implementing requested features
   const [phRange, setPhRange] = useState({ min: 0, max: 14 });
   const [yAxisMode, setYAxisMode] = useState('mw'); // 'mw' or 'distance'
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
 
   // State for PPS1-106: Acrylamide slider
@@ -81,12 +79,68 @@ const TwoDE = () => {
   // Shreyes: these decide the max labels for the axes, i used 0 and 1 as the starting axes
   const [minMW, setMinMW] = useState(0);
   const [maxMW, setMaxMW] = useState(1);
+  const offsetRef = useRef({ x: 0, y: 0 });
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, y: 0 });
 
-  //Shreyes: pan and zoom states
-  const [isPanning, setIsPanning] = useState(false);
-  const [lastMouse, setLastMouse] = useState({ x: 0, y: 0 });
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  //Shreyes: zoom states
   const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(zoom);
+
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+
+  const setZoomSafe = (newZoom) => {
+    setZoom(newZoom);
+    zoomRef.current = newZoom;
+  };
+
+
+
+  const handleCanvasClick = (event) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const clickedDot = dots.find(dot => {
+      const zoom = zoomRef.current;
+      const offset = offsetRef.current;
+      const pHRange = MAX_PH - MIN_PH;
+      const mwRange = maxMW - minMW;
+
+      // e.g. zoom centered around the midpoint of each axis
+      const pHMid = (MAX_PH + MIN_PH) / 2;
+      const mwMid = (maxMW + minMW) / 2;
+
+      // Adjusted min/max for visible window
+      const visibleMinPH = pHMid - (pHRange / 2) / zoom;
+      const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
+      const visibleMinMW = mwMid - (mwRange / 2) / zoom;
+      const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
+
+      const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN);
+      const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
+      const baseY = SDS_TOP_MARGIN + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW)) * usableHeight;
+
+      const dotX = baseX + offset.x;
+      const dotY = baseY + offset.y;
+
+      const dx = x - dotX;
+      const dy = y - dotY;
+      return Math.sqrt(dx * dx + dy * dy) < 10;
+    });
+
+    setSelectedDot(clickedDot);
+    setHoveredDot(null);
+  };
+
+  const handleCanvasMouseLeave = () => {
+    if (!selectedDot) {
+      setHoveredDot(null);
+    }
+  };
 
   // Function to start running the IEF (first dimension), sets simulation 
   // state to 'ief-running' and calls the 'simulate-ief backend API to
@@ -224,7 +278,7 @@ const TwoDE = () => {
   // to the simulation
   const handleFileUpload = async (files) => {
     setIsUploading(true);
-    setUploadProgress(0);
+
 
     // Create form data
     const formData = new FormData();
@@ -309,47 +363,21 @@ const TwoDE = () => {
   // Handler for when the mouse cursor moves on the canvas (simulation)
   // and checks if it is hovering over a dot on the simulation
 const handleCanvasMouseMove = (event) => {
-  const canvas = canvasRef.current;
-  const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    setMousePos({ x: event.clientX, y: event.clientY });
 
-  setMousePos({ x: event.clientX, y: event.clientY });
-
-    if (isPanning) {
-    const dx = event.movementX;
-    const dy = event.movementY;
-    setOffset(prev => ({
-      x: prev.x + dx,
-      y: prev.y + dy
-    }));
-    return; // skip hover detection while panning
-    }
-
-  // --- Hover detection (only when not panning) ---
-  if (!selectedDot) {
-    const hoveredDot = dots.find(dot => {
-        let mappedX = dot.x;
-        let mappedY = dot.y;
-
-        if (['sds-running', 'complete'].includes(simulationState)) {
-          // Map SDS dot to canvas coordinates
-          mappedX = LEFT_MARGIN + ((dot.pH - MIN_PH) / (MAX_PH - MIN_PH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN);
-          const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-          mappedY = SDS_TOP_MARGIN + ((maxMW - dot.mw) / (maxMW - minMW)) * usableHeight;
-        }
-
-        // Apply zoom & offset
-        const screenX = mappedX * zoom + offset.x;
-        const screenY = mappedY * zoom + offset.y;
-
-        const dx = x - screenX;
-        const dy = y - screenY;
+    if (!selectedDot) {
+      const hoveredDot = dots.find(dot => {
+        const dx = x - dot.x;
+        const dy = y - dot.y;
         return Math.sqrt(dx * dx + dy * dy) < 10;
       });
-    setHoveredDot(hoveredDot);
-  }
-};
+      setHoveredDot(hoveredDot);
+    }
+  };
 
   // Handler for when the mouse course clicks on the document, which closes
   // the selected proteins information popup if clicked outside of the
@@ -462,13 +490,38 @@ const handleCanvasMouseMove = (event) => {
 
   // React hook to handle all the different changes that may happen to the simulation
   // and draws makes sure that everything is drawn as it should be
+
   useEffect(() => {
     const canvas = canvasRef.current;
+    const zoom = zoomRef.current;
+    const offset = offsetRef.current;
+
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
     // Clear initially
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    canvas.addEventListener('mousedown', e => {
+      isPanning.current = true;
+      panStart.current = { x: e.clientX, y: e.clientY };
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      isPanning.current = false;
+    });
+
+  canvas.addEventListener('mousemove', e => {
+    if (!isPanning.current) return;
+
+    const dx = e.clientX - panStart.current.x;
+    const dy = e.clientY - panStart.current.y;
+
+    offsetRef.current.x += dx;
+    offsetRef.current.y += dy;
+
+    panStart.current = { x: e.clientX, y: e.clientY };
+  });
 
     // The function that handles drawing everything on the simulation
     const draw = () => {
@@ -539,7 +592,8 @@ const handleCanvasMouseMove = (event) => {
 
             // Map Y → MW: top (y=topMargin) => maxMW, bottom => minMW
             const t = (y - topMargin) / usableHeight; // 0..1 top→bottom
-            const mwValue = Math.round(maxMW - t * (maxMW - minMW));
+            const mwValue = Math.round(maxMW / zoomRef.current - t * ((maxMW - minMW) / zoomRef.current))
+            // console.log(mwValue, y)
 
             ctx.save();
             ctx.translate(15, y + 5);
@@ -555,7 +609,7 @@ const handleCanvasMouseMove = (event) => {
 
           ctx.save();
           ctx.translate(15, bottomY + 5);
-          ctx.fillText(`${minMW.toLocaleString()} Da.`, 0, 0);
+          ctx.fillText(`${(minMW*zoomRef.current).toLocaleString()} Da.`, 0, 0);
           ctx.restore();
 
         } else {
@@ -582,14 +636,16 @@ const handleCanvasMouseMove = (event) => {
           ctx.lineTo(x, canvas.height - bottomMargin);
           ctx.stroke();
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(pH.toFixed(1), x - 10, canvas.height - 30);
+          ctx.fillText((pH * zoomRef.current).toFixed(2), x - 10, canvas.height - 30);
         }
       }
 
       // Draw PH axis label (now centered at bottom)
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
-      ctx.fillText('pH', canvas.width / 2, canvas.height - 10);
+
+      //TODO: edited this for fun 
+      ctx.fillText('pI', canvas.width / 2, canvas.height - 10);
 
       // Vertical MW/Distance label
       ctx.save();
@@ -618,13 +674,9 @@ const handleCanvasMouseMove = (event) => {
           // Loading zone dots
           ctx.beginPath();
 
-          const screenX = dot.x * zoom + offset.x;
-          const screenY = dot.y * zoom + offset.y;
-          ctx.arc(screenX, screenY, DOT_RADIUS * zoom, 0, Math.PI * 2);
-
-          
-
-          // ctx.arc(dot.x, dot.y, (isHighlighted || isHovered) ? DOT_HOVER_RADIUS : DOT_RADIUS, 0, Math.PI * 2);
+          const screenX = dot.x * zoomRef.current + offset.x;
+          const screenY = dot.y * zoomRef.current + offset.y;
+          ctx.arc(screenX, screenY, DOT_RADIUS * zoomRef.current, 0, Math.PI * 2);
           ctx.fill();
 
           if (isHighlighted) {
@@ -672,28 +724,50 @@ const handleCanvasMouseMove = (event) => {
           }
         } else {
           // SDS-PAGE dots mapped to pH (x) and MW (y)
-          const x = LEFT_MARGIN + ((dot.pH - MIN_PH) / (MAX_PH - MIN_PH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN);
+            const zoom = zoomRef.current;
+            const offset = offsetRef.current;
+            const pHRange = MAX_PH - MIN_PH;
+            const mwRange = maxMW - minMW;
 
-          const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-          const y = SDS_TOP_MARGIN + ((maxMW - dot.mw) / (maxMW - minMW)) * usableHeight;
+            // e.g. zoom centered around the midpoint of each axis
+            const pHMid = (MAX_PH + MIN_PH) / 2;
+            const mwMid = (maxMW + minMW) / 2;
 
-          ctx.beginPath();
-          ctx.arc(x, y, (isHighlighted || isHovered) ? DOT_HOVER_RADIUS : DOT_RADIUS, 0, Math.PI * 2);
-          ctx.fillStyle = dot.color;
-          ctx.fill();
+            // Adjusted min/max for visible window
+            const visibleMinPH = pHMid - (pHRange / 2) / zoom;
+            const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
+            const visibleMinMW = mwMid - (mwRange / 2) / zoom;
+            const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
 
-          if (isHighlighted || isHovered) {
-            ctx.strokeStyle = HIGHLIGHT_STROKE;
-            ctx.lineWidth = isHighlighted ? HIGHLIGHT_LINEWIDTH : 1;
-            ctx.stroke();
+            const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offsetRef.current.x;
+            const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
+            const baseY = SDS_TOP_MARGIN + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW)) * usableHeight + offsetRef.current.y;
 
-            if (isHighlighted) {
-              ctx.beginPath();
-              ctx.arc(x, y, PULSE_RADIUS, 0, Math.PI * 2);
-              ctx.strokeStyle = PULSE_STROKE;
+            // apply zoom around offset
+            const x = (baseX - offset.x) * zoom + offset.x;
+            const y = (baseY - offset.y) * zoom + offset.y;
+
+            const withinX = x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN;
+            const withinY = y >= SDS_TOP_MARGIN && y <= canvas.height - SDS_BOTTOM_MARGIN;
+            if (!withinX || !withinY) return;
+          
+            ctx.beginPath();
+            ctx.arc(x, y, (isHighlighted || isHovered) ? DOT_HOVER_RADIUS : DOT_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = dot.color;
+            ctx.fill();
+
+            if (isHighlighted || isHovered) {
+              ctx.strokeStyle = HIGHLIGHT_STROKE;
+              ctx.lineWidth = isHighlighted ? HIGHLIGHT_LINEWIDTH : 1;
               ctx.stroke();
+
+              if (isHighlighted) {
+                ctx.beginPath();
+                ctx.arc(x, y, PULSE_RADIUS, 0, Math.PI * 2);
+                ctx.strokeStyle = PULSE_STROKE;
+                ctx.stroke();
+              }
             }
-          }
         }
       });
 
@@ -1065,20 +1139,20 @@ const handleCanvasMouseMove = (event) => {
               )}
 
               {/* The actual graph part of the simulation, including the popups for protein informatiopn */}
-             <canvas
-              ref={canvasRef}
-              width={800}
-              height={600}
-              onMouseDown={(e) => {setIsPanning(true)}}
-              onMouseUp={() => setIsPanning(false)}
-              onMouseMove={handleCanvasMouseMove}
-            />
+              <canvas
+                ref={canvasRef}
+                width={800}
+                height={600}
+                className="twoDE-canvas"
+                onMouseMove={handleCanvasMouseMove}
+                onMouseLeave={handleCanvasMouseLeave}
+                onClick={handleCanvasClick}
+              />
 
               {['sds-running', 'complete'].includes(simulationState) && (
-                <div className='zoom-handler-buttons'
-                  style={{position: 'absolute',top: 10,right: 10,display: 'flex',flexDirection: 'column',gap: '4px',background: 'rgba(20, 20, 20, 0)',borderRadius: '8px',padding: '4px', paddingTop: '160px'}}>
-                  <button className="plus-button" onClick={() => setZoom((z) => Math.min(z * 1.1, 5))}>+</button>
-                  <button className="minus-button" onClick={() => setZoom((z) => Math.max(z / 1.1, 0.5))}> - </button>
+                <div style={{position: 'absolute',top: 10,right: 10,display: 'flex',flexDirection: 'column',gap: '4px',background: 'rgba(20, 20, 20, 0)',borderRadius: '8px',padding: '4px', paddingTop: '160px'}}>
+                  <button className="plus-button" onClick={() => {const newZoom = Math.min(zoom * 1.1, 5); setZoomSafe(newZoom);}}>+</button>
+                  <button className="minus-button" onClick={() => setZoomSafe(Math.max(zoom / 1.1, 0.5))}>-</button>
                 </div>
               )}
 
