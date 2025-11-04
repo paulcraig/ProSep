@@ -187,4 +187,8 @@ class Simulation_2de():
         normalized_mw = (math.log10(min(max(mw, min_mw), max_mw)) - math.log10(min_mw)) / (math.log10(max_mw) - math.log10(min_mw))
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 10
         distance = max_distance_traveled * (1 - normalized_mw) * acrylamide_factor
-        return 170 + (d
+        return 170 + (distance / (max_distance_traveled * acrylamide_factor)) * (canvas_height - 220)
+
+if (__name__ == '__main__'):
+    print(Simulation_2de().parse_fasta_content("tests\data\singleProtein.fasta"))
+    
