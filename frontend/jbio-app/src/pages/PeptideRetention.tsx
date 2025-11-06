@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import {
   TextField,
   Button,
@@ -30,16 +30,11 @@ import annotationPlugin from "chartjs-plugin-annotation";
 import { API_URL } from "../config";
 import "./PeptideRetention.css";
 import {
-  Cancel,
   CheckCircle,
-  CloseOutlined,
-  CropSquareSharp,
-  DeleteOutline,
   DownloadOutlined,
   FileOpenOutlined,
   X,
 } from "@mui/icons-material";
-import { pink } from "@mui/material/colors";
 
 ChartJS.register(
   CategoryScale,
@@ -152,12 +147,9 @@ const PeptideRetention: React.FC = () => {
   };
   const generateChromatogramData = () => {
     const scalingFactor = 6.5;
-    const xVals = Array.from({ length: 500 }, (_, i) => (i / 499) * 100);
+    const xVals = Array.from({ length: 1000 }, (_, i) => (i / 999) * 100);
     const chromatogram = new Array(xVals.length).fill(0);
-    const noise = Array.from(
-      { length: xVals.length },
-      () => Math.random() - 0.5
-    );
+    const noise = Array.from({ length: xVals.length }, () => Math.random());
     const annotations: any = {};
 
     let maxChrom = 0;
@@ -170,24 +162,23 @@ const PeptideRetention: React.FC = () => {
       xVals.forEach((x, i) => {
         chromatogram[i] +=
           height * Math.exp(-Math.pow(x - rt, 2) / (2 * Math.pow(0.35, 2)));
+        if (height > 20) {
+          annotations[`peak-label-${index}`] = {
+            type: "label",
+            xValue: rt * 10,
+            yValue: height + 10,
+            content: peptide,
+            font: { size: 10, weight: "bold", color: "var(--text)" },
+            rotation: -30,
+          };
+          annotations[`peak-point-${index}`] = {
+            type: "point",
+            xValue: rt * 10,
+            yValue: height,
+            radius: 5,
+          };
+        }
       });
-      if (height > 20) {
-        annotations[`peak-label-${index}`] = {
-          type: "label",
-          xValue: rt * 5,
-          yValue: height + 3,
-          content: peptide,
-          font: { size: 8, weight: "bold", color: "var(--text)" },
-          rotation: 30,
-          position: "center",
-        };
-        annotations[`peak-point-${index}`] = {
-          type: "point",
-          xValue: rt * 5,
-          yValue: height,
-          radius: 5,
-        };
-      }
     });
 
     chromatogram.forEach((val, i) => {
@@ -250,7 +241,9 @@ const PeptideRetention: React.FC = () => {
 
       {peptides.length > 0 && (
         <div>
-          <div><b>Peptides to predict:</b></div>
+          <div>
+            <b>Peptides to predict:</b>
+          </div>
           <div className="peptides-list">
             {peptides.map((peptide) => (
               <Chip
@@ -259,9 +252,10 @@ const PeptideRetention: React.FC = () => {
                 onDelete={() => removePeptide(peptide)}
                 className="peptide-chip"
                 sx={{
-                '& .MuiChip-deleteIcon': {
-                  color: '#a26363',
-                },}}
+                  "& .MuiChip-deleteIcon": {
+                    color: "#a26363",
+                  },
+                }}
               />
             ))}
           </div>
@@ -373,7 +367,7 @@ const PeptideRetention: React.FC = () => {
                     padding: "30px",
                     borderRadius: "8px",
                     minHeight: "450px",
-                    width: "100%"
+                    width: "100%",
                   }}
                   data={chromatogramData}
                   options={{
@@ -387,7 +381,10 @@ const PeptideRetention: React.FC = () => {
                     },
                     elements: {
                       point: {
-                        radius: 0.5,
+                        radius: 0,
+                      },
+                      line: {
+                        borderWidth: 1,
                       },
                     },
                     scales: {
@@ -403,8 +400,8 @@ const PeptideRetention: React.FC = () => {
                           display: true,
                         },
                         ticks: {
-                          maxTicksLimit: 6,
-                          callback: (value) => Number(value).toFixed(0),
+                          maxTicksLimit: 7,
+                          callback: (value) => (Number(value) / 65).toFixed(1),
                           color: textColor,
                         },
                       },
@@ -415,7 +412,7 @@ const PeptideRetention: React.FC = () => {
                           color: textColor,
                         },
                         min: 0,
-                        max: chromatogramData.max + 25,
+                        max: Math.ceil(chromatogramData.max * 1.2),
                         grid: {
                           display: true,
                         },
