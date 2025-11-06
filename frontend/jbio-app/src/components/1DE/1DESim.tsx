@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react"
+import React, { useState, useMemo, useRef } from "react"
 
 
 interface IDEProtein {
@@ -29,7 +29,7 @@ export default function OneDESim({
 } : OneDEProps ) {
 
   /* Consts */
-  const SUB_TICKS = 2;
+  const SUB_TICKS = 4;
   const MAX_WELLS = 10;
   
   const BORDER = 4;
@@ -71,7 +71,7 @@ export default function OneDESim({
   
   /* Functions and Handlers */
   const { min, max } = useMemo(() => ({
-    min: -(SUB_TICKS + 1) / 10,
+    min: -(SUB_TICKS + 1) / (SUB_TICKS * 5),
     max: numTicks
   }), [numTicks]);
 
@@ -116,6 +116,40 @@ export default function OneDESim({
   }
 
 
+  const handleDrag = (e: React.MouseEvent<HTMLElement>) => {
+    if (!isDragging || lastDragY === null || rafRef.current) return;
+    const clientY = e.clientY;
+
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const dy = clientY - lastDragY;
+      const normShift = dy / slabHeight;
+
+      setlastDragY(clientY);
+      setAnchor(a => Math.max(0, Math.min(1, a - normShift)));
+    })
+  }
+
+
+  const handleDragMDown = (e: React.MouseEvent<HTMLElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+    setlastDragY(e.clientY);
+  }
+
+
+  React.useEffect(() => {
+    const handleDragMUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        setlastDragY(null);
+      }
+    };
+    window.addEventListener("mouseup", handleDragMUp);
+    return () => window.removeEventListener("mouseup", handleDragMUp);
+  }, [isDragging]);
+
+
   /* Components */
   const acrylamideSlab = useMemo(() => {
     const width = slabWidth - 1;
@@ -123,6 +157,7 @@ export default function OneDESim({
     const wellHeight = getY(min / 2, min, max, slabHeight, false) * 2;
 
     const n = numTicks + 1 + numTicks * SUB_TICKS;
+    const dotOffset = (1 / (2 * (SUB_TICKS + 1)));
     let dotIdx = 0, tickIdx = 0, lineIdx = 0;
 
     const dots = new Array(n);
@@ -131,18 +166,15 @@ export default function OneDESim({
 
     // Factories:
     const makeBuffers = () => {
+      let path = `M 0 0 L 0 ${wellHeight * 2} L ${TICK_MAJOR} ${wellHeight * 2} L ${TICK_MAJOR} ${wellHeight}`;
       const wellWidth = slabWidth / (2 * numWells + 1);
       const fullWidth = slabWidth + (TICK_MAJOR * 2);
-
-      let path = `M 0 0 L 0 ${wellHeight * 2} L ${TICK_MAJOR} ${wellHeight * 2} L ${TICK_MAJOR} ${wellHeight}`;
       
       for (let i = 0; i <= numWells; i++) {
         const base = (i * wellWidth * 2) + TICK_MAJOR;
-
         path += ` L ${base} ${wellHeight} L ${base + wellWidth} ${wellHeight} L ${base + wellWidth} ${wellHeight * 2}`;
         if (i < numWells) { path += ` L ${base + wellWidth * 2} ${wellHeight * 2}`; }
       }
-
       path += ` L ${fullWidth} ${wellHeight * 2} L ${fullWidth} 0 Z`;
       
       return (
@@ -150,7 +182,7 @@ export default function OneDESim({
           <svg
             viewBox={`${-BORDER / 2} ${-BORDER / 2} ${fullWidth + BORDER} ${wellHeight * 2 + BORDER}`}
             style={{
-              position: "relative", zIndex: '2',
+              position: "relative", zIndex: "2",
               top: `${-wellHeight}`, left: `${-TICK_MAJOR - (BORDER / 2)}`,
               width: `${fullWidth + BORDER}px`, height: `${wellHeight * 2 + BORDER}px`
             }}
@@ -166,7 +198,7 @@ export default function OneDESim({
               position: "absolute", boxSizing: "border-box", zIndex: 0,
               bottom: `-${(wellHeight * 2) - 1}px`, left: `-${TICK_MAJOR}px`,
               width: `${slabWidth + TICK_MAJOR * 2}px`, height: `${wellHeight * 2}px`,
-              background: "var(--sub-accent)", border: `${BORDER}px solid var(--accent)`, borderRadius: '2px'
+              background: "var(--sub-accent)", border: `${BORDER}px solid var(--accent)`, borderRadius: "2px"
             }}
           />
         </>
@@ -182,7 +214,7 @@ export default function OneDESim({
       return (
         <svg
           key={key}
-          width={width} height={radius * 2}
+          width={width} height={(radius * 2) + 1}
           style={{position: "absolute", top: `${y - radius}px`}}
         >
           {Array.from({length: amount}, (_, i) => (
@@ -200,7 +232,7 @@ export default function OneDESim({
       const tickWidth = isMajor ? TICK_MAJOR : TICK_MINOR;
       const thickness = isMajor ? GUIDE_MAJOR : GUIDE_MINOR;
       const opacity = (isMajor && fadeDist) ? Math.min(1, Math.min(y, slabHeight - y) / fadeDist) : 1;
-      
+
       return (
         <div
           key={key}
@@ -234,7 +266,7 @@ export default function OneDESim({
 
     const makeLine = (key: string, y: number, isMajor: boolean) => {
       const lineHeight = isMajor ? GUIDE_MAJOR : GUIDE_MINOR;
-      
+
       return (
         <svg
           key={key}
@@ -255,7 +287,7 @@ export default function OneDESim({
 
     // Render:
     for (let i = 0; i <= numTicks; i++) {
-      const dy = getY(i - ((SUB_TICKS + 1) / 20), min, max, height);
+      const dy = getY(i - dotOffset, min, max, height);
       const y = getY(i, min, max, height);
 
       dots[dotIdx++] = makeDots(`major-dots-${i}`, dy, BORDER);
@@ -265,7 +297,7 @@ export default function OneDESim({
         lines[lineIdx++] = makeLine(`major-${i}`, y, i > 0);
 
         for (let j = 1; j <= SUB_TICKS; j++) {
-          const dy = getY(i + j / (SUB_TICKS + 1) - ((SUB_TICKS + 1) / 20), min, max, height);
+          const dy = getY(i + j / (SUB_TICKS + 1) - dotOffset, min, max, height);
           const y = getY(i + j / (SUB_TICKS + 1), min, max, height);
 
           dots[dotIdx++] = makeDots(`minor-dots-${i}-${j}`, dy, BORDER);
@@ -282,10 +314,13 @@ export default function OneDESim({
           width: `${slabWidth}px`,
           height: `${slabHeight + 4}px`,
           margin: `${wellHeight}px ${TICK_MAJOR}px ${wellHeight * 2}px ${TICK_MAJOR * 2}px`,
-          background: "var(--sub-background)", 
-          overflow: "visible",
+          cursor: isDragging ? "grabbing" : zoom > 1 ? "grab" : "default",
+          background: "var(--sub-background)",
+          overflow: "visible"
         }}
         onWheel={handleZoom}
+        onMouseMove={handleDrag}
+        onMouseDown={handleDragMDown}
       >
         <div
           style={{
@@ -299,7 +334,7 @@ export default function OneDESim({
         {makeBuffers()}
       </div>
     );
-  }, [slabWidth, slabHeight, numTicks, numWells, zoom]);
+  }, [slabWidth, slabHeight, numTicks, numWells, zoom, anchor, isDragging]);
   
 
   /* Render */
