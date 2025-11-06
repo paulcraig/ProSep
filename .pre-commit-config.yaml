@@ -26,4 +26,4 @@ repos:
         entry: npx prettier --write
         language: system
         types_or:
-          [javascript, jsx, ts, tsx, json, css, scss, html, markdown, yaml]
+          [javascript, jsx, ts, tsx, json, css, scss, html]
