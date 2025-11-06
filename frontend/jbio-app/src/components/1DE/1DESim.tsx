@@ -90,7 +90,6 @@ export default function OneDESim({
 
 
   const handleZoom = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
     if (rafRef.current) return;
 
     const deltaY = e.deltaY;
@@ -132,7 +131,6 @@ export default function OneDESim({
 
 
   const handleDragMDown = (e: React.MouseEvent<HTMLElement>) => {
-    e.preventDefault();
     setIsDragging(true);
     setlastDragY(e.clientY);
   }
