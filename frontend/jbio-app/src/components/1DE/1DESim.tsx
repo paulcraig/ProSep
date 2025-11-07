@@ -240,6 +240,7 @@ export default function OneDESim({
             <span style={{ 
               position: "absolute", right: "8px",
               transform: "translateY(-50%)",
+              pointerEvents: "none",
               color: "var(--text)",
               whiteSpace: "nowrap",
               fontSize: "14px",
@@ -312,8 +313,10 @@ export default function OneDESim({
           width: `${slabWidth}px`,
           height: `${slabHeight + 4}px`,
           margin: `${wellHeight}px ${TICK_MAJOR}px ${wellHeight * 2}px ${TICK_MAJOR * 2}px`,
-          cursor: isDragging ? "grabbing" : zoom > 1 ? "grab" : "default",
+          cursor: zoom > 1 ? isDragging ? "grabbing" : "grab" : "default",
           background: "var(--sub-background)",
+          WebkitUserSelect: "none",
+          userSelect: "none",
           overflow: "visible"
         }}
         onWheel={handleZoom}
