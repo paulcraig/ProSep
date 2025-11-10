@@ -88,9 +88,43 @@ const TwoDE = () => {
   const zoomRef = useRef(zoom);
 
   const setZoomSafe = (newZoom) => {
-    setZoom(newZoom);
-    zoomRef.current = newZoom;
+    //Important: Clamps the zoom within the grid
+    const MIN_ZOOM = 1;
+    const MAX_ZOOM = 5;
+
+    zoomRef.current = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
+    setZoom(zoomRef.current);
+
+    alert(zoomRef.current)
   };
+
+  const clampOffset = () => {
+    const zoom = zoomRef.current;
+    const offset = offsetRef.current;
+
+    // Content area in world-space (SDS region)
+    const worldLeft   = LEFT_MARGIN;
+    const worldRight  = canvasRef.current.width - RIGHT_MARGIN;
+    const worldTop    = SDS_TOP_MARGIN;
+    const worldBottom = canvasRef.current.height - SDS_BOTTOM_MARGIN;
+
+    // Convert world bounds to screen bounds at current zoom
+    const screenLeft   = worldLeft * zoom;
+    const screenRight  = worldRight * zoom;
+    const screenTop    = worldTop * zoom;
+    const screenBottom = worldBottom * zoom;
+
+    // The user should not be able to pan so far that the data leaves the screen entirely.
+    const minOffsetX = -screenLeft;
+    const maxOffsetX = canvasRef.current.width - screenRight;
+
+    const minOffsetY = -screenTop;
+    const maxOffsetY = canvasRef.current.height - screenBottom;
+
+    offset.x = Math.max(minOffsetX, Math.min(offset.x, maxOffsetX));
+    offset.y = Math.max(minOffsetY, Math.min(offset.y, maxOffsetY));
+  };
+
 
 
 
@@ -571,7 +605,7 @@ const handleCanvasMouseMove = (event) => {
     return () => {
       document.removeEventListener('click', handleDocumentClick);
     };
-  }, [selectedDot]);
+  }, [selectedDot, handleDocumentClick]);
 
   // Handler for when a new file is uploaded over an old one
   const handleFileInputChange = async (e) => {
@@ -619,7 +653,6 @@ const handleCanvasMouseMove = (event) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const zoom = zoomRef.current;
     const offset = offsetRef.current;
 
     if (!canvas) return;
@@ -645,6 +678,7 @@ const handleCanvasMouseMove = (event) => {
 
     offsetRef.current.x += dx;
     offsetRef.current.y += dy;
+    clampOffset();
 
     panStart.current = { x: e.clientX, y: e.clientY };
   });
@@ -660,96 +694,85 @@ const handleCanvasMouseMove = (event) => {
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'left';
 
-      // Draw loading zone indicator when in ready state
-      if (simulationState === 'ready') {
-        ctx.fillStyle = LOADING_ZONE_COLOR;
-        ctx.fillRect(LOADING_ZONE_X, LOADING_ZONE_Y, LOADING_ZONE_SIZE, LOADING_ZONE_SIZE);
-      }
+      // Draw loading zone
+      const drawLoadingZone = () => {
+        if (simulationState === 'ready') {
+          ctx.fillStyle = LOADING_ZONE_COLOR;
+          ctx.fillRect(LOADING_ZONE_X, LOADING_ZONE_Y, LOADING_ZONE_SIZE, LOADING_ZONE_SIZE);
+        }
+      };
 
-      // Draw IEF Gel and pH gradient when not ready
-      if (simulationState !== 'ready') {
-        // IEF band/gel
+      // Draw IEF band and pH gradient
+      const drawIEFAndGradient = () => {
+        if (simulationState === 'ready') return;
+
         ctx.fillStyle = '#222222';
         ctx.fillRect(LEFT_MARGIN, TOP_MARGIN_IEF, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), IEF_BAND_HEIGHT);
 
-        // pH gradient visualization above IEF band
         const gradient = ctx.createLinearGradient(LEFT_MARGIN, 0, canvas.width - RIGHT_MARGIN, 0);
-        gradient.addColorStop(0, ACID_COLOR);   // Acidic
-        gradient.addColorStop(0.5, NEUTRAL_COLOR); // Neutral
-        gradient.addColorStop(1, BASIC_COLOR);   // Basic
+        gradient.addColorStop(0, ACID_COLOR);
+        gradient.addColorStop(0.5, NEUTRAL_COLOR);
+        gradient.addColorStop(1, BASIC_COLOR);
 
         ctx.fillStyle = gradient;
         ctx.fillRect(LEFT_MARGIN, PH_GRADIENT_Y, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), PH_GRADIENT_HEIGHT);
 
-        // pH range labels (small)
         ctx.fillStyle = '#FFFFFF';
         ctx.font = SMALL_FONT;
         ctx.fillText(MIN_PH.toFixed(1), LEFT_MARGIN - 5, PH_GRADIENT_Y - 5);
         ctx.fillText(MAX_PH.toFixed(1), canvas.width - RIGHT_MARGIN - 5, PH_GRADIENT_Y - 5);
-      }
+      };
 
-      // Draw Grid
-      ctx.strokeStyle = GRID_STROKE;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = MAIN_FONT;
-
-      // Draw SDS-PAGE area separator when appropriate
-      if (simulationState === 'ief-complete' || simulationState === 'sds-running' || simulationState === 'complete') {
-        ctx.fillStyle = '#222222';
-        ctx.fillRect(LEFT_MARGIN, SDS_TOP_MARGIN, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN);
-      }
-
-      // Draw axes when in SDS stages
-      if (['sds-running', 'complete'].includes(simulationState)) {
-        const topMargin = SDS_TOP_MARGIN;
-        const bottomMargin = SDS_BOTTOM_MARGIN;
-        const leftMargin = LEFT_MARGIN;
-        const rightMargin = RIGHT_MARGIN;
-        const usableHeight = canvas.height - topMargin - bottomMargin;
-
-        // Y-Axis Labels (MW or Distance)
-        if (yAxisMode === 'mw') { 
-        const stepY = 50;
-        const topMargin = SDS_TOP_MARGIN;
-        const bottomMargin = SDS_BOTTOM_MARGIN;
-        const leftMargin = LEFT_MARGIN;
-        const rightMargin = RIGHT_MARGIN;
-        const usableHeight = canvas.height - topMargin - bottomMargin;
-
-        // Extend range slightly so when zooming out we still see lines
-        const yStart = topMargin - 5 * stepY;
-        const yEnd = canvas.height - bottomMargin + 5 * stepY;
-
-        for (let y = yStart; y <= yEnd; y += stepY) {
-          // Apply zoom and offset
-          const yScaled = y * zoomRef.current + offsetRef.current.y;
-
-          // Skip lines completely off-canvas
-          if (yScaled < 0 || yScaled > canvas.height) continue;
-
-          // Draw gridline **only inside SDS gel area**
-          if (yScaled >= topMargin && yScaled <= canvas.height - bottomMargin) {
-            ctx.beginPath();
-            ctx.moveTo(leftMargin, yScaled);
-            ctx.lineTo(canvas.width - rightMargin, yScaled);
-            ctx.stroke();
-          }
-
-          // Compute MW label value
-          const t = (y - topMargin) / usableHeight;
-          const mwValue = Math.round(maxMW - t * (maxMW - minMW));
-
-          // Only draw label if it's within visible SDS region after zoom/pan
-          if (yScaled >= topMargin && yScaled <= canvas.height - bottomMargin) {
-            ctx.save();
-            ctx.fillStyle = '#FFFFFF';
-            ctx.translate(15, yScaled + 5);
-            ctx.fillText(`${mwValue.toLocaleString()} Da.`, 0, 0);
-            ctx.restore();
-          }
+      // Draw SDS area background (gel)
+      const drawSDSArea = () => {
+        if (simulationState === 'ief-complete' || simulationState === 'sds-running' || simulationState === 'complete') {
+          ctx.fillStyle = '#222222';
+          ctx.fillRect(LEFT_MARGIN, SDS_TOP_MARGIN, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN);
         }
-      } else {
-          // Distance traveled axis
+      };
+
+      // Draw axes and gridlines for SDS
+      const drawAxesAndGrid = () => {
+        if (!['sds-running', 'complete'].includes(simulationState)) return;
+
+        ctx.strokeStyle = GRID_STROKE;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = MAIN_FONT;
+
+        const topMargin = SDS_TOP_MARGIN;
+        const bottomMargin = SDS_BOTTOM_MARGIN;
+        const leftMargin = LEFT_MARGIN;
+        const rightMargin = RIGHT_MARGIN;
+        const usableHeight = canvas.height - topMargin - bottomMargin;
+
+        if (yAxisMode === 'mw') {
+          const stepY = 50;
+          const yStart = topMargin - 5 * stepY;
+          const yEnd = canvas.height - bottomMargin + 5 * stepY;
+
+          for (let y = yStart; y <= yEnd; y += stepY) {
+            const yScaled = y * zoomRef.current + offsetRef.current.y;
+            if (yScaled < 0 || yScaled > canvas.height) continue;
+
+            if (yScaled >= topMargin && yScaled <= canvas.height - bottomMargin) {
+              ctx.beginPath();
+              ctx.moveTo(leftMargin, yScaled);
+              ctx.lineTo(canvas.width - rightMargin, yScaled);
+              ctx.stroke();
+            }
+
+            const t = (y - topMargin) / usableHeight;
+            const mwValue = Math.round(maxMW - t * (maxMW - minMW));
+
+            if (yScaled >= topMargin && yScaled <= canvas.height - bottomMargin) {
+              ctx.save();
+              ctx.fillStyle = '#FFFFFF';
+              ctx.translate(15, yScaled + 5);
+              ctx.fillText(`${mwValue.toLocaleString()} Da.`, 0, 0);
+              ctx.restore();
+            }
+          }
+        } else {
           for (let i = 0; i <= MAX_DISTANCE_TRAVELED; i++) {
             const baseY = topMargin + (i / MAX_DISTANCE_TRAVELED) * usableHeight;
             const y = baseY * zoomRef.current + offsetRef.current.y;
@@ -768,159 +791,168 @@ const handleCanvasMouseMove = (event) => {
           }
         }
 
-        // pH Axis vertical gridlines and labels
+        // pH vertical gridlines
         for (let pH = MIN_PH; pH <= MAX_PH; pH += PH_STEP) {
+          const pHRange = MAX_PH - MIN_PH;
+          const pHMid = (MAX_PH + MIN_PH) / 2;
+          const visibleMinPH = pHMid - (pHRange / 2) / zoomRef.current;
+          const visibleMaxPH = pHMid + (pHRange / 2) / zoomRef.current;
 
-        const pHRange = MAX_PH - MIN_PH;
-        const pHMid = (MAX_PH + MIN_PH) / 2;
-        const visibleMinPH = pHMid - (pHRange / 2) / zoomRef.current;
-        const visibleMaxPH = pHMid + (pHRange / 2) / zoomRef.current;
+          const unzoomedX = LEFT_MARGIN + ((pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offsetRef.current.x;
+          const x = (unzoomedX - offsetRef.current.x) * zoomRef.current + offsetRef.current.x;
 
-        // unzoomed base like dot draw
-        const unzoomedX = LEFT_MARGIN + ((pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offsetRef.current.x;
-
-        // zoom transform
-        const x = (unzoomedX - offsetRef.current.x) * zoomRef.current + offsetRef.current.x;
-
-        if (x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN) {
-          ctx.beginPath();
-          ctx.moveTo(x, topMargin);
-          ctx.lineTo(x, canvas.height - bottomMargin);
-          ctx.stroke();
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(pH.toFixed(2), x - 10, canvas.height - 30);
+          if (x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN) {
+            ctx.beginPath();
+            ctx.moveTo(x, topMargin);
+            ctx.lineTo(x, canvas.height - bottomMargin);
+            ctx.stroke();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(pH.toFixed(2), x - 10, canvas.height - 30);
+          }
         }
-      }
-    }
+      };
 
-      // Draw PH axis label (now centered at bottom)
-      ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'center';
+      // Labels
+      const drawLabels = () => {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.fillText('pI', canvas.width / 2, canvas.height - 10);
 
-      //TODO: edited this for fun 
-      ctx.fillText('pI', canvas.width / 2, canvas.height - 10);
+        ctx.save();
+        ctx.translate(10, canvas.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText(yAxisMode === 'mw' ? 'MW (Da)' : 'Distance (cm)', 0, 0);
+        ctx.restore();
+        ctx.textAlign = 'left';
+      };
 
-      // Vertical MW/Distance label
-      ctx.save();
-      ctx.translate(10, canvas.height / 2);
-      ctx.rotate(-Math.PI / 2);
-      ctx.fillText(yAxisMode === 'mw' ? 'MW (Da)' : 'Distance (cm)', 0, 0);
-      ctx.restore();
-      ctx.textAlign = 'left';
+      // Progress indicator
+      const drawProgress = () => {
+        if (simulationState === 'ief-running') {
+          ctx.fillStyle = PROGRESS_BG;
+          ctx.fillRect(LEFT_MARGIN, canvas.height - PROGRESS_Y_OFFSET, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), PROGRESS_HEIGHT);
+          ctx.fillStyle = PROGRESS_FILL;
+          ctx.fillRect(LEFT_MARGIN, canvas.height - PROGRESS_Y_OFFSET, (canvas.width - (LEFT_MARGIN + RIGHT_MARGIN)) * simulationProgress, PROGRESS_HEIGHT);
+        }
+      };
 
-      // Draw progress indicator during IEF
-      if (simulationState === 'ief-running') {
-        ctx.fillStyle = PROGRESS_BG;
-        ctx.fillRect(LEFT_MARGIN, canvas.height - PROGRESS_Y_OFFSET, canvas.width - (LEFT_MARGIN + RIGHT_MARGIN), PROGRESS_HEIGHT);
-        ctx.fillStyle = PROGRESS_FILL;
-        ctx.fillRect(LEFT_MARGIN, canvas.height - PROGRESS_Y_OFFSET, (canvas.width - (LEFT_MARGIN + RIGHT_MARGIN)) * simulationProgress, PROGRESS_HEIGHT);
-      }
+      // Helper to compute SDS coordinates and visibility
+      const computeSDSPosition = (dot) => {
+        const zoom = zoomRef.current;
+        const offset = offsetRef.current;
+        const pHRange = MAX_PH - MIN_PH;
+        const mwRange = maxMW - minMW;
+
+        const pHMid = (MAX_PH + MIN_PH) / 2;
+        const mwMid = (maxMW + minMW) / 2;
+
+        const visibleMinPH = pHMid - (pHRange / 2) / zoom;
+        const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
+        const visibleMinMW = mwMid - (mwRange / 2) / zoom;
+        const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
+
+        const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
+        const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
+        const baseY = SDS_TOP_MARGIN + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW)) * usableHeight + offset.y;
+
+        const x = (baseX - offset.x) * zoom + offset.x;
+        const y = (baseY - offset.y) * zoom + offset.y;
+
+        const withinX = x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN;
+        const withinY = y >= SDS_TOP_MARGIN && y <= canvas.height - SDS_BOTTOM_MARGIN;
+        return { x, y, withinX, withinY };
+      };
+
+      // Per-dot drawing handlers
+      const drawDotReady = (dot, isHighlighted, isHovered) => {
+        const screenX = dot.x * zoomRef.current + offset.x;
+        const screenY = dot.y * zoomRef.current + offset.y;
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, DOT_RADIUS * zoomRef.current, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (isHighlighted) {
+          ctx.strokeStyle = HIGHLIGHT_STROKE;
+          ctx.lineWidth = HIGHLIGHT_LINEWIDTH;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(dot.x, dot.y, PULSE_RADIUS, 0, Math.PI * 2);
+          ctx.strokeStyle = PULSE_STROKE;
+          ctx.stroke();
+        } else if (isHovered) {
+          ctx.strokeStyle = HIGHLIGHT_STROKE;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      };
+
+      const drawDotIEF = (dot, isHighlighted, isHovered) => {
+        if (dot.condensing) {
+          ctx.beginPath();
+          ctx.arc(dot.x, dot.y, DOT_RADIUS, 0, Math.PI * 2);
+          ctx.fill();
+          if (isHighlighted) {
+            ctx.strokeStyle = HIGHLIGHT_STROKE;
+            ctx.lineWidth = HIGHLIGHT_LINEWIDTH;
+            ctx.stroke();
+          }
+        } else {
+          ctx.fillRect(dot.x - dot.bandWidth / 2, dot.y - BAND_HEIGHT / 2, dot.bandWidth, BAND_HEIGHT);
+          if (isHighlighted || isHovered) {
+            ctx.strokeStyle = HIGHLIGHT_STROKE;
+            ctx.lineWidth = isHighlighted ? HIGHLIGHT_LINEWIDTH : 1;
+            ctx.strokeRect(dot.x - dot.bandWidth / 2, dot.y - BAND_HEIGHT / 2, dot.bandWidth, BAND_HEIGHT);
+            if (isHighlighted) {
+              ctx.strokeStyle = PULSE_STROKE;
+              ctx.lineWidth = 1;
+              ctx.strokeRect(dot.x - dot.bandWidth / 2 - 3, dot.y - BAND_HEIGHT / 2 - 3, dot.bandWidth + 6, BAND_HEIGHT + 6);
+            }
+          }
+        }
+      };
+
+      const drawDotSDS = (dot, isHighlighted, isHovered) => {
+        const pos = computeSDSPosition(dot);
+        if (!pos.withinX || !pos.withinY) return;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, (isHighlighted || isHovered) ? DOT_HOVER_RADIUS : DOT_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = dot.color;
+        ctx.fill();
+
+        if (isHighlighted || isHovered) {
+          ctx.strokeStyle = HIGHLIGHT_STROKE;
+          ctx.lineWidth = isHighlighted ? HIGHLIGHT_LINEWIDTH : 1;
+          ctx.stroke();
+          if (isHighlighted) {
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, PULSE_RADIUS, 0, Math.PI * 2);
+            ctx.strokeStyle = PULSE_STROKE;
+            ctx.stroke();
+          }
+        }
+      };
+
+      // Perform drawing steps
+      drawLoadingZone();
+      drawIEFAndGradient();
+      drawSDSArea();
+      drawAxesAndGrid();
+      drawLabels();
+      drawProgress();
 
       // Draw Bands and Dots
       dots.forEach(dot => {
         const isHighlighted = dot === selectedDot;
         const isHovered = dot === hoveredDot;
-
         ctx.fillStyle = dot.color;
 
         if (simulationState === 'ready') {
-          // Loading zone dots
-          ctx.beginPath();
-
-          const screenX = dot.x * zoomRef.current + offset.x;
-          const screenY = dot.y * zoomRef.current + offset.y;
-          ctx.arc(screenX, screenY, DOT_RADIUS * zoomRef.current, 0, Math.PI * 2);
-          ctx.fill();
-
-          if (isHighlighted) {
-            ctx.strokeStyle = HIGHLIGHT_STROKE;
-            ctx.lineWidth = HIGHLIGHT_LINEWIDTH;
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(dot.x, dot.y, PULSE_RADIUS, 0, Math.PI * 2);
-            ctx.strokeStyle = PULSE_STROKE;
-            ctx.stroke();
-          } else if (isHovered) {
-            ctx.strokeStyle = HIGHLIGHT_STROKE;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
+          drawDotReady(dot, isHighlighted, isHovered);
         } else if (simulationState === 'ief-running' || simulationState === 'ief-complete') {
-          if (dot.condensing) {
-            ctx.beginPath();
-            ctx.arc(dot.x, dot.y, DOT_RADIUS, 0, Math.PI * 2);
-            ctx.fill();
-
-            if (isHighlighted) {
-              ctx.strokeStyle = HIGHLIGHT_STROKE;
-              ctx.lineWidth = HIGHLIGHT_LINEWIDTH;
-              ctx.stroke();
-            }
-          } else {
-            // Vertical bands in IEF
-            ctx.fillRect(dot.x - dot.bandWidth / 2,dot.y - BAND_HEIGHT / 2,dot.bandWidth,BAND_HEIGHT);
-
-            if (isHighlighted || isHovered) {
-              ctx.strokeStyle = HIGHLIGHT_STROKE;
-              ctx.lineWidth = isHighlighted ? HIGHLIGHT_LINEWIDTH : 1;
-              ctx.strokeRect(dot.x - dot.bandWidth / 2,dot.y - BAND_HEIGHT / 2,dot.bandWidth,BAND_HEIGHT);
-
-              if (isHighlighted) {
-                ctx.strokeStyle = PULSE_STROKE;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(
-                  dot.x - dot.bandWidth / 2 - 3,
-                  dot.y - BAND_HEIGHT / 2 - 3,dot.bandWidth + 6,BAND_HEIGHT + 6);
-              }
-            }
-          }
+          drawDotIEF(dot, isHighlighted, isHovered);
         } else {
-          // SDS-PAGE dots mapped to pH (x) and MW (y)
-            const zoom = zoomRef.current;
-            const offset = offsetRef.current;
-            const pHRange = MAX_PH - MIN_PH;
-            const mwRange = maxMW - minMW;
-
-            // e.g. zoom centered around the midpoint of each axis
-            const pHMid = (MAX_PH + MIN_PH) / 2;
-            const mwMid = (maxMW + minMW) / 2;
-
-            // Adjusted min/max for visible window
-            const visibleMinPH = pHMid - (pHRange / 2) / zoom;
-            const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
-            const visibleMinMW = mwMid - (mwRange / 2) / zoom;
-            const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
-
-            const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offsetRef.current.x;
-            const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-            const baseY = SDS_TOP_MARGIN + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW)) * usableHeight + offsetRef.current.y;
-
-            // apply zoom around offset
-            const x = (baseX - offset.x) * zoom + offset.x;
-            const y = (baseY - offset.y) * zoom + offset.y;
-
-            const withinX = x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN;
-            const withinY = y >= SDS_TOP_MARGIN && y <= canvas.height - SDS_BOTTOM_MARGIN;
-            if (!withinX || !withinY) return;
-          
-            ctx.beginPath();
-            ctx.arc(x, y, (isHighlighted || isHovered) ? DOT_HOVER_RADIUS : DOT_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = dot.color;
-            ctx.fill();
-
-            if (isHighlighted || isHovered) {
-              ctx.strokeStyle = HIGHLIGHT_STROKE;
-              ctx.lineWidth = isHighlighted ? HIGHLIGHT_LINEWIDTH : 1;
-              ctx.stroke();
-
-              if (isHighlighted) {
-                ctx.beginPath();
-                ctx.arc(x, y, PULSE_RADIUS, 0, Math.PI * 2);
-                ctx.strokeStyle = PULSE_STROKE;
-                ctx.stroke();
-              }
-            }
+          drawDotSDS(dot, isHighlighted, isHovered);
         }
       });
 
@@ -1270,7 +1302,11 @@ const handleCanvasMouseMove = (event) => {
 
               {['sds-running', 'complete'].includes(simulationState) && (
                 <div style={{position: 'absolute',top: 10,right: 10,display: 'flex',flexDirection: 'column',gap: '4px',background: 'rgba(20, 20, 20, 0)',borderRadius: '8px',padding: '4px', paddingTop: '160px'}}>
-                  <button className="plus-button" onClick={() => {const newZoom = Math.min(zoom * 1.1, 5); setZoomSafe(newZoom);}}>+</button>
+                  <button className="plus-button" onClick={() => {
+                    const newZoom = Math.min(zoom * 1.1, 5); 
+                    setZoomSafe(newZoom);
+                    clampOffset()
+                    }}>+</button>
                   <button className="minus-button" onClick={() => setZoomSafe(Math.max(zoom / 1.1, 0.5))}>-</button>
                 </div>
               )}
