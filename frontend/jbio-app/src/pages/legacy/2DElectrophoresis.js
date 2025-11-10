@@ -94,7 +94,7 @@ const TwoDE = () => {
 
 
 
-    const handleCanvasClick = (event) => {
+  const handleCanvasClick = (event) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -198,8 +198,8 @@ const TwoDE = () => {
         // draw() uses arc radius: (isHighlighted || isHovered) ? DOT_HOVER_RADIUS : DOT_RADIUS
         // For hover detection, use DOT_HOVER_RADIUS (or a slightly larger value) so cursor matches visual highlight
         const hitRadius = (DOT_HOVER_RADIUS || DOT_RADIUS) + 4;
-        const dx = mouseX - screenX;
-        const dy = mouseY - screenY;
+        const dx = mouseX - screenX * offset;
+        const dy = mouseY - screenY * offset;
         return Math.hypot(dx, dy) <= hitRadius;
       }
 
@@ -437,35 +437,72 @@ const TwoDE = () => {
   // Handler for when the mouse cursor moves on the canvas (simulation)
   // and checks if it is hovering over a dot on the simulation
 const handleCanvasMouseMove = (event) => {
-    const canvas = canvasRef.current;
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+
   const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const mouseX = (event.clientX - rect.left) * scaleX;
+  const mouseY = (event.clientY - rect.top) * scaleY;
 
   setMousePos({ x: event.clientX, y: event.clientY });
 
+  const zoom = zoomRef.current ?? 1;
+  const offset = offsetRef.current ?? { x: 0, y: 0 };
+
   const hovered = dots.find(dot => {
-    let dotX = dot.x;
-    let dotY = dot.y;
+    let screenX = 0;
+    let screenY = 0;
 
+    // --- SDS mode: mimic draw() exactly ---
     if (['sds-running', 'complete'].includes(simulationState)) {
-      dotX = LEFT_MARGIN + ((dot.pH - MIN_PH) / (MAX_PH - MIN_PH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN);
-      const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-      dotY = SDS_TOP_MARGIN + ((maxMW - dot.mw) / (maxMW - minMW)) * usableHeight;
+      const pHRange = MAX_PH - MIN_PH;
+      const mwRange = maxMW - minMW;
 
-      // Apply zoom & offset
-      dotX = dotX * zoomRef.current + offsetRef.current.x;
-      dotY = dotY * zoomRef.current + offsetRef.current.y;
+      const pHMid = (MAX_PH + MIN_PH) / 2;
+      const mwMid = (maxMW + minMW) / 2;
+
+      const visibleMinPH = pHMid - (pHRange / 2) / zoom;
+      const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
+      const visibleMinMW = mwMid - (mwRange / 2) / zoom;
+      const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
+
+      // base unzoomed positions
+      const baseX = LEFT_MARGIN
+        + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH))
+        * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN)
+        + offset.x;
+
+      const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
+      const baseY = SDS_TOP_MARGIN
+        + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW))
+        * usableHeight
+        + offset.y;
+
+      // actual zoom transform (zoom about offset)
+      screenX = (baseX - offset.x) * zoom + offset.x;
+      screenY = (baseY - offset.y) * zoom + offset.y;
+
+      // check bounds just like draw()
+      const withinX = screenX >= LEFT_MARGIN && screenX <= canvas.width - RIGHT_MARGIN;
+      const withinY = screenY >= SDS_TOP_MARGIN && screenY <= canvas.height - SDS_BOTTOM_MARGIN;
+      if (!withinX || !withinY) return false;
+
+      const hitRadius = DOT_HOVER_RADIUS + 4;
+      return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
     }
 
-    const dx = x - dotX;
-    const dy = y - dotY;
-    return Math.sqrt(dx * dx + dy * dy) < 10; // hover radius
+    // fallback: non-SDS state
+    screenX = dot.x * zoom + offset.x;
+    screenY = dot.y * zoom + offset.y;
+    const hitRadius = DOT_RADIUS * zoom + 4;
+    return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
   });
 
   setHoveredDot(hovered || null);
-
 };
+
 
 
   // Handler for when the mouse course clicks on the document, which closes
@@ -734,8 +771,16 @@ const handleCanvasMouseMove = (event) => {
         // pH Axis vertical gridlines and labels
         for (let pH = MIN_PH; pH <= MAX_PH; pH += PH_STEP) {
 
-        const baseX = getPHPosition(pH, canvas.width);
-        const x = baseX * zoomRef.current + offsetRef.current.x;
+        const pHRange = MAX_PH - MIN_PH;
+        const pHMid = (MAX_PH + MIN_PH) / 2;
+        const visibleMinPH = pHMid - (pHRange / 2) / zoomRef.current;
+        const visibleMaxPH = pHMid + (pHRange / 2) / zoomRef.current;
+
+        // unzoomed base like dot draw
+        const unzoomedX = LEFT_MARGIN + ((pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offsetRef.current.x;
+
+        // zoom transform
+        const x = (unzoomedX - offsetRef.current.x) * zoomRef.current + offsetRef.current.x;
 
         if (x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN) {
           ctx.beginPath();
@@ -883,7 +928,7 @@ const handleCanvasMouseMove = (event) => {
     };
 
     draw();
-  }, [dots, hoveredDot, selectedDot, simulationState, simulationProgress, phRange, yAxisMode, acrylamidePercentage, minMW, maxMW]);
+  }, [dots, hoveredDot, selectedDot, simulationState, simulationProgress, phRange, yAxisMode, acrylamidePercentage, minMW, maxMW, MAX_PH, MIN_PH, getPHPosition]);
 
 
 
@@ -901,41 +946,7 @@ const handleCanvasMouseMove = (event) => {
     e.target.style.borderColor = '#3a3a3a';
   };
 
-  // Circular progress indicator component
-  const CircularProgress = ({ progress }) => {
-    const radius = 20;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference * (1 - progress / 100);
 
-    return (
-      <div style={{ position: 'relative', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg width="50" height="50" viewBox="0 0 50 50">
-          <circle
-            cx="25"
-            cy="25"
-            r={radius}
-            stroke="#333"
-            strokeWidth="4"
-            fill="none"
-          />
-          <circle
-            cx="25"
-            cy="25"
-            r={radius}
-            stroke="#4CAF50"
-            strokeWidth="4"
-            fill="none"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            transform="rotate(-90 25 25)"
-          />
-        </svg>
-        <div style={{ position: 'absolute', fontSize: '12px' }}>
-          {Math.round(progress)}%
-        </div>
-      </div>
-    );
-  };
 
   // Component for collapsible protein list header
   const ProteinListHeader = ({ isCollapsed, onToggle, count }) => {
@@ -1207,23 +1218,23 @@ const handleCanvasMouseMove = (event) => {
                       <div className="twoDE-progress">
                         {/* This svg did not work but this weird line worked idk don't touch this lol */}
                         <svg width="60" height="30" viewBox="0 0 100 50">
-                        <line x1="10" y1="25" x2="10" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <line x1="10" y1="25" x2="10" y2="25" stroke="#7189da" strokeWidth="4" strokeLinecap="round">
                         <animate attributeName="y1" values="25;10;25" dur="1s" begin="0s" repeatCount="indefinite"/>
                         <animate attributeName="y2" values="25;40;25" dur="1s" begin="0s" repeatCount="indefinite"/>
                         </line>
-                        <line x1="30" y1="25" x2="30" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <line x1="30" y1="25" x2="30" y2="25" stroke="#7189da" strokeWidth="4" strokeLinecap="round">
                         <animate attributeName="y1" values="25;10;25" dur="1s" begin="0.2s" repeatCount="indefinite"/>
                         <animate attributeName="y2" values="25;40;25" dur="1s" begin="0.2s" repeatCount="indefinite"/>
                         </line>
-                        <line x1="50" y1="25" x2="50" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <line x1="50" y1="25" x2="50" y2="25" stroke="#7189da" strokeWidth="4" strokeLinecap="round">
                         <animate attributeName="y1" values="25;10;25" dur="1s" begin="0.4s" repeatCount="indefinite"/>
                         <animate attributeName="y2" values="25;40;25" dur="1s" begin="0.4s" repeatCount="indefinite"/>
                         </line>
-                        <line x1="70" y1="25" x2="70" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <line x1="70" y1="25" x2="70" y2="25" stroke="#7189da" strokeWidth="4" strokeLinecap="round">
                         <animate attributeName="y1" values="25;10;25" dur="1s" begin="0.6000000000000001s" repeatCount="indefinite"/>
                         <animate attributeName="y2" values="25;40;25" dur="1s" begin="0.6000000000000001s" repeatCount="indefinite"/>
                         </line>
-                        <line x1="90" y1="25" x2="90" y2="25" stroke="#7189da" stroke-width="4" stroke-linecap="round">
+                        <line x1="90" y1="25" x2="90" y2="25" stroke="#7189da" strokeWidth="4" strokeLinecap="round">
                         <animate attributeName="y1" values="25;10;25" dur="1s" begin="0.8s" repeatCount="indefinite"/>
                         <animate attributeName="y2" values="25;40;25" dur="1s" begin="0.8s" repeatCount="indefinite"/>
                         </line>
