@@ -95,7 +95,6 @@ const TwoDE = () => {
     zoomRef.current = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
     setZoom(zoomRef.current);
 
-    alert(zoomRef.current)
   };
 
   const clampOffset = () => {
@@ -186,11 +185,7 @@ const TwoDE = () => {
 
           // Mouse hit if inside the rect (optionally allow small padding)
           const padding = 4;
-          if (mouseX >= bandLeft - padding && mouseX <= bandRight + padding &&
-              mouseY >= bandTop - padding && mouseY <= bandBottom + padding) {
-            return true;
-          }
-          return false;
+          return !!(mouseX >= bandLeft - padding && mouseX <= bandRight + padding && mouseY >= bandTop - padding && mouseY <= bandBottom + padding);
         }
       }
 
@@ -209,16 +204,10 @@ const TwoDE = () => {
         const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
 
         // base (unzoomed) positions used in draw()
-        const baseX = LEFT_MARGIN
-          + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH))
-          * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN)
-          + offset.x;
+        const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
 
         const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        const baseY = SDS_TOP_MARGIN
-          + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW))
-          * usableHeight
-          + offset.y;
+        const baseY = SDS_TOP_MARGIN + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW)) * usableHeight + offset.y;
 
         // apply the same "zoom about offset" transform as draw()
         screenX = (baseX - offset.x) * zoom + offset.x;
