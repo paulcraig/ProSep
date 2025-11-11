@@ -97,36 +97,6 @@ const TwoDE = () => {
 
   };
 
-  const clampOffset = () => {
-    const zoom = zoomRef.current;
-    const offset = offsetRef.current;
-
-    // Content area in world-space (SDS region)
-    const worldLeft   = LEFT_MARGIN;
-    const worldRight  = canvasRef.current.width - RIGHT_MARGIN;
-    const worldTop    = SDS_TOP_MARGIN;
-    const worldBottom = canvasRef.current.height - SDS_BOTTOM_MARGIN;
-
-    // Convert world bounds to screen bounds at current zoom
-    const screenLeft   = worldLeft * zoom;
-    const screenRight  = worldRight * zoom;
-    const screenTop    = worldTop * zoom;
-    const screenBottom = worldBottom * zoom;
-
-    // The user should not be able to pan so far that the data leaves the screen entirely.
-    const minOffsetX = -screenLeft;
-    const maxOffsetX = canvasRef.current.width - screenRight;
-
-    const minOffsetY = -screenTop;
-    const maxOffsetY = canvasRef.current.height - screenBottom;
-
-    offset.x = Math.max(minOffsetX, Math.min(offset.x, maxOffsetX));
-    offset.y = Math.max(minOffsetY, Math.min(offset.y, maxOffsetY));
-  };
-
-
-
-
   const handleCanvasClick = (event) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -185,7 +155,11 @@ const TwoDE = () => {
 
           // Mouse hit if inside the rect (optionally allow small padding)
           const padding = 4;
-          return !!(mouseX >= bandLeft - padding && mouseX <= bandRight + padding && mouseY >= bandTop - padding && mouseY <= bandBottom + padding);
+          if (mouseX >= bandLeft - padding && mouseX <= bandRight + padding &&
+              mouseY >= bandTop - padding && mouseY <= bandBottom + padding) {
+            return true;
+          }
+          return false;
         }
       }
 
@@ -204,10 +178,16 @@ const TwoDE = () => {
         const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
 
         // base (unzoomed) positions used in draw()
-        const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
+        const baseX = LEFT_MARGIN
+          + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH))
+          * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN)
+          + offset.x;
 
         const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        const baseY = SDS_TOP_MARGIN + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW)) * usableHeight + offset.y;
+        const baseY = SDS_TOP_MARGIN
+          + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW))
+          * usableHeight
+          + offset.y;
 
         // apply the same "zoom about offset" transform as draw()
         screenX = (baseX - offset.x) * zoom + offset.x;
@@ -334,7 +314,6 @@ const TwoDE = () => {
     axios.post(`${API_URL}/2d/simulate-sds`, data)
 
       .then(response => {
-        console.log("SDS RESPONSE DATA:", response.data);
         // Get the simulation results
         const simulationResults = response.data;
         const totalSteps = simulationResults.length;
@@ -667,8 +646,6 @@ const handleCanvasMouseMove = (event) => {
 
     offsetRef.current.x += dx;
     offsetRef.current.y += dy;
-    clampOffset();
-
     panStart.current = { x: e.clientX, y: e.clientY };
   });
 
@@ -1291,11 +1268,13 @@ const handleCanvasMouseMove = (event) => {
 
               {['sds-running', 'complete'].includes(simulationState) && (
                 <div style={{position: 'absolute',top: 10,right: 10,display: 'flex',flexDirection: 'column',gap: '4px',background: 'rgba(20, 20, 20, 0)',borderRadius: '8px',padding: '4px', paddingTop: '160px'}}>
+                  
                   <button className="plus-button" onClick={() => {
                     const newZoom = Math.min(zoom * 1.1, 5); 
                     setZoomSafe(newZoom);
-                    clampOffset()
-                    }}>+</button>
+                    }}>+
+                  </button>
+
                   <button className="minus-button" onClick={() => setZoomSafe(Math.max(zoom / 1.1, 0.5))}>-</button>
                 </div>
               )}
