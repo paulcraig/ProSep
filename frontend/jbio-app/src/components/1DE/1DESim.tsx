@@ -31,7 +31,7 @@ interface OneDEProps {
 
 export default function OneDESim({
   axisTicks = 6,
-  initWells = 5,
+  initWells = 6,
   initVoltage= 100,
   initAcrylamide= 7.5
 
@@ -39,7 +39,10 @@ export default function OneDESim({
 
   /* Consts */
   const SUB_TICKS = 3;
-  const MAX_WELLS = 10;
+  
+  const MIN_WELLS = 4;
+  const MAX_WELLS = 11;
+  const WELL_SCALE = 800 / 6;
   
   const BORDER = 4;
   const TICK_MAJOR = 20;
@@ -59,8 +62,8 @@ export default function OneDESim({
   };
 
   /* Dimensions */
-  const [slabHeight, setSlabHeight] = useState(800);
-  const [slabWidth,  setSlabWidth ] = useState(800);
+  const [slabHeight, setSlabHeight] = useState(WELL_SCALE * initWells);
+  const [slabWidth,  setSlabWidth ] = useState(WELL_SCALE * initWells);
   
   const rootRef = useRef<HTMLDivElement>(null);
   const slabRef = useRef<HTMLDivElement>(null);
@@ -91,7 +94,7 @@ export default function OneDESim({
   
   /* Functions and Handlers */
   React.useLayoutEffect(() => {
-    const recalcHeight = () => {
+    const computeHeight = () => {
       if (!rootRef.current || !slabRef.current || !buffRef.current) return;
 
       const rootRect = rootRef.current.getBoundingClientRect();
@@ -105,14 +108,15 @@ export default function OneDESim({
       setSlabHeight(prev => (Math.abs(prev - next) > 0.5 ? next : prev));
     };
 
-    const observer = new ResizeObserver(recalcHeight);
+    const observer = new ResizeObserver(computeHeight);
+    
     if (rootRef.current) observer.observe(rootRef.current);
-    window.addEventListener("resize", recalcHeight);
-    recalcHeight();
+    window.addEventListener("resize", computeHeight);
+    computeHeight();
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", recalcHeight);
+      window.removeEventListener("resize", computeHeight);
     };
   }, []);
 
@@ -195,10 +199,18 @@ export default function OneDESim({
   }, [isDragging]);
 
 
+  const addNumWells = (n: number) => {
+    const newNum = numWells + n;
+    
+    if (newNum >= MIN_WELLS && newNum <= MAX_WELLS) {
+      setSlabWidth(WELL_SCALE * newNum);
+      setNumWells(newNum);
+    }
+  }
+
+
   const handleHelp = () => setShowHelp(true);
   const handlePlot = () => setShowPlot(true);
-  const handleReset = () => console.log("Reset");
-  const handleClear = () => console.log("Clear");
 
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,6 +225,10 @@ export default function OneDESim({
     setIsRunning(!isRunning);
     setIsStarted(true);
   };
+
+
+  const handleReset = () => console.log("Reset");
+  const handleClear = () => console.log("Clear");
 
 
   const handleToggleStandard = (protein: IDEProtein) => {
@@ -230,7 +246,7 @@ export default function OneDESim({
   /* Components */
   const toolBar = useMemo(() => {
     const buttons = [
-      { label: "Instructions", icon: <InfoIcon />, onClick: handleHelp },
+      { label: "Info", icon: <InfoIcon />, onClick: handleHelp },
       { 
         label: "Upload",
         icon: <UploadIcon />,
@@ -264,7 +280,7 @@ export default function OneDESim({
                 "&:hover": { backgroundColor: "var(--accent)", color: "#fff" },
                 backgroundColor: "var(--highlight)",
                 textTransform: "none",
-                fontSize: "0.85rem",
+                fontSize: "0.875rem",
                 color: "var(--text)"
               }}
             >
@@ -340,6 +356,58 @@ export default function OneDESim({
       );
     }
 
+    const makeWellButtons = () => {
+      const r = getY(min / 2, min, max, slabHeight, false);
+      const sidePad = slabWidth / (2 * numWells + 1) / 2;
+
+      return (
+        <svg
+          width={slabWidth} height={slabHeight}
+          style={{ position: "absolute", top: 0, left: 0, zIndex: 3 }}
+        >
+          {(numWells > MIN_WELLS) &&
+            <g
+              transform={`translate(${sidePad},${(r * 2) + (GUIDE_MINOR / 2)})`}
+              style={{ cursor: "pointer" }}
+              onClick={() => addNumWells(-1)}
+
+            >
+              <circle r={r * 0.75} fill="var(--accent)" opacity={0.3} />
+              <line
+                x1={-r / 4} y1={0} x2={r / 4} y2={0}
+                strokeLinecap="round"
+                stroke="var(--text)"
+                strokeWidth={GUIDE_MAJOR}
+              />
+              <title>Remove well</title>
+            </g>
+          }
+          {(numWells < MAX_WELLS) &&
+            <g
+              transform={`translate(${slabWidth - sidePad},${(r * 2) + (GUIDE_MINOR / 2)})`}
+              style={{ cursor: "pointer" }}
+              onClick={() => addNumWells(1)}
+            >
+              <circle r={r * 0.75} fill="var(--accent)" opacity={0.3} />
+              <line
+                x1={-r / 4} y1={0} x2={r / 4} y2={0}
+                strokeLinecap="round"
+                stroke="var(--text)"
+                strokeWidth={GUIDE_MAJOR}
+              />
+              <line
+                x1={0} y1={-r / 4} x2={0} y2={r / 4}
+                strokeLinecap="round"
+                stroke="var(--text)"
+                strokeWidth={GUIDE_MAJOR}
+              />
+              <title>Add well</title>
+            </g>
+          }
+        </svg>
+      );
+    };
+
     const makeDots = (key: string, y: number, radius: number) => {
       const wellWidth = slabWidth / (2 * numWells + 1);
       const gap = wellWidth / 4;
@@ -380,7 +448,7 @@ export default function OneDESim({
               pointerEvents: "none",
               color: "var(--text)",
               whiteSpace: "nowrap",
-              fontSize: "0.85rem",
+              fontSize: "0.875rem",
               opacity: opacity
             }}>
               {label}
@@ -469,6 +537,7 @@ export default function OneDESim({
         {lines}
         {dots}
         {makeBuffers()}
+        {makeWellButtons()}
       </div>
     );
   }, [slabWidth, slabHeight, numTicks, numWells, zoom, anchor, isDragging]);
@@ -477,7 +546,7 @@ export default function OneDESim({
   const standardChips = useMemo(() => {
     const getContrast = (hex: string): string => {
       const [r, g, b] = hex.match(/\w\w/g)!.map(x => parseInt(x, 16));
-      return (0.299 * r + 0.587 * g + 0.114 * b) > 186 ? "var(--dark)" : "var(--text)";
+      return (0.299 * r + 0.587 * g + 0.114 * b) > 186 ? "var(--dark)" : "#fff";
     };
 
     return (
@@ -498,10 +567,12 @@ export default function OneDESim({
               style={{
                 backgroundColor: isSelected ? protein.color : "var(--highlight)",
                 color: getContrast(isSelected ? protein.color : "var(--highlight)"),
-                fontWeight: "bold",
-                cursor: "pointer"
+                fontSize: "0.875rem", fontWeight: "bold", cursor: "pointer"
               }}
-              sx={{"&:hover": { opacity: 0.8 }}}
+              sx={{
+                boxShadow: (theme) => theme.shadows[2],
+                "&:hover": { opacity: 0.8, boxShadow: (theme) => theme.shadows[4] }
+              }}
             />
           );
         })}
