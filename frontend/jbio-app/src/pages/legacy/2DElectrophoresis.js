@@ -102,109 +102,78 @@ const TwoDE = () => {
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-
-    // Convert mouse to canvas pixel coordinates (handles CSS scaling)
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     const mouseX = (event.clientX - rect.left) * scaleX;
     const mouseY = (event.clientY - rect.top) * scaleY;
 
-    // Optional: keep original client coords if you rely on them elsewhere
     setMousePos({ x: event.clientX, y: event.clientY });
 
-    if (selectedDot) return;
+    const zoom = zoomRef.current ?? 1;
+    const offset = offsetRef.current ?? { x: 0, y: 0 };
 
-    const hovered = dots.find(dot => {
+    const clickedDot = dots.find(dot => {
       let screenX = 0;
       let screenY = 0;
 
-      // Use the same refs used in draw()
-      const zoom = zoomRef.current ?? 1;
-      const offset = offsetRef.current ?? { x: 0, y: 0 };
-
       if (simulationState === 'ready') {
-        // draw() uses: const screenX = dot.x * zoomRef.current + offset.x;
-        //              const screenY = dot.y * zoomRef.current + offset.y;
         screenX = dot.x * zoom + offset.x;
         screenY = dot.y * zoom + offset.y;
-
-        // radius used when drawing ready-state dots: DOT_RADIUS * zoomRef.current
-        const hitRadius = (DOT_RADIUS * zoom) + 4; // +4 margin to make hover a bit easier
-        const dx = mouseX - screenX;
-        const dy = mouseY - screenY;
-        return Math.hypot(dx, dy) <= hitRadius;
+        const hitRadius = DOT_RADIUS * zoom + 4;
+        return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
       }
 
       if (simulationState === 'ief-running' || simulationState === 'ief-complete') {
-        // draw() for condensing uses raw coordinates (no zoom/offset)
         if (dot.condensing) {
           screenX = dot.x;
           screenY = dot.y;
           const hitRadius = DOT_RADIUS + 4;
-          const dx = mouseX - screenX;
-          const dy = mouseY - screenY;
-          return Math.hypot(dx, dy) <= hitRadius;
+          return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
         } else {
-          // non-condensing IEF: vertical bands drawn via fillRect at raw coords
-          // We'll test hover against the band rectangle
           const bandHalf = dot.bandWidth / 2;
           const bandTop = dot.y - BAND_HEIGHT / 2;
           const bandLeft = dot.x - bandHalf;
           const bandRight = dot.x + bandHalf;
           const bandBottom = dot.y + BAND_HEIGHT / 2;
-
-          // Mouse hit if inside the rect (optionally allow small padding)
           const padding = 4;
-          if (mouseX >= bandLeft - padding && mouseX <= bandRight + padding &&
-              mouseY >= bandTop - padding && mouseY <= bandBottom + padding) {
-            return true;
-          }
-          return false;
+          return mouseX >= bandLeft - padding && mouseX <= bandRight + padding &&
+                mouseY >= bandTop - padding && mouseY <= bandBottom + padding;
         }
       }
 
-      // Else: SDS-PAGE drawing logic (the long mapping in your draw())
       if (['sds-running', 'complete'].includes(simulationState)) {
-        // replicate draw()'s visible window calculations exactly
         const pHRange = MAX_PH - MIN_PH;
         const mwRange = maxMW - minMW;
-
         const pHMid = (MAX_PH + MIN_PH) / 2;
         const mwMid = (maxMW + minMW) / 2;
-
         const visibleMinPH = pHMid - (pHRange / 2) / zoom;
         const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
-        const visibleMinMW = mwMid - (mwRange / 2) / zoom;
-        const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
 
-        // base (unzoomed) positions used in draw()
-        const baseX = LEFT_MARGIN
-          + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH))
-          * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN)
-          + offset.x;
-
+        const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
         const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        const baseY = SDS_TOP_MARGIN + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW)) * usableHeight + offset.y;
-
+        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / (maxMW - minMW)) * usableHeight;
+        const centerY = canvas.height / 2;
 
         screenX = (baseX - offset.x) * zoom + offset.x;
-        screenY = (baseY - offset.y) * zoom + offset.y;
+        screenY = (baseY - centerY) * zoom + centerY + offset.y;
 
         const withinX = screenX >= LEFT_MARGIN && screenX <= canvas.width - RIGHT_MARGIN;
         const withinY = screenY >= SDS_TOP_MARGIN && screenY <= canvas.height - SDS_BOTTOM_MARGIN;
         if (!withinX || !withinY) return false;
 
         const hitRadius = (DOT_HOVER_RADIUS || DOT_RADIUS) + 4;
-        const dx = mouseX - screenX * offset;
-        const dy = mouseY - screenY * offset;
-        return Math.hypot(dx, dy) <= hitRadius;
+        return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
       }
 
-      // fallback: no hit
       return false;
     });
 
-    setHoveredDot(hovered || null);  
+    if (clickedDot) {
+      setSelectedDot(clickedDot);
+      setHoveredDot(clickedDot);
+    } else {
+      setHoveredDot(null);
+    }
   };
 
   const handleCanvasMouseLeave = () => {
@@ -432,71 +401,67 @@ const TwoDE = () => {
 
   // Handler for when the mouse cursor moves on the canvas (simulation)
   // and checks if it is hovering over a dot on the simulation
-const handleCanvasMouseMove = (event) => {
-  const canvas = canvasRef.current;
-  if (!canvas) return;
+  const handleCanvasMouseMove = (event) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const mouseX = (event.clientX - rect.left) * scaleX;
-  const mouseY = (event.clientY - rect.top) * scaleY;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mouseX = (event.clientX - rect.left) * scaleX;
+    const mouseY = (event.clientY - rect.top) * scaleY;
 
-  setMousePos({ x: event.clientX, y: event.clientY });
+    setMousePos({ x: event.clientX, y: event.clientY });
 
-  const zoom = zoomRef.current ?? 1;
-  const offset = offsetRef.current ?? { x: 0, y: 0 };
+    const zoom = zoomRef.current ?? 1;
+    const offset = offsetRef.current ?? { x: 0, y: 0 };
 
-  const hovered = dots.find(dot => {
-    let screenX = 0;
-    let screenY = 0;
+    const hovered = dots.find(dot => {
+      let screenX = 0;
+      let screenY = 0;
 
-    // --- SDS mode: mimic draw() exactly ---
-    if (['sds-running', 'complete'].includes(simulationState)) {
-      const pHRange = MAX_PH - MIN_PH;
-      const mwRange = maxMW - minMW;
+      // --- SDS mode: mimic draw() exactly ---
+      if (['sds-running', 'complete'].includes(simulationState)) {
+        const zoom = zoomRef.current ?? 1;
+        const offset = offsetRef.current ?? { x: 0, y: 0 };
 
-      const pHMid = (MAX_PH + MIN_PH) / 2;
-      const mwMid = (maxMW + minMW) / 2;
+        const pHRange = MAX_PH - MIN_PH;
+        const mwRange = maxMW - minMW;
 
-      const visibleMinPH = pHMid - (pHRange / 2) / zoom;
-      const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
-      const visibleMinMW = mwMid - (mwRange / 2) / zoom;
-      const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
+        const pHMid = (MAX_PH + MIN_PH) / 2;
+        const mwMid = (maxMW + minMW) / 2;
 
-      // base unzoomed positions
-      const baseX = LEFT_MARGIN
-        + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH))
-        * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN)
-        + offset.x;
+        const visibleMinPH = pHMid - (pHRange / 2) / zoom;
+        const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
 
-      const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-      const baseY = SDS_TOP_MARGIN
+        //can't believe i'm repeating this from the draw function but i can't be arsed to change the slop from the prev team
+        const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
+        const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
+        
+        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / (maxMW - minMW)) * usableHeight;
+        const centerY = canvas.height / 2;
 
-      // actual zoom transform (zoom about offset)
-      screenX = (baseX - offset.x) * zoom + offset.x;
-      screenY = (baseY - offset.y) * zoom + offset.y;
+        const screenX = (baseX - offset.x) * zoom + offset.x;
+        const screenY = (baseY - centerY) * zoom + centerY + offset.y;
 
-      // check bounds just like draw()
-      const withinX = screenX >= LEFT_MARGIN && screenX <= canvas.width - RIGHT_MARGIN;
-      const withinY = screenY >= SDS_TOP_MARGIN && screenY <= canvas.height - SDS_BOTTOM_MARGIN;
-      if (!withinX || !withinY) return false;
+        const withinX = screenX >= LEFT_MARGIN && screenX <= canvas.width - RIGHT_MARGIN;
+        const withinY = screenY >= SDS_TOP_MARGIN && screenY <= canvas.height - SDS_BOTTOM_MARGIN;
+        if (!withinX || !withinY) return false;
 
-      const hitRadius = DOT_HOVER_RADIUS + 4;
+        const hitRadius = (DOT_HOVER_RADIUS || DOT_RADIUS) + 4;
+        const dx = mouseX - screenX;
+        const dy = mouseY - screenY;
+        return Math.hypot(dx, dy) <= hitRadius;
+      }
+      // fallback: non-SDS state
+      screenX = dot.x * zoom + offset.x;
+      screenY = dot.y * zoom + offset.y;
+      const hitRadius = DOT_RADIUS * zoom + 4;
       return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
-    }
+    });
 
-    // fallback: non-SDS state
-    screenX = dot.x * zoom + offset.x;
-    screenY = dot.y * zoom + offset.y;
-    const hitRadius = DOT_RADIUS * zoom + 4;
-    return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
-  });
-
-  setHoveredDot(hovered || null);
-};
-
-
+    setHoveredDot(hovered || null);
+  };
 
   // Handler for when the mouse course clicks on the document, which closes
   // the selected proteins information popup if clicked outside of the
@@ -577,6 +542,8 @@ const handleCanvasMouseMove = (event) => {
     setSelectedDot(dot);
     setHoveredDot(null);
 
+    alert(dot.name)
+
     // Update the mouse position to position the popup correctly
     // Position it next to the protein list
     const proteinList = document.querySelector('#protein-list');
@@ -597,11 +564,13 @@ const handleCanvasMouseMove = (event) => {
   useEffect(() => {
     if (dots && dots.length > 0) {
       // Filter out invalid or missing mw values
-      const mws = dots
-        .map(p => Number(p.mw))
-        .filter(mw => !isNaN(mw) && mw > 0);
-      if (mws.length > 0) {
+      const mws = dots.map(p => Number(p.mw)).filter(mw => !isNaN(mw) && mw > 0);
+      if (mws.length > 1) {
         setMinMW(Math.min(...mws));
+        setMaxMW(Math.max(...mws));
+      }
+      else{
+        setMinMW(0);
         setMaxMW(Math.max(...mws));
       }
     }
@@ -813,7 +782,7 @@ const handleCanvasMouseMove = (event) => {
 
         const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
         const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        const baseY = SDS_TOP_MARGIN + ((dot.mw - minMW)/(maxMW - minMW)) * usableHeight
+        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / (maxMW - minMW)) * usableHeight;
         const centerY = canvas.height / 2;
 
         const x = (baseX - offset.x) * zoom + offset.x;
