@@ -261,7 +261,7 @@ export default function OneDESim({
               variant="contained"
               startIcon={btn.icon}
               sx={{
-                "&:hover": { backgroundColor: "var(--accent)" },
+                "&:hover": { backgroundColor: "var(--accent)", color: "#fff" },
                 backgroundColor: "var(--highlight)",
                 textTransform: "none",
                 fontSize: "0.85rem",
@@ -475,6 +475,11 @@ export default function OneDESim({
 
 
   const standardChips = useMemo(() => {
+    const getContrast = (hex: string): string => {
+      const [r, g, b] = hex.match(/\w\w/g)!.map(x => parseInt(x, 16));
+      return (0.299 * r + 0.587 * g + 0.114 * b) > 186 ? "var(--dark)" : "var(--text)";
+    };
+
     return (
       <div
         style={{
@@ -492,7 +497,7 @@ export default function OneDESim({
               onClick={() => handleToggleStandard(protein)}
               style={{
                 backgroundColor: isSelected ? protein.color : "var(--highlight)",
-                color: "white",
+                color: getContrast(isSelected ? protein.color : "var(--highlight)"),
                 fontWeight: "bold",
                 cursor: "pointer"
               }}

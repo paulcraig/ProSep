@@ -28,6 +28,7 @@ code {
   --accent: #7289da;
   --sub-accent: #323848;
   --highlight: #7289da24;
+  --dark: #46505f;
 }
 
 [data-theme="light"] {
@@ -40,6 +41,7 @@ code {
   --accent: #4f6edb;
   --sub-accent: #e5e7ef;
   --highlight: #9ba3c343;
+  --dark: #46505f;
 }
 
 /* Links */
