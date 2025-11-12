@@ -33,8 +33,7 @@ const TwoDE = () => {
   // Constants
   const MIN_PH = phRange.min;
   const MAX_PH = phRange.max;
-  const PH_STEP = 1;
-  const MAX_DISTANCE_TRAVELED = 6; // Maximum distance traveled in cm
+  const MAX_DISTANCE_TRAVELED = 20; // Maximum distance traveled in cm
 
   //All the constants for drawing the canvas
     const CANVAS_BG_COLOR = '#111111';
@@ -95,32 +94,6 @@ const TwoDE = () => {
     setZoom(zoomRef.current);
   };
 
-  const drawCanvas = () => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw axes and grid
-    drawAxesAndGrid();
-
-    // Draw dots
-    dots.forEach(dot => {
-      const isHighlighted = dot === selectedDot;
-      const isHovered = dot === hoveredDot;
-
-      if (simulationState === 'ready') {
-        drawDotReady(dot, isHighlighted, isHovered);
-      } else if (simulationState === 'ief-running' || simulationState === 'ief-complete') {
-        drawDotIEF(dot, isHighlighted, isHovered);
-      } else if (['sds-running', 'complete'].includes(simulationState)) {
-        drawDotSDS(dot, isHighlighted, isHovered);
-      }
-    });
-  };
-
   const handleCanvasClick = (event) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -140,6 +113,7 @@ const TwoDE = () => {
       let screenX = 0;
       let screenY = 0;
 
+      // --- READY state (normal dots) ---
       if (simulationState === 'ready') {
         screenX = dot.x * zoom + offset.x;
         screenY = dot.y * zoom + offset.y;
@@ -147,6 +121,7 @@ const TwoDE = () => {
         return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
       }
 
+      // --- IEF states (condensing bands) ---
       if (simulationState === 'ief-running' || simulationState === 'ief-complete') {
         if (dot.condensing) {
           screenX = dot.x;
@@ -165,20 +140,23 @@ const TwoDE = () => {
         }
       }
 
+      // --- SDS states ---
       if (['sds-running', 'complete'].includes(simulationState)) {
+        const usableWidth = canvas.width - LEFT_MARGIN - RIGHT_MARGIN;
+        const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
+
         const pHRange = MAX_PH - MIN_PH;
         const mwRange = maxMW - minMW;
-        const pHMid = (MAX_PH + MIN_PH) / 2;
-        const mwMid = (maxMW + minMW) / 2;
-        const visibleMinPH = pHMid - (pHRange / 2) / zoom;
-        const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
 
-        const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
-        const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / (maxMW - minMW)) * usableHeight;
+        const visibleMinPH = MIN_PH - (offset.x - LEFT_MARGIN) / (usableWidth / pHRange * zoom);
+        const visibleMaxPH = visibleMinPH + usableWidth / (usableWidth / pHRange * zoom);
+
+        // Map dot to screen coordinates (same as draw)
+        screenX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * usableWidth;
+        screenX = (screenX - offset.x) * zoom + offset.x;
+
+        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / mwRange) * usableHeight;
         const centerY = canvas.height / 2;
-
-        screenX = (baseX - offset.x) * zoom + offset.x;
         screenY = (baseY - centerY) * zoom + centerY + offset.y;
 
         const withinX = screenX >= LEFT_MARGIN && screenX <= canvas.width - RIGHT_MARGIN;
@@ -192,12 +170,14 @@ const TwoDE = () => {
       return false;
     });
 
+    // --- Set selected / hovered dot ---
     if (clickedDot) {
       setSelectedDot(clickedDot);
       setHoveredDot(clickedDot);
     } else {
       setHoveredDot(null);
     }
+
   };
 
   const handleCanvasMouseLeave = () => {
@@ -327,15 +307,6 @@ const TwoDE = () => {
       });
   };
 
-  // Clean up animation frame on unmount
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
-
   // Function to handle uploading a file to the 2DE by parsing out the files 
   // through the 'parse-fasta' backend API and then adds the new proteins 
   // to the simulation
@@ -355,9 +326,7 @@ const TwoDE = () => {
       // Add new proteins to the existing dots
       setDots(prevDots => [...prevDots, ...response.data]);
     } catch (error) {
-      const backendMessage = error.response?.data?.message || error.response?.data || error.message;
       console.error('Error uploading FASTA files:', error);
-      alert('Error uploading files. The error is: ' + backendMessage)
     } finally {
       setIsUploading(false);
     }
@@ -446,30 +415,22 @@ const TwoDE = () => {
       let screenX = 0;
       let screenY = 0;
 
-      // --- SDS mode: mimic draw() exactly ---
       if (['sds-running', 'complete'].includes(simulationState)) {
-        const zoom = zoomRef.current ?? 1;
-        const offset = offsetRef.current ?? { x: 0, y: 0 };
-
+        // Compute visible range
         const pHRange = MAX_PH - MIN_PH;
-        const mwRange = maxMW - minMW;
+        const visibleMinPH = MIN_PH - (offset.x - LEFT_MARGIN) / (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) * (pHRange * zoom);
+        const visibleMaxPH = visibleMinPH + (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) / ((canvas.width - LEFT_MARGIN - RIGHT_MARGIN) / (pHRange * zoom));
 
-        const pHMid = (MAX_PH + MIN_PH) / 2;
-        const mwMid = (maxMW + minMW) / 2;
+        // Map dot to screen coordinates
+        const usableWidth = canvas.width - LEFT_MARGIN - RIGHT_MARGIN;
+        const pixelsPerPH = usableWidth / (visibleMaxPH - visibleMinPH) * zoom;
+        screenX = LEFT_MARGIN + (dot.pH - visibleMinPH) * pixelsPerPH;
 
-        const visibleMinPH = pHMid - (pHRange / 2) / zoom;
-        const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
-
-        //can't believe i'm repeating this from the draw function but i can't be arsed to change the slop from the prev team
-        const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
         const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        
-        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / (maxMW - minMW)) * usableHeight;
-        const centerY = canvas.height / 2;
+        screenY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / (maxMW - minMW)) * usableHeight;
+        screenY = (screenY - canvas.height / 2) * zoom + canvas.height / 2 + offset.y;
 
-        const screenX = (baseX - offset.x) * zoom + offset.x;
-        const screenY = (baseY - centerY) * zoom + centerY + offset.y;
-
+        // Check within bounds
         const withinX = screenX >= LEFT_MARGIN && screenX <= canvas.width - RIGHT_MARGIN;
         const withinY = screenY >= SDS_TOP_MARGIN && screenY <= canvas.height - SDS_BOTTOM_MARGIN;
         if (!withinX || !withinY) return false;
@@ -479,6 +440,7 @@ const TwoDE = () => {
         const dy = mouseY - screenY;
         return Math.hypot(dx, dy) <= hitRadius;
       }
+
       // fallback: non-SDS state
       screenX = dot.x * zoom + offset.x;
       screenY = dot.y * zoom + offset.y;
@@ -695,27 +657,23 @@ const TwoDE = () => {
         
 
         if (yAxisMode === 'mw') {
-          const topMargin = SDS_TOP_MARGIN;
-          const bottomMargin = SDS_BOTTOM_MARGIN;
-          const usableHeight = canvas.height - topMargin - bottomMargin;
-          const centerY = canvas.height / 2;
           const zoom = zoomRef.current;
           const offsetY = offsetRef.current.y;
 
-          // Determine desired pixel spacing between lines
-          const targetPixelSpacing = 50; // adjust for density
+          //This is for dynamic 
+          const targetPixelSpacing = 50;
           const mwRange = maxMW - minMW;
           const pixelPerMW = usableHeight / mwRange * zoom;
-          let stepMW = targetPixelSpacing / pixelPerMW;
+          let stepMW = (targetPixelSpacing / pixelPerMW);
 
           // Round step to nearest “nice” number
           const magnitude = Math.pow(10, Math.floor(Math.log10(stepMW)));
           stepMW = Math.ceil(stepMW / magnitude) * magnitude;
 
-          for (let mw = minMW; mw <= maxMW; mw += stepMW) {
+          for (let mw = Math.floor((minMW - stepMW * 3) / stepMW) * stepMW; mw <= maxMW + stepMW * 3; mw += stepMW) { //this will give me some more lines above and below the axes
             // Map MW → y
             const t = (mw - minMW) / (maxMW - minMW);
-            let baseY = topMargin + (1 - t) * usableHeight; // invert axis
+            let baseY = topMargin + (1 - t) * usableHeight;
             const y = (baseY - centerY) * zoom + centerY + offsetY;
 
             if (y < topMargin || y > canvas.height - bottomMargin) continue;
@@ -769,35 +727,50 @@ const TwoDE = () => {
         }
 
         // pH vertical gridlines
-        const targetPixelSpacing = 50; // desired space between lines
+       // pH vertical gridlines — fixed to respect zoom AND pan correctly
         const zoom = zoomRef.current;
         const offsetX = offsetRef.current.x;
-        const usableWidth = canvas.width - leftMargin - rightMargin;
 
+        const usableWidth = canvas.width - LEFT_MARGIN - RIGHT_MARGIN;
         const pHRange = MAX_PH - MIN_PH;
-        const pHPerPixel = pHRange / usableWidth; // units per pixel unzoomed
-        let stepPH = targetPixelSpacing * pHPerPixel / zoom;
 
-        // Round to nice number
+        // Base scale (pixels per pH at zoom = 1)
+        const basePixelsPerPH = usableWidth / pHRange;
+
+        // Adjust for zoom
+        const pixelsPerPH = basePixelsPerPH * zoom;
+
+        // Compute visible range based on offset
+        // offsetX is in pixels — translate it into pH-space
+        const visibleMinPH = MIN_PH - (offsetX - LEFT_MARGIN) / pixelsPerPH;
+        const visibleMaxPH = visibleMinPH + usableWidth / pixelsPerPH;
+
+        // Adaptive step sizing
+        const targetPixelSpacing = 100; // desired pixel spacing between lines
+        let stepPH = targetPixelSpacing / pixelsPerPH;
+
+        // Round step to a "nice" number
         const magnitude = Math.pow(10, Math.floor(Math.log10(stepPH)));
-        stepPH = Math.ceil(stepPH / magnitude) * magnitude;
+        const niceSteps = [1, 2, 5, 7.5 ,10];
+        const niceStep = niceSteps.find(s => s * magnitude >= stepPH) || magnitude * 10;
+        stepPH = niceStep * magnitude;
 
-        for (let pH = MIN_PH; pH <= MAX_PH; pH += stepPH) {
-          const t = (pH - MIN_PH) / pHRange;
-          const unzoomedX = leftMargin + t * usableWidth;
-          const x = (unzoomedX - offsetX) * zoom + offsetX;
+        // Draw gridlines
+        for (let pH = Math.floor(visibleMinPH / stepPH) * stepPH; pH <= visibleMaxPH; pH += stepPH) {
+          const x = LEFT_MARGIN + (pH - visibleMinPH) * pixelsPerPH;
 
-          if (x < leftMargin || x > canvas.width - rightMargin) continue;
+          if (x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN) {
+            ctx.beginPath();
+            ctx.moveTo(x, topMargin);
+            ctx.lineTo(x, canvas.height - bottomMargin);
+            ctx.stroke();
 
-          ctx.beginPath();
-          ctx.moveTo(x, topMargin);
-          ctx.lineTo(x, canvas.height - bottomMargin);
-          ctx.stroke();
-
-          ctx.save();
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(pH.toFixed(2), x - 10, canvas.height - 30);
-          ctx.restore();
+            ctx.save();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.translate(x - 10, canvas.height - 30);
+            ctx.fillText(pH.toFixed(2), 0, 0);
+            ctx.restore();
+          }
         }
       };
 
@@ -827,29 +800,42 @@ const TwoDE = () => {
 
       // Helper to compute SDS coordinates and visibility
       const computeSDSPosition = (dot) => {
-        const zoom = zoomRef.current;
-        const offset = offsetRef.current;
-        const pHRange = MAX_PH - MIN_PH;
-        const mwRange = maxMW - minMW;
+      const zoom = zoomRef.current;
+      const offset = offsetRef.current;
 
-        const pHMid = (MAX_PH + MIN_PH) / 2;
-        const mwMid = (maxMW + minMW) / 2;
+      // ----- X (pH axis) -----
+      const usableWidth = canvas.width - LEFT_MARGIN - RIGHT_MARGIN;
+      const pHRange = MAX_PH - MIN_PH;
 
-        const visibleMinPH = pHMid - (pHRange / 2) / zoom;
-        const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
+      // Base scale (pixels per pH at zoom = 1)
+      const basePixelsPerPH = usableWidth / pHRange;
+      const pixelsPerPH = basePixelsPerPH * zoom;
 
-        const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
-        const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / (maxMW - minMW)) * usableHeight;
-        const centerY = canvas.height / 2;
+      // Compute visible min pH using offset (so panning works)
+      const visibleMinPH = MIN_PH - (offset.x - LEFT_MARGIN) / pixelsPerPH;
 
-        const x = (baseX - offset.x) * zoom + offset.x;
-        const y = (baseY - centerY) * zoomRef.current + centerY + offsetRef.current.y
+      // Map pH to X coordinate
+      const x = LEFT_MARGIN + (dot.pH - visibleMinPH) * pixelsPerPH;
 
-        const withinX = x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN;
-        const withinY = y >= SDS_TOP_MARGIN && y <= canvas.height - SDS_BOTTOM_MARGIN;
-        return { x, y, withinX, withinY };
-      };
+      // ----- Y (MW axis) -----
+      const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
+      const mwRange = maxMW - minMW;
+      const centerY = canvas.height / 2;
+
+      // Base scale (pixels per MW at zoom = 1)
+      const basePixelsPerMW = usableHeight / mwRange;
+      const pixelsPerMW = basePixelsPerMW * zoom;
+
+      // Map MW to Y coordinate
+      const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / mwRange) * usableHeight;
+      const y = (baseY - centerY) * zoom + centerY + offset.y;
+
+      // ----- Visibility -----
+      const withinX = x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN;
+      const withinY = y >= SDS_TOP_MARGIN && y <= canvas.height - SDS_BOTTOM_MARGIN;
+
+      return { x, y, withinX, withinY };
+    };
 
       // Per-dot drawing handlers
       const drawDotReady = (dot, isHighlighted, isHovered) => {
