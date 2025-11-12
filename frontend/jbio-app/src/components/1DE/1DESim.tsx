@@ -59,8 +59,12 @@ export default function OneDESim({
   };
 
   /* Dimensions */
-  const [slabHeight, setSlabHeight] = useState(850); // TODO: Update to dynamic sizing later.
-  const [slabWidth,  setSlabWidth ] = useState(1000);
+  const [slabHeight, setSlabHeight] = useState(800);
+  const [slabWidth,  setSlabWidth ] = useState(800);
+  
+  const rootRef = useRef<HTMLDivElement>(null);
+  const slabRef = useRef<HTMLDivElement>(null);
+  const buffRef = useRef<HTMLDivElement>(null);
 
   /* Zoom and Drag */
   const [zoom,   setZoom  ] = useState(1);
@@ -70,15 +74,12 @@ export default function OneDESim({
   const [isDragging, setIsDragging] = useState(false);
   const [lastDragY, setlastDragY] = useState<number | null>(null);
 
-  /* Top/Bottom Bars */
+  /* Simulation */
   const [showHelp, setShowHelp] = useState(false);
   const [showPlot, setShowPlot] = useState(false);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const chipsRef = useRef<HTMLDivElement>(null);
-
-  /* Simulation */
   const [isRunning, setIsRunning] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
+
   const [numTicks,   setNumTicks  ] = useState(axisTicks);
   const [numWells,   setNumWells  ] = useState(initWells);
   const [voltage,    setVoltage   ] = useState(initVoltage);
@@ -89,6 +90,33 @@ export default function OneDESim({
 
   
   /* Functions and Handlers */
+  React.useLayoutEffect(() => {
+    const recalcHeight = () => {
+      if (!rootRef.current || !slabRef.current || !buffRef.current) return;
+
+      const rootRect = rootRef.current.getBoundingClientRect();
+      const slabRect = slabRef.current.getBoundingClientRect();
+      const buffRect = buffRef.current.getBoundingClientRect();
+
+      const available = window.innerHeight - rootRect.top;
+      const nonSlab = rootRect.height - slabRect.height + buffRect.height + BORDER;
+      const next = Math.max(300, Math.floor(available - nonSlab - 1));
+
+      setSlabHeight(prev => (Math.abs(prev - next) > 0.5 ? next : prev));
+    };
+
+    const observer = new ResizeObserver(recalcHeight);
+    if (rootRef.current) observer.observe(rootRef.current);
+    window.addEventListener("resize", recalcHeight);
+    recalcHeight();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", recalcHeight);
+    };
+  }, []);
+
+
   const { min, max } = useMemo(() => ({
     min: -(SUB_TICKS + 1) / (SUB_TICKS * 5),
     max: numTicks
@@ -200,7 +228,7 @@ export default function OneDESim({
 
 
   /* Components */
-  const toolbar = useMemo(() => {
+  const toolBar = useMemo(() => {
     const buttons = [
       { label: "Instructions", icon: <InfoIcon />, onClick: handleHelp },
       { 
@@ -221,7 +249,6 @@ export default function OneDESim({
     return (
       <>
         <div
-          ref={toolbarRef}
           style={{
             display: "flex", justifyContent: "center", gap: "0.5rem",
             marginLeft: TICK_MAJOR, width: slabWidth + (TICK_MAJOR * 2),
@@ -286,7 +313,7 @@ export default function OneDESim({
       path += ` L ${fullWidth} ${wellHeight * 2} L ${fullWidth} 0 Z`;
       
       return (
-        <>
+        <div ref={buffRef}>
           <svg
             viewBox={`${-BORDER / 2} ${-BORDER / 2} ${fullWidth + BORDER} ${wellHeight * 2 + BORDER}`}
             style={{
@@ -309,7 +336,7 @@ export default function OneDESim({
               background: "var(--sub-accent)", border: `${BORDER}px solid var(--accent)`, borderRadius: "2px"
             }}
           />
-        </>
+        </div>
       );
     }
 
@@ -418,6 +445,7 @@ export default function OneDESim({
 
     return (
       <div
+        ref={slabRef}
         style={{
           position: "relative", width: `${slabWidth}px`, height: `${slabHeight + 4}px`,
           margin: `${wellHeight}px ${TICK_MAJOR}px ${wellHeight * 2}px ${TICK_MAJOR * 2}px`,
@@ -449,7 +477,6 @@ export default function OneDESim({
   const standardChips = useMemo(() => {
     return (
       <div
-        ref={chipsRef}
         style={{
           display: "flex", flexWrap: "wrap", justifyContent: "center",
           gap: "0.5rem", marginLeft: TICK_MAJOR,
@@ -537,8 +564,8 @@ export default function OneDESim({
 
   /* Render */
   return (
-    <div style={{margin:"4rem", display: "flex", flexDirection: "column", gap: "1rem"}}>
-      {toolbar}
+    <div ref={rootRef} style={{margin:"4rem", display: "flex", flexDirection: "column", gap: "1rem"}}>
+      {toolBar}
       {acrylamideSlab}
       {standardChips}
       {helpModal}
