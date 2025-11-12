@@ -218,6 +218,7 @@
   display: flex;
   justify-content: center;
   gap: 8px;
+  color: var(--background);
 }
 
 .twoDE-controls-col {
@@ -244,10 +245,6 @@
 .twoDE-acrylic-desc {
   min-width: 140px;
   font-size: 12px;
-}
-
-.twoDE-controls-col{
-    background-color:#292b31;
 }
 
 /*this should switch based on theme */
@@ -289,4 +286,14 @@
   background: rgba(20, 20, 20, 0.5);
   border-radius: 8px;
   padding: 4px
+}
+
+.zoom-button-container{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 160px;
 }

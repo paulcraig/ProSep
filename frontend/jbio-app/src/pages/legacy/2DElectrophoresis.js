@@ -184,22 +184,16 @@ const TwoDE = () => {
           + offset.x;
 
         const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        const baseY = SDS_TOP_MARGIN
-          + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW))
-          * usableHeight
-          + offset.y;
+        const baseY = SDS_TOP_MARGIN + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW)) * usableHeight + offset.y;
 
-        // apply the same "zoom about offset" transform as draw()
+
         screenX = (baseX - offset.x) * zoom + offset.x;
         screenY = (baseY - offset.y) * zoom + offset.y;
 
-        // draw() ignores dots outside the visible SDS region — keep same behavior:
         const withinX = screenX >= LEFT_MARGIN && screenX <= canvas.width - RIGHT_MARGIN;
         const withinY = screenY >= SDS_TOP_MARGIN && screenY <= canvas.height - SDS_BOTTOM_MARGIN;
         if (!withinX || !withinY) return false;
 
-        // draw() uses arc radius: (isHighlighted || isHovered) ? DOT_HOVER_RADIUS : DOT_RADIUS
-        // For hover detection, use DOT_HOVER_RADIUS (or a slightly larger value) so cursor matches visual highlight
         const hitRadius = (DOT_HOVER_RADIUS || DOT_RADIUS) + 4;
         const dx = mouseX - screenX * offset;
         const dy = mouseY - screenY * offset;
@@ -478,9 +472,6 @@ const handleCanvasMouseMove = (event) => {
 
       const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
       const baseY = SDS_TOP_MARGIN
-        + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW))
-        * usableHeight
-        + offset.y;
 
       // actual zoom transform (zoom about offset)
       screenX = (baseX - offset.x) * zoom + offset.x;
@@ -710,6 +701,8 @@ const handleCanvasMouseMove = (event) => {
         const leftMargin = LEFT_MARGIN;
         const rightMargin = RIGHT_MARGIN;
         const usableHeight = canvas.height - topMargin - bottomMargin;
+        const centerY = canvas.height / 2;
+        
 
         if (yAxisMode === 'mw') {
           const stepY = 50;
@@ -717,7 +710,8 @@ const handleCanvasMouseMove = (event) => {
           const yEnd = canvas.height - bottomMargin + 5 * stepY;
 
           for (let y = yStart; y <= yEnd; y += stepY) {
-            const yScaled = y * zoomRef.current + offsetRef.current.y;
+            const centerY = canvas.height / 2;
+            const yScaled = (y - centerY) * zoomRef.current + centerY + offsetRef.current.y;
             if (yScaled < 0 || yScaled > canvas.height) continue;
 
             if (yScaled >= topMargin && yScaled <= canvas.height - bottomMargin) {
@@ -741,7 +735,7 @@ const handleCanvasMouseMove = (event) => {
         } else {
           for (let i = 0; i <= MAX_DISTANCE_TRAVELED; i++) {
             const baseY = topMargin + (i / MAX_DISTANCE_TRAVELED) * usableHeight;
-            const y = baseY * zoomRef.current + offsetRef.current.y;
+            const y = (baseY - centerY) * zoomRef.current + centerY + offsetRef.current.y
 
             if (y >= topMargin && y <= canvas.height - bottomMargin) {
               ctx.beginPath();
@@ -819,10 +813,11 @@ const handleCanvasMouseMove = (event) => {
 
         const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
         const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        const baseY = SDS_TOP_MARGIN + ((visibleMaxMW - dot.mw) / (visibleMaxMW - visibleMinMW)) * usableHeight + offset.y;
+        const baseY = SDS_TOP_MARGIN + ((dot.mw - minMW)/(maxMW - minMW)) * usableHeight
+        const centerY = canvas.height / 2;
 
         const x = (baseX - offset.x) * zoom + offset.x;
-        const y = (baseY - offset.y) * zoom + offset.y;
+        const y = (baseY - centerY) * zoomRef.current + centerY + offsetRef.current.y
 
         const withinX = x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN;
         const withinY = y >= SDS_TOP_MARGIN && y <= canvas.height - SDS_BOTTOM_MARGIN;
@@ -831,8 +826,17 @@ const handleCanvasMouseMove = (event) => {
 
       // Per-dot drawing handlers
       const drawDotReady = (dot, isHighlighted, isHovered) => {
-        const screenX = dot.x * zoomRef.current + offset.x;
-        const screenY = dot.y * zoomRef.current + offset.y;
+        // Defensive guard: if dot is falsy, skip drawing and log once for debugging
+        if (!dot) {
+          // optional: comment out or remove the console.log after debugging
+          console.warn('drawDotReady called with undefined dot', dot);
+          return;
+        }
+
+        // Use the correct ref name (offsetRef.current)
+        const screenX = dot.x * zoomRef.current + offsetRef.current.x;
+        const screenY = dot.y * zoomRef.current + offsetRef.current.y;
+
         ctx.beginPath();
         ctx.arc(screenX, screenY, DOT_RADIUS * zoomRef.current, 0, Math.PI * 2);
         ctx.fill();
@@ -843,7 +847,7 @@ const handleCanvasMouseMove = (event) => {
           ctx.stroke();
 
           ctx.beginPath();
-          ctx.arc(dot.x, dot.y, PULSE_RADIUS, 0, Math.PI * 2);
+          ctx.arc(screenX, screenY, PULSE_RADIUS * zoomRef.current, 0, Math.PI * 2);
           ctx.strokeStyle = PULSE_STROKE;
           ctx.stroke();
         } else if (isHovered) {
