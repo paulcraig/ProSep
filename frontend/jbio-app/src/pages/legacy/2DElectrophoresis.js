@@ -88,13 +88,37 @@ const TwoDE = () => {
   const zoomRef = useRef(zoom);
 
   const setZoomSafe = (newZoom) => {
-    //Important: Clamps the zoom within the grid
-    const MIN_ZOOM = 1;
+    const MIN_ZOOM = 0.95;
     const MAX_ZOOM = 5;
 
     zoomRef.current = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
     setZoom(zoomRef.current);
+  };
 
+  const drawCanvas = () => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw axes and grid
+    drawAxesAndGrid();
+
+    // Draw dots
+    dots.forEach(dot => {
+      const isHighlighted = dot === selectedDot;
+      const isHovered = dot === hoveredDot;
+
+      if (simulationState === 'ready') {
+        drawDotReady(dot, isHighlighted, isHovered);
+      } else if (simulationState === 'ief-running' || simulationState === 'ief-complete') {
+        drawDotIEF(dot, isHighlighted, isHovered);
+      } else if (['sds-running', 'complete'].includes(simulationState)) {
+        drawDotSDS(dot, isHighlighted, isHovered);
+      }
+    });
   };
 
   const handleCanvasClick = (event) => {
@@ -318,14 +342,11 @@ const TwoDE = () => {
   const handleFileUpload = async (files) => {
     setIsUploading(true);
 
-
     // Create form data
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
-
-
 
     try {
       // Upload to backend for processing
@@ -334,7 +355,9 @@ const TwoDE = () => {
       // Add new proteins to the existing dots
       setDots(prevDots => [...prevDots, ...response.data]);
     } catch (error) {
+      const backendMessage = error.response?.data?.message || error.response?.data || error.message;
       console.error('Error uploading FASTA files:', error);
+      alert('Error uploading files. The error is: ' + backendMessage)
     } finally {
       setIsUploading(false);
     }
@@ -392,11 +415,14 @@ const TwoDE = () => {
       velocity: 0,
       settled: false
     })));
+
+
     setHoveredDot(null);
     setSelectedDot(null);
     setSimulationState('ready');
     setSimulationProgress(0);
-
+    setZoomSafe(1);
+    offsetRef.current = {x: 0, y:0};
   };
 
   // Handler for when the mouse cursor moves on the canvas (simulation)
@@ -542,28 +568,23 @@ const TwoDE = () => {
     setSelectedDot(dot);
     setHoveredDot(null);
 
-    alert(dot.name)
-
-    // Update the mouse position to position the popup correctly
-    // Position it next to the protein list
     const proteinList = document.querySelector('#protein-list');
     if (proteinList) {
       const rect = proteinList.getBoundingClientRect();
       setMousePos({
         x: rect.right + 10,
-        y: rect.top + 100 // Position it near the top of the panel
+        y: rect.top + 100
       });
     }
 
-    // Scroll to the protein in the canvas if it's off-screen
     if (canvasRef.current) {
       canvasRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
+
   // Dynamically compute min and max molecular weight (MW) from the loaded dots (proteins)
   useEffect(() => {
     if (dots && dots.length > 0) {
-      // Filter out invalid or missing mw values
       const mws = dots.map(p => Number(p.mw)).filter(mw => !isNaN(mw) && mw > 0);
       if (mws.length > 1) {
         setMinMW(Math.min(...mws));
@@ -674,70 +695,109 @@ const TwoDE = () => {
         
 
         if (yAxisMode === 'mw') {
-          const stepY = 50;
-          const yStart = topMargin - 5 * stepY;
-          const yEnd = canvas.height - bottomMargin + 5 * stepY;
+          const topMargin = SDS_TOP_MARGIN;
+          const bottomMargin = SDS_BOTTOM_MARGIN;
+          const usableHeight = canvas.height - topMargin - bottomMargin;
+          const centerY = canvas.height / 2;
+          const zoom = zoomRef.current;
+          const offsetY = offsetRef.current.y;
 
-          for (let y = yStart; y <= yEnd; y += stepY) {
-            const centerY = canvas.height / 2;
-            const yScaled = (y - centerY) * zoomRef.current + centerY + offsetRef.current.y;
-            if (yScaled < 0 || yScaled > canvas.height) continue;
+          // Determine desired pixel spacing between lines
+          const targetPixelSpacing = 50; // adjust for density
+          const mwRange = maxMW - minMW;
+          const pixelPerMW = usableHeight / mwRange * zoom;
+          let stepMW = targetPixelSpacing / pixelPerMW;
 
-            if (yScaled >= topMargin && yScaled <= canvas.height - bottomMargin) {
-              ctx.beginPath();
-              ctx.moveTo(leftMargin, yScaled);
-              ctx.lineTo(canvas.width - rightMargin, yScaled);
-              ctx.stroke();
-            }
+          // Round step to nearest “nice” number
+          const magnitude = Math.pow(10, Math.floor(Math.log10(stepMW)));
+          stepMW = Math.ceil(stepMW / magnitude) * magnitude;
 
-            const t = (y - topMargin) / usableHeight;
-            const mwValue = Math.round(maxMW - t * (maxMW - minMW));
+          for (let mw = minMW; mw <= maxMW; mw += stepMW) {
+            // Map MW → y
+            const t = (mw - minMW) / (maxMW - minMW);
+            let baseY = topMargin + (1 - t) * usableHeight; // invert axis
+            const y = (baseY - centerY) * zoom + centerY + offsetY;
 
-            if (yScaled >= topMargin && yScaled <= canvas.height - bottomMargin) {
-              ctx.save();
-              ctx.fillStyle = '#FFFFFF';
-              ctx.translate(15, yScaled + 5);
-              ctx.fillText(`${mwValue.toLocaleString()} Da.`, 0, 0);
-              ctx.restore();
-            }
+            if (y < topMargin || y > canvas.height - bottomMargin) continue;
+
+            ctx.beginPath();
+            ctx.moveTo(LEFT_MARGIN, y);
+            ctx.lineTo(canvas.width - RIGHT_MARGIN, y);
+            ctx.stroke();
+
+            // Label
+            ctx.save();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.translate(15, y + 5);
+            ctx.fillText(`${Math.round(mw).toLocaleString()} Da.`, 0, 0);
+            ctx.restore();
           }
         } else {
-          for (let i = 0; i <= MAX_DISTANCE_TRAVELED; i++) {
-            const baseY = topMargin + (i / MAX_DISTANCE_TRAVELED) * usableHeight;
-            const y = (baseY - centerY) * zoomRef.current + centerY + offsetRef.current.y
+          const zoom = zoomRef.current;
+          const offsetY = offsetRef.current.y;
+          const topMargin = SDS_TOP_MARGIN;
+          const bottomMargin = SDS_BOTTOM_MARGIN;
+          const usableHeight = canvas.height - topMargin - bottomMargin;
+          const centerY = canvas.height / 2;
 
-            if (y >= topMargin && y <= canvas.height - bottomMargin) {
-              ctx.beginPath();
-              ctx.moveTo(leftMargin, y);
-              ctx.lineTo(canvas.width - rightMargin, y);
-              ctx.stroke();
-              ctx.fillStyle = '#FFFFFF';
-              ctx.save();
-              ctx.translate(25, y + 5);
-              ctx.fillText(`${i} cm`, 0, 0);
-              ctx.restore();
-            }
+          const targetPixelSpacing = 50; // desired space between lines
+          const pixelPerUnit = usableHeight / MAX_DISTANCE_TRAVELED * zoom;
+          let stepUnit = targetPixelSpacing / pixelPerUnit;
+
+          // Round step to a "nice" number
+          const magnitude = Math.pow(10, Math.floor(Math.log10(stepUnit)));
+          stepUnit = Math.ceil(stepUnit / magnitude) * magnitude;
+
+          for (let i = 0; i <= MAX_DISTANCE_TRAVELED; i += stepUnit) {
+            const baseY = topMargin + (i / MAX_DISTANCE_TRAVELED) * usableHeight;
+            const y = (baseY - centerY) * zoom + centerY + offsetY;
+
+            if (y < topMargin || y > canvas.height - bottomMargin) continue;
+
+            ctx.beginPath();
+            ctx.moveTo(leftMargin, y);
+            ctx.lineTo(canvas.width - rightMargin, y);
+            ctx.stroke();
+
+            // Label
+            ctx.save();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.translate(25, y + 5);
+            ctx.fillText(`${Math.round(i)} cm`, 0, 0);
+            ctx.restore();
           }
         }
 
         // pH vertical gridlines
-        for (let pH = MIN_PH; pH <= MAX_PH; pH += PH_STEP) {
-          const pHRange = MAX_PH - MIN_PH;
-          const pHMid = (MAX_PH + MIN_PH) / 2;
-          const visibleMinPH = pHMid - (pHRange / 2) / zoomRef.current;
-          const visibleMaxPH = pHMid + (pHRange / 2) / zoomRef.current;
+        const targetPixelSpacing = 50; // desired space between lines
+        const zoom = zoomRef.current;
+        const offsetX = offsetRef.current.x;
+        const usableWidth = canvas.width - leftMargin - rightMargin;
 
-          const unzoomedX = LEFT_MARGIN + ((pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offsetRef.current.x;
-          const x = (unzoomedX - offsetRef.current.x) * zoomRef.current + offsetRef.current.x;
+        const pHRange = MAX_PH - MIN_PH;
+        const pHPerPixel = pHRange / usableWidth; // units per pixel unzoomed
+        let stepPH = targetPixelSpacing * pHPerPixel / zoom;
 
-          if (x >= LEFT_MARGIN && x <= canvas.width - RIGHT_MARGIN) {
-            ctx.beginPath();
-            ctx.moveTo(x, topMargin);
-            ctx.lineTo(x, canvas.height - bottomMargin);
-            ctx.stroke();
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillText(pH.toFixed(2), x - 10, canvas.height - 30);
-          }
+        // Round to nice number
+        const magnitude = Math.pow(10, Math.floor(Math.log10(stepPH)));
+        stepPH = Math.ceil(stepPH / magnitude) * magnitude;
+
+        for (let pH = MIN_PH; pH <= MAX_PH; pH += stepPH) {
+          const t = (pH - MIN_PH) / pHRange;
+          const unzoomedX = leftMargin + t * usableWidth;
+          const x = (unzoomedX - offsetX) * zoom + offsetX;
+
+          if (x < leftMargin || x > canvas.width - rightMargin) continue;
+
+          ctx.beginPath();
+          ctx.moveTo(x, topMargin);
+          ctx.lineTo(x, canvas.height - bottomMargin);
+          ctx.stroke();
+
+          ctx.save();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillText(pH.toFixed(2), x - 10, canvas.height - 30);
+          ctx.restore();
         }
       };
 
@@ -777,8 +837,6 @@ const TwoDE = () => {
 
         const visibleMinPH = pHMid - (pHRange / 2) / zoom;
         const visibleMaxPH = pHMid + (pHRange / 2) / zoom;
-        const visibleMinMW = mwMid - (mwRange / 2) / zoom;
-        const visibleMaxMW = mwMid + (mwRange / 2) / zoom;
 
         const baseX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) + offset.x;
         const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
@@ -1242,7 +1300,8 @@ const TwoDE = () => {
               {['sds-running', 'complete'].includes(simulationState) && (
                 <div style={{position: 'absolute',top: 10,right: 10,display: 'flex',flexDirection: 'column',gap: '4px',background: 'rgba(20, 20, 20, 0)',borderRadius: '8px',padding: '4px', paddingTop: '160px'}}>
                   
-                  <button className="plus-button" onClick={() => {
+                  <button className="plus-button" 
+                  onClick={() => {
                     const newZoom = Math.min(zoom * 1.1, 5); 
                     setZoomSafe(newZoom);
                     }}>+
