@@ -1,4 +1,13 @@
 import React, { useState, useMemo, useRef } from "react"
+import { Button, Chip } from "@mui/material"
+
+import InfoIcon from '@mui/icons-material/Info';
+import StopIcon from "@mui/icons-material/Stop";
+import UploadIcon from "@mui/icons-material/Upload";
+import ClearAllIcon from "@mui/icons-material/ClearAll";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import InsertChartIcon from "@mui/icons-material/InsertChart";
 
 
 interface IDEProtein {
@@ -29,7 +38,7 @@ export default function OneDESim({
 } : OneDEProps ) {
 
   /* Consts */
-  const SUB_TICKS = 4;
+  const SUB_TICKS = 3;
   const MAX_WELLS = 10;
   
   const BORDER = 4;
@@ -50,7 +59,7 @@ export default function OneDESim({
   };
 
   /* Dimensions */
-  const [slabHeight, setSlabHeight] = useState(1000); // TODO: Update to dynamic sizing later.
+  const [slabHeight, setSlabHeight] = useState(850); // TODO: Update to dynamic sizing later.
   const [slabWidth,  setSlabWidth ] = useState(1000);
 
   /* Zoom and Drag */
@@ -61,12 +70,22 @@ export default function OneDESim({
   const [isDragging, setIsDragging] = useState(false);
   const [lastDragY, setlastDragY] = useState<number | null>(null);
 
+  /* Top/Bottom Bars */
+  const [showHelp, setShowHelp] = useState(false);
+  const [showPlot, setShowPlot] = useState(false);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
+
   /* Simulation */
+  const [isRunning, setIsRunning] = useState(false);
+  const [isStarted, setIsStarted] = useState(false);
   const [numTicks,   setNumTicks  ] = useState(axisTicks);
   const [numWells,   setNumWells  ] = useState(initWells);
   const [voltage,    setVoltage   ] = useState(initVoltage);
   const [acrylamide, setAcrylamide] = useState(initAcrylamide);
+
   const [proteins,   setProteins  ] = useState<Record<string, IDEProtein>[]>([]);
+  const [selStandards, setSelStandards] = useState<IDEProtein[]>(Object.values(STANDARDS));
 
   
   /* Functions and Handlers */
@@ -148,7 +167,98 @@ export default function OneDESim({
   }, [isDragging]);
 
 
+  const handleHelp = () => setShowHelp(true);
+  const handlePlot = () => setShowPlot(true);
+  const handleReset = () => console.log("Reset");
+  const handleClear = () => console.log("Clear");
+
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    console.log("Uploading files:", files);
+    e.target.value = "";
+  };
+
+
+  const handleRun = () => {
+    setIsRunning(!isRunning);
+    setIsStarted(true);
+  };
+
+
+  const handleToggleStandard = (protein: IDEProtein) => {
+    setSelStandards(prev => {
+      const isSelected = prev.some(p => p.id_num === protein.id_num);
+      if (isSelected) {
+        return prev.filter(p => p.id_num !== protein.id_num);
+      } else {
+        return [...prev, protein];
+      }
+    });
+  };
+
+
   /* Components */
+  const toolbar = useMemo(() => {
+    const buttons = [
+      { label: "Instructions", icon: <InfoIcon />, onClick: handleHelp },
+      { 
+        label: "Upload",
+        icon: <UploadIcon />,
+        onClick: () => document.getElementById("bulk-upload-input")?.click()
+      },
+      { 
+        label: isRunning ? "Pause" : isStarted ? "Resume" : "Start",
+        icon: isRunning ? <StopIcon /> : <PlayArrowIcon />,
+        onClick: handleRun
+      },
+      { label: "Reset", icon: <RestartAltIcon />,  onClick: handleReset },
+      { label: "Clear", icon: <ClearAllIcon />,    onClick: handleClear },
+      { label: "Plot",  icon: <InsertChartIcon />, onClick: handlePlot }
+    ];
+
+    return (
+      <>
+        <div
+          ref={toolbarRef}
+          style={{
+            display: "flex", justifyContent: "center", gap: "0.5rem",
+            marginLeft: TICK_MAJOR, width: slabWidth + (TICK_MAJOR * 2),
+          }}
+        >
+          {buttons.map(btn => (
+            <Button
+              key={btn.label}
+              onClick={btn.onClick}
+              variant="contained"
+              startIcon={btn.icon}
+              sx={{
+                "&:hover": { backgroundColor: "var(--accent)" },
+                backgroundColor: "var(--highlight)",
+                textTransform: "none",
+                fontSize: "0.85rem",
+                color: "var(--text)"
+              }}
+            >
+              {btn.label}
+            </Button>
+          ))}
+        </div>
+
+        <input
+          id="bulk-upload-input"
+          type="file"
+          multiple
+          accept=".fasta,.txt"
+          style={{ display: "none" }}
+          onChange={handleUpload}
+        />
+      </>
+    );
+  }, [isRunning, isStarted, slabWidth]);
+
+
   const acrylamideSlab = useMemo(() => {
     const width = slabWidth - 1;
     const height = slabHeight + BORDER / 2;
@@ -194,7 +304,7 @@ export default function OneDESim({
           <div
             style={{
               position: "absolute", boxSizing: "border-box", zIndex: 0,
-              bottom: `-${(wellHeight * 2) - 1}px`, left: `-${TICK_MAJOR}px`,
+              bottom: `-${(wellHeight * 2) - (BORDER / 2)}px`, left: `-${TICK_MAJOR}px`,
               width: `${slabWidth + TICK_MAJOR * 2}px`, height: `${wellHeight * 2}px`,
               background: "var(--sub-accent)", border: `${BORDER}px solid var(--accent)`, borderRadius: "2px"
             }}
@@ -243,7 +353,7 @@ export default function OneDESim({
               pointerEvents: "none",
               color: "var(--text)",
               whiteSpace: "nowrap",
-              fontSize: "14px",
+              fontSize: "0.85rem",
               opacity: opacity
             }}>
               {label}
@@ -309,9 +419,7 @@ export default function OneDESim({
     return (
       <div
         style={{
-          position: "absolute",
-          width: `${slabWidth}px`,
-          height: `${slabHeight + 4}px`,
+          position: "relative", width: `${slabWidth}px`, height: `${slabHeight + 4}px`,
           margin: `${wellHeight}px ${TICK_MAJOR}px ${wellHeight * 2}px ${TICK_MAJOR * 2}px`,
           cursor: zoom > 1 ? isDragging ? "grabbing" : "grab" : "default",
           background: "var(--sub-background)",
@@ -336,12 +444,104 @@ export default function OneDESim({
       </div>
     );
   }, [slabWidth, slabHeight, numTicks, numWells, zoom, anchor, isDragging]);
+
+
+  const standardChips = useMemo(() => {
+    return (
+      <div
+        ref={chipsRef}
+        style={{
+          display: "flex", flexWrap: "wrap", justifyContent: "center",
+          gap: "0.5rem", marginLeft: TICK_MAJOR,
+          width: slabWidth + (TICK_MAJOR * 2)
+        }}
+      >
+        {Object.values(STANDARDS).map(protein => {
+          const isSelected = selStandards.some(p => p.id_num === protein.id_num);
+          return (
+            <Chip
+              key={protein.id_num}
+              label={protein.name}
+              onClick={() => handleToggleStandard(protein)}
+              style={{
+                backgroundColor: isSelected ? protein.color : "var(--highlight)",
+                color: "white",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+              sx={{"&:hover": { opacity: 0.8 }}}
+            />
+          );
+        })}
+      </div>
+    );
+  }, [selStandards, slabWidth]);
+
+
+  const helpModal = useMemo(() => {
+    if (!showHelp) return null;
+
+    return (
+      <div
+        style={{
+          position: "fixed", display: "flex", alignItems: "center", justifyContent: "center",
+          top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+        }}
+        onClick={() => setShowHelp(false)}
+      >
+        <div
+          style={{
+            position: "relative", padding: "1.5rem",
+            width: "600px", maxWidth: "90%", maxHeight: "90vh",
+            border: "4px solid var(--accent)", borderRadius: "8px",
+            overflow: "auto", backgroundColor: "var(--sub-background)"
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 id="1de-page-instructions" style={{color: "var(--accent)", margin: 0}}>
+            Instructions
+          </h2>
+          <ol style={{ paddingLeft: "1.25rem", lineHeight: 1.5, marginBottom: "1rem" }}>
+            <li>Add or remove wells as needed.</li>
+            <li>Select wells to upload FASTA files.</li>
+            <ul style={{ lineHeight: 1.5, marginBlock: "0.5rem" }}>
+              <li>Click and drag to swap well contents.</li>
+              <li>Hover over wells to see uploaded files.</li>
+              <li>Remove uploaded files by double-clicking</li>
+            </ul>
+            <li>Select or deselect protein standards.</li>
+            <li>Choose the voltage setting (50 / 100 / 150 / 200 V).</li>
+            <li>Choose the acrylamide concentration (7.5 / 10 / 12 / 15%).</li>
+            <ul style={{ lineHeight: 1.5, marginBlock: "0.5rem" }}>
+              <li>Click <strong>Start</strong> to begin the run.</li>
+              <li>Click <strong>Stop</strong> to end the run manually.</li>
+              <li>Click <strong>Clear</strong> to clear all uploaded files and reset.</li>
+              <li>Click <strong>Reset</strong> to return bands to their starting positions.</li>
+              <li>Click <strong>Upload</strong> to upload multiple FASTA files at once.</li>
+            </ul>
+          </ol>
+
+          <h2 id="1de-page-notes" style={{color: "var(--accent)", margin: 0}}>
+            Notes
+          </h2>
+          <ul style={{ paddingLeft: "1.25rem", lineHeight: 1.5, marginBottom: 0 }}>
+            <li>The exact number of wells is flexible.</li>
+            <li>Protein bands stop at their relative migration distances.</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }, [showHelp]);
   
 
   /* Render */
   return (
-    <div style={{margin:"4rem"}}>
+    <div style={{margin:"4rem", display: "flex", flexDirection: "column", gap: "1rem"}}>
+      {toolbar}
       {acrylamideSlab}
+      {standardChips}
+      {helpModal}
     </div>
   );
 }
