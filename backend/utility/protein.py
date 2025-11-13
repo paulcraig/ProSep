@@ -6,6 +6,7 @@ from Bio import SeqIO
 
 
 class Protein():
+    
     # Utilizes Biopython SeqIO library to parse through a fasta file given by the user and collect
     # information stored within the file
     # @return: Sequence identifier, amino acid sequence, length of amino acid sequence
