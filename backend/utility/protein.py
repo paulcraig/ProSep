@@ -1,9 +1,8 @@
-import re, httpx
-import time
-from typing import Dict, List
+import re
+from typing import Dict
+from typing import List
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from Bio import SeqIO
-import requests
 
 
 class Protein():
