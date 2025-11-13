@@ -1,8 +1,51 @@
-import React, { useState } from 'react';
-import { TextField, IconButton, Button, Chip, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Card, CardHeader, CardContent, Alert } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import { API_URL } from '../config';
+import React, { useState, useRef } from "react";
+import {
+  TextField,
+  Button,
+  Chip,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Card,
+  CardHeader,
+  CardContent,
+  Alert,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import annotationPlugin from "chartjs-plugin-annotation";
+import { API_URL } from "../config";
 import "./PeptideRetention.css";
+import {
+  CheckCircle,
+  DownloadOutlined,
+  FileOpenOutlined,
+  X,
+} from "@mui/icons-material";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  annotationPlugin
+);
 
 type PredictionResult = {
   peptide: string;
@@ -19,6 +62,7 @@ const PeptideRetention: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [results, setResults] = useState<PredictionResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const chartRef = useRef<any>(null);
 
   const addPeptide = () => {
     if (newPeptide.trim() && !peptides.includes(newPeptide)) {
@@ -85,39 +129,136 @@ const PeptideRetention: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
+  const loadFromFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      const loadedPeptides = content
+        .split(",")
+        .map((peptide) => peptide.trim());
+      setPeptides((prevPeptides) =>
+        Array.from(new Set([...prevPeptides, ...loadedPeptides]))
+      );
+    };
+    reader.readAsText(file);
+  };
+  const generateChromatogramData = () => {
+    const scalingFactor = 6.5;
+    const xVals = Array.from({ length: 1000 }, (_, i) => (i / 999) * 100);
+    const chromatogram = new Array(xVals.length).fill(0);
+    const noise = Array.from({ length: xVals.length }, () => Math.random());
+    const annotations: any = {};
+
+    let maxChrom = 0;
+
+    results.forEach((result, index) => {
+      const peptide = result.peptide.replace(/-NH2/g, "").replace(/Ac-/g, "");
+      const aaCount = peptide.length;
+      const rt = result.predicted_tr * scalingFactor;
+      const height = aaCount * 10;
+      xVals.forEach((x, i) => {
+        chromatogram[i] +=
+          height * Math.exp(-Math.pow(x - rt, 2) / (2 * Math.pow(0.35, 2)));
+        if (height > 20) {
+          annotations[`peak-label-${index}`] = {
+            type: "label",
+            xValue: rt * 10,
+            yValue: height + 10,
+            content: peptide,
+            font: { size: 10, weight: "bold", color: "var(--text)" },
+            rotation: -30,
+          };
+          annotations[`peak-point-${index}`] = {
+            type: "point",
+            xValue: rt * 10,
+            yValue: height,
+            radius: 5,
+          };
+        }
+      });
+    });
+
+    chromatogram.forEach((val, i) => {
+      chromatogram[i] = Math.max(0, val + noise[i]);
+      if (chromatogram[i] > maxChrom) maxChrom = chromatogram[i];
+    });
+
+    return {
+      labels: xVals,
+      datasets: [
+        {
+          label: "Chromatogram",
+          data: chromatogram,
+          borderColor: results.length === 0 ? "transparent" : "black",
+          borderWidth: 2,
+        },
+      ],
+      max: maxChrom,
+      annotations: annotations,
+    };
+  };
+
+  const exportChromatogram = () => {
+    if (chartRef.current) {
+      const base64Image = chartRef.current.toBase64Image();
+      const a = document.createElement("a");
+      a.href = base64Image;
+      a.download = "chromatogram.png";
+      a.click();
+    }
+  };
 
   return (
     <div className="peptide-retention-page">
       <div className="input-section">
         <TextField
           className="peptide-input"
-          label="Peptide Sequence"
-          variant="outlined"
+          label="Enter Peptide Sequence"
+          variant="filled"
+          size="small"
           value={newPeptide}
           onChange={(e) => setNewPeptide(e.target.value)}
           onKeyUp={handleKeyUp}
-          color="primary"
+          focused
+          sx={{
+            input: { color: "var(--text)" },
+            label: { color: "var(--text)" },
+          }}
         />
-        <IconButton
-          color="primary"
+        <Button
           onClick={addPeptide}
           disabled={!newPeptide.trim()}
+          className="predict-button"
+          variant="contained"
+          startIcon={<AddIcon />}
         >
-          <AddIcon />
-        </IconButton>
+          Add
+        </Button>
       </div>
 
       {peptides.length > 0 && (
-        <div className="peptides-list">
-          <div>Peptides to predict:</div>
-          {peptides.map((peptide) => (
-            <Chip
-              key={peptide}
-              label={peptide}
-              onDelete={() => removePeptide(peptide)}
-              className="peptide-chip"
-            />
-          ))}
+        <div>
+          <div>
+            <b>Peptides to predict:</b>
+          </div>
+          <div className="peptides-list">
+            {peptides.map((peptide) => (
+              <Chip
+                key={peptide}
+                label={<div className="pr-label">{peptide}</div>}
+                onDelete={() => removePeptide(peptide)}
+                className="peptide-chip"
+                sx={{
+                  "& .MuiChip-deleteIcon": {
+                    color: "#a26363",
+                  },
+                }}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -126,26 +267,41 @@ const PeptideRetention: React.FC = () => {
         onClick={predictAll}
         disabled={isLoading || peptides.length === 0}
         className="predict-button"
+        startIcon={<CheckCircle />}
       >
         {isLoading ? "Predicting..." : "Predict All"}
       </Button>
+      <Button
+        variant="contained"
+        component="label"
+        className="predict-button"
+        style={{ float: "right" }}
+        startIcon={<FileOpenOutlined />}
+      >
+        Load from File
+        <input type="file" accept=".txt,.csv" hidden onChange={loadFromFile} />
+      </Button>
 
-      {isLoading && <CircularProgress className="loading-spinner" />}
-
-      {results.length > 0 && (
-        <Card className="results-card">
-          <CardHeader
-            title="Prediction Results"
-            action={
-              <Button variant="text" color="primary" onClick={exportCsv}>
-                Export CSV
-              </Button>
-            }
-          />
-          <CardContent>
-            <Table>
+      <Card className="results-card">
+        <CardHeader
+          title="Prediction Results"
+          action={
+            <Button
+              variant="contained"
+              className="predict-button"
+              onClick={exportCsv}
+              disabled={results.length === 0}
+              startIcon={<DownloadOutlined />}
+            >
+              Export CSV
+            </Button>
+          }
+        />
+        <CardContent>
+          <div className="table-container">
+            <Table className={results.length === 0 ? "disabled" : ""}>
               <TableHead>
-                <TableRow className='results-header'>
+                <TableRow className="results-header">
                   <TableCell>Peptide</TableCell>
                   <TableCell>Predicted tR (min)</TableCell>
                   <TableCell>SMILES</TableCell>
@@ -157,7 +313,9 @@ const PeptideRetention: React.FC = () => {
               <TableBody>
                 {results.map((result, index) => (
                   <TableRow key={index}>
-                    <TableCell><b>{result.peptide}</b></TableCell>
+                    <TableCell>
+                      <b>{result.peptide}</b>
+                    </TableCell>
                     <TableCell>{result.predicted_tr.toFixed(2)}</TableCell>
                     <TableCell>{result.smiles}</TableCell>
                     <TableCell>{result.log_sum_aa.toFixed(4)}</TableCell>
@@ -167,9 +325,109 @@ const PeptideRetention: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
+      <Card className="results-card">
+        <CardHeader
+          title="Chromatogram"
+          action={
+            <Button
+              variant="contained"
+              startIcon={<DownloadOutlined />}
+              className="predict-button"
+              onClick={exportChromatogram}
+              disabled={results.length === 0}
+            >
+              Export As Image
+            </Button>
+          }
+        />
+        <CardContent>
+          <div
+            className={`chromatogram-section ${
+              results.length === 0 ? "disabled" : ""
+            }`}
+          >
+            {isLoading && (
+              <CircularProgress className="chromatogram-loading-overlay" />
+            )}
+            {(() => {
+              const chromatogramData = generateChromatogramData();
+              var textColor = "#000";
+              return (
+                <Line
+                  ref={(chart) => {
+                    if (chart) {
+                      chartRef.current = chart;
+                    }
+                  }}
+                  style={{
+                    backgroundColor: "#fff",
+                    padding: "30px",
+                    borderRadius: "8px",
+                    minHeight: "450px",
+                    width: "100%",
+                  }}
+                  data={chromatogramData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      annotation: {
+                        annotations: chromatogramData.annotations,
+                      },
+                    },
+                    elements: {
+                      point: {
+                        radius: 0,
+                      },
+                      line: {
+                        borderWidth: 1,
+                      },
+                    },
+                    scales: {
+                      x: {
+                        title: {
+                          display: true,
+                          text: "Retention Time (min)",
+                          color: textColor,
+                        },
+                        min: 0,
+                        max: 100,
+                        grid: {
+                          display: true,
+                        },
+                        ticks: {
+                          maxTicksLimit: 7,
+                          callback: (value) => (Number(value) / 65).toFixed(1),
+                          color: textColor,
+                        },
+                      },
+                      y: {
+                        title: {
+                          display: true,
+                          text: "Relative Intensity",
+                          color: textColor,
+                        },
+                        min: 0,
+                        max: Math.ceil(chromatogramData.max * 1.2),
+                        grid: {
+                          display: true,
+                        },
+                        ticks: {
+                          color: textColor,
+                        },
+                      },
+                    },
+                  }}
+                />
+              );
+            })()}
+          </div>
+        </CardContent>
+      </Card>
 
       {errorMessage && (
         <Alert severity="error" className="error-alert">

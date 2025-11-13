@@ -3,6 +3,7 @@ from rdkit.Chem import Descriptors, AllChem
 import math
 from pyPept.sequence import Sequence, correct_pdb_atoms
 from pyPept.molecule import Molecule
+from concurrent.futures import ThreadPoolExecutor
 
 class PeptideRetentionPredictor:
     AA_RETENTION_TIMES = {
@@ -55,7 +56,7 @@ class PeptideRetentionPredictor:
     @staticmethod
     def predict(peptides: list[str]) -> list[dict]:
         results = []
-        for peptide in peptides:
+        def _process(peptide):
             try:
                 smiles = PeptideRetentionPredictor.peptide_to_smiles(peptide)
                 if not smiles:
@@ -63,17 +64,19 @@ class PeptideRetentionPredictor:
                 log_sum = PeptideRetentionPredictor.log_sum_aa(peptide)
                 log_vdw, clog_p = PeptideRetentionPredictor.compute_rdkit_features(smiles)
                 tr_pred = 8.02 + 14.86 * log_sum - 5.77 * log_vdw + 0.28 * clog_p
-                results.append({
+                return {
                     'peptide': peptide,
                     'smiles': smiles,
                     'log_sum_aa': log_sum,
                     'log_vdw_vol': log_vdw,
                     'clog_p': clog_p,
                     'predicted_tr': tr_pred
-                })
+                }
             except Exception as e:
-                results.append({
+                return {
                     'peptide': peptide,
                     'error': str(e)
-                })
+                }
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(_process, peptides))
         return results
