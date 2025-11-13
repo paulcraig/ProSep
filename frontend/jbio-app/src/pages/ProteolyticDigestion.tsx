@@ -141,14 +141,14 @@ const ProteolyticDigestion: React.FC = () => {
         <Grid size={1}>
           <Grid container>
             <Grid size={12}>
-              <div>SELECTED PROTEIN</div>
+              <div className="word">SELECTED PROTEIN</div>
               <div className="selectedProtein">
                 {isSelected() ? currentSeq : "No protein selected"}
               </div>
             </Grid>
             <Grid size={12}>
-              <div>Select a protease</div>
-              <FormControl>
+              <div className="word">Select a protease</div>
+              <FormControl className="word">
                 <Select
                   onChange={(e) => {
                     changeSelectedProtease(e.target.value);

@@ -11,24 +11,14 @@ from backend.utility.protein import Protein
 class ProteolyticDigestion():
     @staticmethod
     def breakUpProtein(sequence:str,two_animno_acids:str)->List:
-        if (len(two_animno_acids) == 1):
-            seperated:list = sequence.split(two_animno_acids)
-            seperated[0] = seperated[0] + two_animno_acids[0]
-            i = 1
-            while (i < len(seperated)-1):
-                seperated[i] =  two_animno_acids[0]+seperated[i]+two_animno_acids[1]
-                i+=1
-        
-            return seperated
         seperated:list = sequence.split(two_animno_acids)
-        seperated[0] = seperated[0] + two_animno_acids[0]
-        seperated[-1] = seperated[-1]+ two_animno_acids[1]
-        i = 1
+        i = 0
         while (i < len(seperated)-1):
-            seperated[i] =  two_animno_acids[0]+seperated[i]+two_animno_acids[1]
+            seperated[i] =  seperated[i]+two_animno_acids
             i+=1
-        
+    
         return seperated
+     
 
     @staticmethod
     def fileGetProteinInfo(file: UploadFile) -> Any:
