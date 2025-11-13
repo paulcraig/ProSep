@@ -103,29 +103,21 @@ class Simulation_2de():
 
     @staticmethod
     def parse_fasta(sequences, new_proteins):
-        def extract_id(header: str) -> str:
-            parts = header.split("|")
-            if len(parts) > 1:
-                return parts[1].strip()
-            match = re.search(r'([A-Z]{1,3}_?\d+\.\d+|[A-Z0-9]{4,10})', header)
-            return match.group(0) if match else header.strip()
-
-        id_list = [extract_id(seq['header']) for seq in sequences]
-
-        links_dict = Protein.find_links(id_list)
+        """
+        Parses sequences and uses accession numbers to make NCBI links.
+        """
+        links_dict = Protein.find_links(sequences)
 
         for seq in sequences:
-            pid = extract_id(seq['header'])
-            display_name = seq['header'].split("|")[-1].strip() if "|" in seq['header'] else pid
-
-            uniprot_match = re.search(r'[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}', seq['header'])
-            uniprotId = uniprot_match.group(0) if uniprot_match else "N/A"
+            header = seq.get('header', 'Unknown')
+            match = re.search(r'\|([A-Z0-9]+\.\d+)\|', header)
+            short_id = match.group(1) if match else header[:10]
 
             protein_info = {
-                'name': seq.get('name', display_name),
-                'fullName': seq.get('name', display_name),
+                'name': seq.get('name', header),
+                'fullName': seq.get('name', header),
                 'organism': seq.get('organism', 'Unknown organism'),
-                'uniprotId': uniprotId,
+                'uniprotId': "N/A",
                 'mw': seq.get('mw'),
                 'pH': seq.get('pH'),
                 'color': Simulation_2de.COLOR_PALETTE[len(new_proteins) % len(Simulation_2de.COLOR_PALETTE)],
@@ -135,13 +127,12 @@ class Simulation_2de():
                 'currentpH': 7,
                 'velocity': 0,
                 'settled': False,
-                'ID': pid,
-                'Link': links_dict.get(pid, "N/A"),
-                'display_name': display_name
+                'ID': short_id,
+                'Link': links_dict.get(short_id, "N/A"),
+                'display_name': header
             }
 
             new_proteins.append(protein_info.copy())
-
         
     @staticmethod
     def parse_fasta_content(content: str) -> List[Dict[str, Any]]:
@@ -172,6 +163,9 @@ class Simulation_2de():
         return 50 + ((clampedPH - min_ph) / (max_ph - min_ph)) * (canvas_width - 100)
 
 
+    '''
+    The two functions below calculate the Y position on the gel based on molecular weight or distance traveled.
+    '''
     @staticmethod
     def get_mw_position(mw, canvas_height, acrylamide_percentage, min_mw = 1000, max_mw = 1000000):
         log_mw = math.log10(min(max(mw, min_mw), max_mw))

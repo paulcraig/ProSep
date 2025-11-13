@@ -135,35 +135,38 @@ const TwoDE = () => {
           const bandRight = dot.x + bandHalf;
           const bandBottom = dot.y + BAND_HEIGHT / 2;
           const padding = 4;
-          return mouseX >= bandLeft - padding && mouseX <= bandRight + padding &&
-                mouseY >= bandTop - padding && mouseY <= bandBottom + padding;
+          return (
+            mouseX >= bandLeft - padding &&
+            mouseX <= bandRight + padding &&
+            mouseY >= bandTop - padding &&
+            mouseY <= bandBottom + padding
+          );
         }
       }
 
-      // --- SDS states ---
+      // --- SDS states (zoomed scatter) ---
       if (['sds-running', 'complete'].includes(simulationState)) {
+        // Use EXACT SAME math as computeSDSPosition
         const usableWidth = canvas.width - LEFT_MARGIN - RIGHT_MARGIN;
-        const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-
         const pHRange = MAX_PH - MIN_PH;
+        const basePixelsPerPH = usableWidth / pHRange;
+        const pixelsPerPH = basePixelsPerPH * zoom;
+        const visibleMinPH = MIN_PH - (offset.x - LEFT_MARGIN) / pixelsPerPH;
+        screenX = LEFT_MARGIN + (dot.pH - visibleMinPH) * pixelsPerPH;
+
+        const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
         const mwRange = maxMW - minMW;
-
-        const visibleMinPH = MIN_PH - (offset.x - LEFT_MARGIN) / (usableWidth / pHRange * zoom);
-        const visibleMaxPH = visibleMinPH + usableWidth / (usableWidth / pHRange * zoom);
-
-        // Map dot to screen coordinates (same as draw)
-        screenX = LEFT_MARGIN + ((dot.pH - visibleMinPH) / (visibleMaxPH - visibleMinPH)) * usableWidth;
-        screenX = (screenX - offset.x) * zoom + offset.x;
-
-        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / mwRange) * usableHeight;
         const centerY = canvas.height / 2;
+        const basePixelsPerMW = usableHeight / mwRange;
+        const pixelsPerMW = basePixelsPerMW * zoom;
+        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / mwRange) * usableHeight;
         screenY = (baseY - centerY) * zoom + centerY + offset.y;
 
         const withinX = screenX >= LEFT_MARGIN && screenX <= canvas.width - RIGHT_MARGIN;
         const withinY = screenY >= SDS_TOP_MARGIN && screenY <= canvas.height - SDS_BOTTOM_MARGIN;
         if (!withinX || !withinY) return false;
 
-        const hitRadius = (DOT_HOVER_RADIUS || DOT_RADIUS) + 4;
+        const hitRadius = (DOT_HOVER_RADIUS || DOT_RADIUS) * zoom + 4;
         return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
       }
 
@@ -177,8 +180,8 @@ const TwoDE = () => {
     } else {
       setHoveredDot(null);
     }
-
   };
+
 
   const handleCanvasMouseLeave = () => {
     if (!selectedDot) {
@@ -326,6 +329,7 @@ const TwoDE = () => {
       // Add new proteins to the existing dots
       setDots(prevDots => [...prevDots, ...response.data]);
     } catch (error) {
+      alert("Error uploading FASTA file. Please ensure it is correctly formatted.");
       console.error('Error uploading FASTA files:', error);
     } finally {
       setIsUploading(false);
@@ -416,39 +420,38 @@ const TwoDE = () => {
       let screenY = 0;
 
       if (['sds-running', 'complete'].includes(simulationState)) {
-        // Compute visible range
-        const pHRange = MAX_PH - MIN_PH;
-        const visibleMinPH = MIN_PH - (offset.x - LEFT_MARGIN) / (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) * (pHRange * zoom);
-        const visibleMaxPH = visibleMinPH + (canvas.width - LEFT_MARGIN - RIGHT_MARGIN) / ((canvas.width - LEFT_MARGIN - RIGHT_MARGIN) / (pHRange * zoom));
-
-        // Map dot to screen coordinates
+        // Use EXACT same projection as drawDotSDS → computeSDSPosition
         const usableWidth = canvas.width - LEFT_MARGIN - RIGHT_MARGIN;
-        const pixelsPerPH = usableWidth / (visibleMaxPH - visibleMinPH) * zoom;
+        const pHRange = MAX_PH - MIN_PH;
+        const basePixelsPerPH = usableWidth / pHRange;
+        const pixelsPerPH = basePixelsPerPH * zoom;
+        const visibleMinPH = MIN_PH - (offset.x - LEFT_MARGIN) / pixelsPerPH;
         screenX = LEFT_MARGIN + (dot.pH - visibleMinPH) * pixelsPerPH;
 
         const usableHeight = canvas.height - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
-        screenY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / (maxMW - minMW)) * usableHeight;
-        screenY = (screenY - canvas.height / 2) * zoom + canvas.height / 2 + offset.y;
+        const mwRange = maxMW - minMW;
+        const centerY = canvas.height / 2;
+        const basePixelsPerMW = usableHeight / mwRange;
+        const pixelsPerMW = basePixelsPerMW * zoom;
+        const baseY = SDS_TOP_MARGIN + (1 - (dot.mw - minMW) / mwRange) * usableHeight;
+        screenY = (baseY - centerY) * zoom + centerY + offset.y;
 
-        // Check within bounds
         const withinX = screenX >= LEFT_MARGIN && screenX <= canvas.width - RIGHT_MARGIN;
         const withinY = screenY >= SDS_TOP_MARGIN && screenY <= canvas.height - SDS_BOTTOM_MARGIN;
         if (!withinX || !withinY) return false;
-
-        const hitRadius = (DOT_HOVER_RADIUS || DOT_RADIUS) + 4;
-        const dx = mouseX - screenX;
-        const dy = mouseY - screenY;
-        return Math.hypot(dx, dy) <= hitRadius;
+      } else {
+        // For IEF or ready state — simpler unzoomed coords
+        screenX = dot.x * zoom + offset.x;
+        screenY = dot.y * zoom + offset.y;
       }
 
-      // fallback: non-SDS state
-      screenX = dot.x * zoom + offset.x;
-      screenY = dot.y * zoom + offset.y;
-      const hitRadius = DOT_RADIUS * zoom + 4;
-      return Math.hypot(mouseX - screenX, mouseY - screenY) <= hitRadius;
-    });
+      const hitRadius = (DOT_HOVER_RADIUS || DOT_RADIUS) * zoom + 4;
+      const dx = mouseX - screenX;
+      const dy = mouseY - screenY;
+      return Math.hypot(dx, dy) <= hitRadius;
+  });
 
-    setHoveredDot(hovered || null);
+  setHoveredDot(hovered || null);
   };
 
   // Handler for when the mouse course clicks on the document, which closes
