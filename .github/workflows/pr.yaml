@@ -11,10 +11,8 @@ jobs:
       - name: Set up workspace
         uses: actions/checkout@v4.2.2
       - name: Enforce PR has Description
-        env:
-          PR_BODY= ${{ github.event.pull_request.body }}
         run: |
-          PR_DESCRIPTION=$(printf "%s" "$PR_BODY")
+          PR_DESCRIPTION=$(jq -r '.pull_request.body' "$GITHUB_EVENT_PATH")
           NOT_EMPTY="^(?!\s*$).+"
           if [[ $PR_DESCRIPTION =~ $NOT_EMPTY ]] || [[ -z $PR_DESCRIPTION ]]; then
             echo "PR description is empty"
