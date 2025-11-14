@@ -9,6 +9,7 @@ const TwoDE = () => {
   const canvasRef = useRef(null);
 
   
+  //just to commit
   const animationFrameRef = useRef(null);
   const [dots, setDots] = useState([]);
   const [hoveredDot, setHoveredDot] = useState(null);
