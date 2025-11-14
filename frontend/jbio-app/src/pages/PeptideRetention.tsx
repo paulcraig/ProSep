@@ -31,9 +31,11 @@ import { API_URL } from "../config";
 import "./PeptideRetention.css";
 import {
   CheckCircle,
+  ClearAll,
   DownloadOutlined,
   FileOpenOutlined,
-  X,
+  StopCircle,
+  Timer
 } from "@mui/icons-material";
 
 ChartJS.register(
@@ -47,7 +49,7 @@ ChartJS.register(
   annotationPlugin
 );
 
-type PredictionResult = {
+type PredictionSuccess = {
   peptide: string;
   smiles: string;
   log_sum_aa: number;
@@ -56,13 +58,27 @@ type PredictionResult = {
   predicted_tr: number;
 };
 
+type PredictionError = {
+  peptide: string;
+  error: string;
+};
+
+export type PredictionResult = PredictionSuccess | PredictionError;
+
+
 const PeptideRetention: React.FC = () => {
   const [newPeptide, setNewPeptide] = useState<string>("");
   const [peptides, setPeptides] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [results, setResults] = useState<PredictionResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [stopRequested, setStopRequested] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const chartRef = useRef<any>(null);
+
 
   const addPeptide = () => {
     if (newPeptide.trim() && !peptides.includes(newPeptide)) {
@@ -70,50 +86,137 @@ const PeptideRetention: React.FC = () => {
       setNewPeptide("");
     }
   };
+
+
   const removePeptide = (peptide: string) => {
     setPeptides(peptides.filter((p) => p !== peptide));
   };
+
+
   const handleKeyUp = (event: React.KeyboardEvent) => {
     if (event.key === "Enter") {
       addPeptide();
     }
   };
+
+
+  const bucketPeptides = (list: string[]) => {
+    const trivial:   string[] = [];
+    const normal:    string[] = [];
+    const nightmare: string[] = [];
+
+    const scorer = (seq: string) => {
+      let clean = seq.replace("Ac-", "").replace("-NH2", "");
+      const len = clean.length;
+      let mods = 0;
+
+      if (seq.includes("-NH2")) mods += 2;
+      if (seq.startsWith("Ac-")) mods += 2;
+      if (/^pE/i.test(seq)) mods += 4;
+
+      return len + mods;
+    };
+
+    for (const p of list) {
+      const score = scorer(p);
+
+      if (score <= 6) trivial.push(p);
+      else if (score < 15) normal.push(p);
+      else nightmare.push(p);
+    }
+    return { trivial, normal, nightmare };
+  };
+
+
+  const stopPredicting = () => {
+    setStopRequested(true);
+    abortRef.current?.abort();
+    
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsLoading(false);
+  };
+
+
+  const chunkPredict = async (peps: string[], size?: number) => {
+    const step = size ?? peps.length;
+
+    for (let i = 0; i < peps.length; i += step) {
+      if (stopRequested) return;
+
+      const batch = peps.slice(i, i + step);
+      
+      const res = await fetch(`${API_URL}/pr/predict-multiple`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ peptides: batch }),
+        signal: abortRef.current?.signal,
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      setResults(prev => [...prev, ...data]);
+    }
+  };
+
+
   const predictAll = async () => {
     if (!peptides.length) return;
 
     setIsLoading(true);
+    setStopRequested(false);
     setErrorMessage(null);
     setResults([]);
+    setElapsed(0);
+
+    abortRef.current = new AbortController();
+
+    if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setElapsed(prev => prev + 1);
+    }, 1000);
 
     try {
-      console.log(
-        `${API_URL}/pr/predict?peptides=${encodeURIComponent(
-          peptides.join(",")
-        )}`
-      );
-      const response = await fetch(
-        `${API_URL}/pr/predict?peptides=${encodeURIComponent(
-          peptides.join(",")
-        )}`,
-        { method: "GET" }
-      );
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
-      }
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      setResults(data);
-    } catch (error: any) {
-      setErrorMessage(`Error: ${error.message}`);
+      const { trivial, normal, nightmare } = bucketPeptides(peptides);
+
+      if (!stopRequested && trivial.length > 0)
+        await chunkPredict(trivial);
+
+      if (!stopRequested && normal.length > 0)
+        await chunkPredict(normal, 8);
+
+      if (!stopRequested && nightmare.length > 0)
+        await chunkPredict(nightmare, 3);
+
+    } catch (err: any) {
+      if (err.name !== "AbortError")
+        setErrorMessage(`Error: ${err.message}`);
     }
 
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     setIsLoading(false);
   };
+
+
+  const formatTime = (totalSec: number) => {
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return secs > 0 ? `${mins}m ${secs.toString().padStart(2, "0")}s` : `${secs}s`;
+  };
+
+
+
   const exportCsv = () => {
     let csv = "Peptide,Predicted tR (min),SMILES,log SumAA,log VDW Vol,clogP\n";
     results.forEach((result) => {
+      if ("error" in result) return;
+
       csv += `${result.peptide},${result.predicted_tr.toFixed(2)},${
         result.smiles
       },${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(
@@ -129,22 +232,30 @@ const PeptideRetention: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
-  const loadFromFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      const loadedPeptides = content
-        .split(",")
-        .map((peptide) => peptide.trim());
-      setPeptides((prevPeptides) =>
-        Array.from(new Set([...prevPeptides, ...loadedPeptides]))
-      );
-    };
-    reader.readAsText(file);
+
+  const loadFromFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        const loadedPeptides = content
+          .split(",")
+          .map((peptide) => peptide.trim());
+        setPeptides((prevPeptides) =>
+          Array.from(new Set([...prevPeptides, ...loadedPeptides]))
+        );
+      };
+      reader.readAsText(file);
+    });
+    
+    event.target.value = "";
   };
+
+
   const generateChromatogramData = () => {
     const scalingFactor = 6.5;
     const xVals = Array.from({ length: 1000 }, (_, i) => (i / 999) * 100);
@@ -155,10 +266,13 @@ const PeptideRetention: React.FC = () => {
     let maxChrom = 0;
 
     results.forEach((result, index) => {
+      if ("error" in result) return;
+
       const peptide = result.peptide.replace(/-NH2/g, "").replace(/Ac-/g, "");
       const aaCount = peptide.length;
       const rt = result.predicted_tr * scalingFactor;
       const height = aaCount * 10;
+
       xVals.forEach((x, i) => {
         chromatogram[i] +=
           height * Math.exp(-Math.pow(x - rt, 2) / (2 * Math.pow(0.35, 2)));
@@ -201,6 +315,7 @@ const PeptideRetention: React.FC = () => {
     };
   };
 
+
   const exportChromatogram = () => {
     if (chartRef.current) {
       const base64Image = chartRef.current.toBase64Image();
@@ -210,6 +325,7 @@ const PeptideRetention: React.FC = () => {
       a.click();
     }
   };
+
 
   return (
     <div className="peptide-retention-page">
@@ -225,7 +341,14 @@ const PeptideRetention: React.FC = () => {
           focused
           sx={{
             input: { color: "var(--text)" },
-            label: { color: "var(--text)" },
+            label: { color: "var(--accent) !important" },
+            '& .MuiInputLabel-root': { color: "var(--accent) !important" },
+            '& .MuiInputLabel-root.Mui-focused': { color: "var(--accent) !important" },
+            '& .MuiFilledInput-root': {
+              '&:before': { borderBottomColor: "var(--accent)" },
+              '&:after': { borderBottomColor: "var(--accent)" },
+              '&:hover:before': { borderBottomColor: "var(--accent)" },
+            },
           }}
         />
         <Button
@@ -239,62 +362,110 @@ const PeptideRetention: React.FC = () => {
         </Button>
       </div>
 
+      {isLoading ? (
+        <Button
+          variant="contained"
+          onClick={stopPredicting}
+          className="predict-button"
+          color="error"
+          startIcon={<StopCircle />}
+        >
+          Stop Predicting
+        </Button>
+      ) : (
+        <Button
+          variant="contained"
+          onClick={predictAll}
+          disabled={peptides.length === 0}
+          className="predict-button"
+          startIcon={<CheckCircle />}
+        >
+          Predict All
+        </Button>
+      )}
+      <div style={{ float: "right", display: "flex", gap: "1rem" }}>
+        <Button
+          variant="contained"
+          onClick={() => setPeptides([])}
+          disabled={peptides.length === 0}
+          className="predict-button"
+          startIcon={<ClearAll />}
+        >
+          Clear All
+        </Button>
+        <Button
+          variant="contained"
+          component="label"
+          className="predict-button"
+          startIcon={<FileOpenOutlined />}
+        >
+          Load from File(s)
+          <input type="file" accept=".txt,.csv" multiple hidden onChange={loadFromFiles} />
+        </Button>
+      </div>
+
       {peptides.length > 0 && (
-        <div>
-          <div>
-            <b>Peptides to predict:</b>
-          </div>
-          <div className="peptides-list">
-            {peptides.map((peptide) => (
-              <Chip
-                key={peptide}
-                label={<div className="pr-label">{peptide}</div>}
-                onDelete={() => removePeptide(peptide)}
-                className="peptide-chip"
-                sx={{
-                  "& .MuiChip-deleteIcon": {
-                    color: "#a26363",
-                  },
-                }}
-              />
-            ))}
-          </div>
+        <div className="peptides-list">
+          {peptides.map((peptide) => (
+            <Chip
+              key={peptide}
+              label={<div className="pr-label">{peptide}</div>}
+              onDelete={() => removePeptide(peptide)}
+              className="peptide-chip"
+              sx={{
+                "& .MuiChip-deleteIcon": {
+                  color: "#a26363",
+                },
+              }}
+            />
+          ))}
         </div>
       )}
-
-      <Button
-        variant="contained"
-        onClick={predictAll}
-        disabled={isLoading || peptides.length === 0}
-        className="predict-button"
-        startIcon={<CheckCircle />}
-      >
-        {isLoading ? "Predicting..." : "Predict All"}
-      </Button>
-      <Button
-        variant="contained"
-        component="label"
-        className="predict-button"
-        style={{ float: "right" }}
-        startIcon={<FileOpenOutlined />}
-      >
-        Load from File
-        <input type="file" accept=".txt,.csv" hidden onChange={loadFromFile} />
-      </Button>
 
       <Card className="results-card">
         <CardHeader
           title="Prediction Results"
           action={
-            <Button
-              variant="contained"
-              className="predict-button"
-              onClick={exportCsv}
-              disabled={results.length === 0}
-              startIcon={<DownloadOutlined />}
-            >
-              Export CSV
-            </Button>
+            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+              {(isLoading || results.length > 0) && (
+                <>
+                  <div /* Timer */
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      fontWeight: "bold",
+                      color: "var(--sub-text)"
+                    }}
+                  >
+                    <Timer fontSize="small" style={{ marginRight: "0.25rem", fill: "var(--text)" }} />
+                    {formatTime(elapsed)}
+                  </div>
+
+                  <div /* Progress */
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      fontWeight: "bold",
+                      color: "var(--sub-text)"
+                    }}
+                  >
+                    <CheckCircle fontSize="small" style={{ marginRight: "0.25rem", fill: "var(--text)" }} />
+                    {results.length} / {peptides.length}
+                  </div>
+                </>
+              )}
+
+              <Button
+                variant="contained"
+                className="predict-button"
+                onClick={exportCsv}
+                disabled={results.length === 0}
+                startIcon={<DownloadOutlined />}
+                style={{marginRight: "0.75rem"}}
+              >
+                Export CSV
+              </Button>
+            </div>
           }
         />
         <CardContent>
@@ -311,16 +482,30 @@ const PeptideRetention: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {results.map((result, index) => (
+                {[...results].sort((a, b) => {
+                  if ("error" in a) return 1;
+                  if ("error" in b) return -1;
+                  return a.predicted_tr - b.predicted_tr;
+                })
+                .map((result, index) => (
                   <TableRow key={index}>
                     <TableCell>
                       <b>{result.peptide}</b>
                     </TableCell>
-                    <TableCell>{result.predicted_tr.toFixed(2)}</TableCell>
-                    <TableCell>{result.smiles}</TableCell>
-                    <TableCell>{result.log_sum_aa.toFixed(4)}</TableCell>
-                    <TableCell>{result.log_vdw_vol.toFixed(4)}</TableCell>
-                    <TableCell>{result.clog_p.toFixed(4)}</TableCell>
+
+                    {"error" in result ? (
+                      <TableCell colSpan={5} style={{ color: "red" }}>
+                        {result.error}
+                      </TableCell>
+                    ) : (
+                      <>
+                        <TableCell>{result.predicted_tr.toFixed(2)}</TableCell>
+                        <TableCell>{result.smiles}</TableCell>
+                        <TableCell>{result.log_sum_aa.toFixed(4)}</TableCell>
+                        <TableCell>{result.log_vdw_vol.toFixed(4)}</TableCell>
+                        <TableCell>{result.clog_p.toFixed(4)}</TableCell>
+                      </>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

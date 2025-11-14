@@ -1,7 +1,7 @@
 .peptide-retention-page {
     background: var(--background);
     color: var(--text);
-    padding: 1rem;
+    padding: 2rem;
     min-height: 100vh;
 }
 
@@ -17,10 +17,9 @@
 }
 
 .peptides-list {
-    margin-bottom: 1rem;
+    margin-top: 1rem;
     display: flex;
     flex-wrap: wrap;
-
 }
 
 .peptides-list div:first-child {
@@ -96,13 +95,16 @@ border: 0.125rem solid var(--accent);
 }
 
 .peptide-chip {
-    margin: 0.25rem;
+    margin: 0.25rem !important;;
     background-color: var(--sub-accent) !important;
-    margin-right: 10px !important;
 }
 
 .loading-spinner {
     margin-left: 1rem;
+}
+
+.chromatogram-loading-overlay .MuiCircularProgress-circle {
+    stroke: var(--accent) !important;
 }
 
 .chromatogram-section {
