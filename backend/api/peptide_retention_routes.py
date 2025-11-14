@@ -8,8 +8,11 @@ router = APIRouter(
     tags=["Peptide Retention Time Prediction"]
 )
 
-class SinglePeptideRequest(BaseModel): peptide: str
-class MultiplePeptidesRequest(BaseModel): peptides: List[str]
+class SinglePeptideRequest(BaseModel):
+    peptide: str
+
+class MultiplePeptidesRequest(BaseModel):
+    peptides: List[str]
 
 
 @router.post("/predict", response_model=Dict[str, Any])
