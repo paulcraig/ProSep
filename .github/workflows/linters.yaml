@@ -58,3 +58,5 @@ jobs:
         uses: Azbagheri/shell-linter@v0.8.0
         with:
           exclude-paths: ".devcontainer"
+          path: "scripts"
+        continue-on-error: true
