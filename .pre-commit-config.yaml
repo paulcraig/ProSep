@@ -15,7 +15,10 @@ repos:
   hooks:
     - id: trailing-whitespace
       stages: [pre-commit]
+      exclude_types: [svg]
     - id: mixed-line-ending
       stages: [pre-commit]
+      exclude_types: [svg]
     - id: end-of-file-fixer
       stages: [pre-commit]
+      exclude_types: [svg]
