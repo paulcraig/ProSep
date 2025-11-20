@@ -1,16 +1,22 @@
 # JBioFramework Web Application
+
+[![Visit Website](https://img.shields.io/badge/Visit_Website-JBioFramework-blue?style=for-the-badge)](http://protein-separation-sim.se.rit.edu/)
+
 > The JBioFramework Web Application is a more efficient method of performing 1-Dimensional
 > through the use of a browser and file selection in the format of
 > FASTA files. This document will contain information regarding [Download and Installation](#download-and-installation),
 > [Usage for Development](#usage-for-development), and [Testing Usage](#testing-usage) for the application.
 
 ## Project Sponsor
+
 - [Dr. Paul Craig](mailto:pac8612@rit.edu)
 
 <img src="frontend/jbio-app/src/assets/profiles/Paul_Craig.jpg" alt="Paul Craig" width="200"/>
 
 Dr. Paul Craig received his B.S. in Chemistry from Oral Roberts University in 1979, and his Ph.D. in Biological Chemistry from The University of Michigan in 1985. Following a post-doc at Henry Ford Hospital (biophysical chemistry of blood clotting; 1985-1988), he spent five years as an analytical biochemistry at BioQuant, Inc., in Ann Arbor, Michigan before joining RIT in 1993.
+
 ## Download and Installation:
+
 ### Git
 
 ```bash
@@ -47,19 +53,23 @@ pre-commit install
 This will install all the hooks. Any freshly committed files should have the hooks fix and apply.
 
 ### Software Requirements
+
 - Python 3.7 or higher
 - Node.js 20.11.0 or higher
 - React 18.2.0 or higher
 
 ## Usage for Development
+
 Navigate to the top level directory by typing in the command line
 
 ```bash
 cd ProSep
 ```
+
 <br/>
 
 Launch the API server by typing in the command line:
+
 ```bash
 uvicorn server:app --reload
 ```
@@ -79,6 +89,7 @@ npm install
 <br/>
 
 Launch the application by typing in the command line:
+
 ```bash
 npm start
 ```
@@ -101,6 +112,7 @@ For example: `v1.1.1` -> `v1.1.2`
 ## Testing Usage
 
 ### Backend Guide:
+
 #### Author: Mack Leonard
 
 Navigate to the top level directory by typing in the command line
@@ -130,29 +142,22 @@ Analyze results from the tests being run and modify the test or method being tes
 ## Project Teams
 
 - Fall 2025 to Spring 2026:
+
   - Coach:
     - [Mark Wilson](mailto:mwvse@rit.edu)
   - Developers:
     - Luke Knofczynski
-
     - Zachary Van Horn
-
     - Shreyas Gadwalker
-
     - Jacob Fey
-
     - Aditya Vikram
-
 - Fall 2023 to Spring 2024:
+
   - Coach:
     - [Mark Wilson](mailto:mwvse@rit.edu)
   - Developers:
     - [Chase Amador](https://www.linkedin.com/in/chase-amador-54765b209/)
-
     - [Beck Anderson](https://www.linkedin.com/in/beck-anderson-se/)
-
     - [Landon Heatly](https://www.linkedin.com/in/landon-heatly-77a093175/)
-
     - [Mack Leonard](https://www.linkedin.com/in/mack-leonard/)
-
     - [Amr Mualla](https://www.linkedin.com/in/amrmualla/)
