@@ -81,10 +81,10 @@ const PeptideRetention: React.FC = () => {
 
 
   const addPeptide = () => {
-    if (newPeptide.trim() && !peptides.includes(newPeptide)) {
-      setPeptides([...peptides, newPeptide]);
-      setNewPeptide("");
-    }
+    var toAdd = newPeptide.trim().split(",").map((p) => p.trim()).filter((p) => p.length > 0);;
+    if (toAdd.length === 0) return;
+    setPeptides((prev) => Array.from(new Set([...prev, ...toAdd])));
+    setNewPeptide("");
   };
 
 
