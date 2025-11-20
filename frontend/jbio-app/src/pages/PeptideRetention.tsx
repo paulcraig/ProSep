@@ -14,8 +14,13 @@ import {
   CardContent,
   Alert,
   Skeleton,
+  Checkbox,
+  FormControlLabel,
+  Icon,
+  IconButton,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import ContentCopy from "@mui/icons-material/ContentCopy";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -37,6 +42,7 @@ import {
   FileOpenOutlined,
   StopCircle,
   Timer,
+  Info,
 } from "@mui/icons-material";
 
 ChartJS.register(
@@ -74,10 +80,23 @@ const PeptideRetention: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stopRequested, setStopRequested] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [useCached, setUseCached] = useState(true);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const chartRef = useRef<any>(null);
+
+  const getCache = (): Record<string, PredictionSuccess> => {
+    try {
+      return JSON.parse(localStorage.getItem("peptideCache") || "{}");
+    } catch {
+      return {};
+    }
+  };
+
+  const setCache = (cache: Record<string, PredictionSuccess>) => {
+    localStorage.setItem("peptideCache", JSON.stringify(cache));
+  };
 
   const peptideResults = peptides
     .map((peptide) => {
@@ -156,7 +175,11 @@ const PeptideRetention: React.FC = () => {
     setIsLoading(false);
   };
 
-  const chunkPredict = async (peps: string[], size?: number) => {
+  const chunkPredict = async (
+    peps: string[],
+    size?: number,
+    cache?: Record<string, PredictionSuccess>
+  ) => {
     const step = size ?? peps.length;
 
     for (let i = 0; i < peps.length; i += step) {
@@ -175,6 +198,15 @@ const PeptideRetention: React.FC = () => {
       if (data.error) throw new Error(data.error);
 
       setResults((prev) => [...prev, ...data]);
+
+      if (cache) {
+        data.forEach((result: PredictionResult) => {
+          if ("predicted_tr" in result) {
+            cache[result.peptide] = result;
+          }
+        });
+        setCache(cache);
+      }
     }
   };
 
@@ -195,14 +227,35 @@ const PeptideRetention: React.FC = () => {
     }, 1000);
 
     try {
-      const { trivial, normal, nightmare } = bucketPeptides(peptides);
+      const cache = getCache();
+      let peptidesToPredict = peptides;
+      const cachedResults: PredictionResult[] = [];
 
-      if (!stopRequested && trivial.length > 0) await chunkPredict(trivial);
+      if (useCached) {
+        peptides.forEach((peptide) => {
+          if (cache[peptide]) {
+            cachedResults.push(cache[peptide]);
+            // console.log("found a peptide in cache: " + peptide);
+          }
+        });
+        peptidesToPredict = peptides.filter((p) => !cache[p]);
+      }
 
-      if (!stopRequested && normal.length > 0) await chunkPredict(normal, 8);
+      setResults(cachedResults);
 
-      if (!stopRequested && nightmare.length > 0)
-        await chunkPredict(nightmare, 3);
+      if (peptidesToPredict.length > 0) {
+        const { trivial, normal, nightmare } =
+          bucketPeptides(peptidesToPredict);
+
+        if (!stopRequested && trivial.length > 0)
+          await chunkPredict(trivial, undefined, cache);
+
+        if (!stopRequested && normal.length > 0)
+          await chunkPredict(normal, 8, cache);
+
+        if (!stopRequested && nightmare.length > 0)
+          await chunkPredict(nightmare, 3, cache);
+      }
     } catch (err: any) {
       if (err.name !== "AbortError") setErrorMessage(`Error: ${err.message}`);
     }
@@ -241,6 +294,11 @@ const PeptideRetention: React.FC = () => {
     a.download = "predictions.csv";
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const copyRow = (result: PredictionSuccess) => {
+    const text = `${result.peptide},${result.predicted_tr.toFixed(2)},${result.smiles},${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(4)},${result.clog_p.toFixed(4)}`;
+    navigator.clipboard.writeText(text);
   };
 
   const loadFromFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -392,6 +450,26 @@ const PeptideRetention: React.FC = () => {
         </Button>
       )}
       <div style={{ float: "right", display: "flex", gap: "1rem" }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={useCached}
+              onChange={(e) => setUseCached(e.target.checked)}
+              sx={
+                {
+                  color: "var(--accent)",
+                  "&.Mui-checked": {
+                    color: "var(--accent)",
+                  },
+                  "& .MuiSvgIcon-root": {
+                    fill: "var(--accent)",
+                  },
+                }
+              }
+            />
+          }
+          label="Use Cached"
+        />
         <Button
           variant="contained"
           onClick={() => setPeptides([])}
@@ -499,13 +577,34 @@ const PeptideRetention: React.FC = () => {
                   <TableCell>log SumAA</TableCell>
                   <TableCell>log VDW Vol</TableCell>
                   <TableCell>clogP</TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {peptideResults.map((item) => (
                   <TableRow key={item.peptide}>
                     <TableCell>
-                      <b>{item.peptide}</b>
+                      <>
+                        <b>{item.peptide}</b>
+                        {useCached &&
+                          (() => {
+                            try {
+                              const cache = JSON.parse(localStorage.getItem("peptideCache") || "{}");
+                              if (cache && cache[item.peptide]) {
+                                return (
+                                  <span
+                                    title="Loaded from cache"
+                                    style={{marginLeft: "5px", cursor: "help"}}
+                                  >
+                                    <Info fontSize="small" color="success"/>
+                                  </span>
+                                );
+                              }
+                            } catch {
+                            }
+                            return null;
+                          })()}
+                      </>
                     </TableCell>
                     {item.result ? (
                       "error" in item.result ? (
