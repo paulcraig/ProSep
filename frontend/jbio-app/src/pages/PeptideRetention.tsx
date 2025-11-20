@@ -16,8 +16,11 @@ import {
   Skeleton,
   Checkbox,
   FormControlLabel,
-  Icon,
   IconButton,
+  Tooltip,
+  styled,
+  tooltipClasses,
+  TooltipProps
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ContentCopy from "@mui/icons-material/ContentCopy";
@@ -29,7 +32,6 @@ import {
   PointElement,
   LineElement,
   Title,
-  Tooltip,
   Legend,
 } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
@@ -51,7 +53,6 @@ ChartJS.register(
   PointElement,
   LineElement,
   Title,
-  Tooltip,
   Legend,
   annotationPlugin
 );
@@ -69,6 +70,18 @@ type PredictionError = {
   peptide: string;
   error: string;
 };
+
+const BTooltip = styled(({ className, ...props }: TooltipProps) => (
+  <Tooltip {...props} arrow classes={{ popper: className }} />
+))(({ theme }) => ({
+  [`& .${tooltipClasses.arrow}`]: {
+    color: theme.palette.common.black,
+  },
+  [`& .${tooltipClasses.tooltip}`]: {
+    backgroundColor: theme.palette.common.black,
+  },
+}));
+
 
 export type PredictionResult = PredictionSuccess | PredictionError;
 
@@ -592,12 +605,18 @@ const PeptideRetention: React.FC = () => {
                               const cache = JSON.parse(localStorage.getItem("peptideCache") || "{}");
                               if (cache && cache[item.peptide]) {
                                 return (
-                                  <span
-                                    title="Loaded from cache"
-                                    style={{marginLeft: "5px", cursor: "help"}}
-                                  >
-                                    <Info fontSize="small" color="success"/>
-                                  </span>
+                                  <BTooltip title="Loaded from cache" arrow placement="top">
+                                    <span
+                                      style={{
+                                        marginLeft: "5px",
+                                        cursor: "help",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                      }}
+                                    >
+                                      <Info fontSize="small" color="success" />
+                                    </span>
+                                  </BTooltip>
                                 );
                               }
                             } catch {
@@ -608,7 +627,7 @@ const PeptideRetention: React.FC = () => {
                     </TableCell>
                     {item.result ? (
                       "error" in item.result ? (
-                        <TableCell colSpan={5} style={{ color: "red" }}>
+                        <TableCell colSpan={6} style={{ color: "red" }}>
                           {item.result.error}
                         </TableCell>
                       ) : (
@@ -624,6 +643,13 @@ const PeptideRetention: React.FC = () => {
                             {item.result.log_vdw_vol.toFixed(4)}
                           </TableCell>
                           <TableCell>{item.result.clog_p.toFixed(4)}</TableCell>
+                          <TableCell>
+                            <BTooltip title="Copy Row" arrow placement="top">
+                              <IconButton onClick={() => copyRow(item.result as PredictionSuccess)} sx={{ color: 'var(--text)' }}>
+                                <ContentCopy />
+                              </IconButton>
+                            </BTooltip>
+                          </TableCell>
                         </>
                       )
                     ) : (
@@ -643,6 +669,7 @@ const PeptideRetention: React.FC = () => {
                         <TableCell>
                           <Skeleton />
                         </TableCell>
+                        <TableCell></TableCell>
                       </>
                     )}
                   </TableRow>
