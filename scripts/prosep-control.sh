@@ -1,45 +1,12 @@
 #!/usr/bin/env bash
-
-source "$(dirname "$0")/prosep-config.sh"
 set -euo pipefail
 
-RESTART=false
-STOP=false
+BASE_DIR="$(dirname "$0")"
+source "$BASE_DIR/prosep-config.sh"
 
-# ---> Parse Flags <--- #
+# ---> Sub-commands <--- #
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --stop)
-      STOP=true
-      ;;
-    --restart)
-      RESTART=true
-      ;;
-    --help)
-      cat <<EOF
-Usage: $(basename "$0") [--stop] [--restart] [--help]
-
---stop
-    Disable deploy service, stop backend, stop Apache -> Shutdown the webapp.
-
---restart
-    If deploy service is inactive, activate it. Restart backend, reload Apache.
-
-EOF
-      exit 0
-      ;;
-    *)
-      echo "Usage: $0 [--restart] [--stop] [--help]"
-      exit 1
-      ;;
-  esac
-  shift
-done
-
-# ---> Stop <--- #
-
-if [[ "$STOP" == true ]]; then
+stop_app() {
   echo "Stopping webapp..."
 
   echo "Disabling deploy timer..."
@@ -55,16 +22,12 @@ if [[ "$STOP" == true ]]; then
   sudo systemctl stop "$APACHE_SERVICE" || true
 
   echo "Stopped."
-  exit 0
-fi
+}
 
-# ---> Restart <--- #
-
-if [[ "$RESTART" == true ]]; then
+restart_app() {
   echo "Restarting backend and Apache..."
 
   TIMER_STATE="$(systemctl is-active "$DEPLOY_TIMER" || true)"
-
   if [[ "$TIMER_STATE" != "active" ]]; then
     echo "Deploy timer inactive; enabling..."
     sudo systemctl enable --now "$DEPLOY_TIMER"
@@ -77,5 +40,54 @@ if [[ "$RESTART" == true ]]; then
   sudo systemctl reload "$APACHE_SERVICE"
 
   echo "Restart complete."
-  exit 0
-fi
+}
+
+show_help() {
+  cat <<EOF
+Usage: $(basename "$0") <command> [options]
+
+Commands:
+  stop                 Shutdown backend, Apache, and disable deploy timer.
+  restart              Restart backend + reload Apache and ensure deploy timer enabled.
+  deploy [options]     Forwarded to prosep-deploy.sh.
+  status [options]     Forwarded to prosep-status.sh.
+  help                 Show this help message.
+
+Use '$(basename "$0") deploy --help' or '$(basename "$0") status --help'
+to see subcommand-specific options.
+EOF
+}
+
+# ---> Dispatcher <--- #
+
+CMD="${1:-}"
+
+case "$CMD" in
+  stop)
+    stop_app
+    ;;
+
+  restart)
+    restart_app
+    ;;
+
+  deploy)
+    shift
+    exec "$BASE_DIR/prosep-deploy.sh" "$@"
+    ;;
+
+  status)
+    shift
+    exec "$BASE_DIR/prosep-status.sh" "$@"
+    ;;
+
+  help|--help|-h|"")
+    show_help
+    ;;
+
+  *)
+    echo "Unknown command: $CMD"
+    echo "Try: $(basename "$0") help"
+    exit 1
+    ;;
+esac
