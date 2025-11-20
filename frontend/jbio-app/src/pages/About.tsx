@@ -49,9 +49,9 @@ const About: React.FC = () => {
   return (
     <div className="about-page">
       <div className="about-intro">
-        <section className="sponsor-section">
+        <section className="sp-section">
           <h2 className="section-header">Project Sponsor</h2>
-          <div className="dev-grid sponsor-block">
+          <div className="dev-grid">
             {sponsors.map((s) => (
               <Profile
                 key={s.name}
