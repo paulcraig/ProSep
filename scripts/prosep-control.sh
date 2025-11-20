@@ -37,7 +37,11 @@ restart_app() {
   sudo systemctl restart "$BACKEND_SERVICE"
 
   echo "Reloading Apache..."
-  sudo systemctl reload "$APACHE_SERVICE"
+  if systemctl is-active --quiet "$APACHE_SERVICE"; then
+    sudo systemctl reload "$APACHE_SERVICE"
+  else
+    sudo systemctl start "$APACHE_SERVICE"
+  fi
 
   echo "Restart complete."
 }
