@@ -67,7 +67,7 @@ type PredictionSuccess = {
   fromCache: boolean;
 };
 
-type CachedPrediction = Omit<PredictionSuccess, "fromCache">;
+type CachedPrediction = Omit<PredictionSuccess, 'fromCache'>;
 
 type PredictionError = {
   peptide: string;
@@ -84,6 +84,7 @@ const BTooltip = styled(({ className, ...props }: TooltipProps) => (
     backgroundColor: theme.palette.common.black,
   },
 }));
+
 
 export type PredictionResult = PredictionSuccess | PredictionError;
 
@@ -212,10 +213,7 @@ const PeptideRetention: React.FC = () => {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      setResults((prev) => [
-        ...prev,
-        ...data.map((r: PredictionResult) => ({ ...r, fromCache: false })),
-      ]);
+      setResults((prev) => [...prev, ...data.map((r: PredictionResult) => ({ ...r, fromCache: false }))]);
 
       if (cache) {
         data.forEach((result: PredictionResult) => {
@@ -316,11 +314,7 @@ const PeptideRetention: React.FC = () => {
   };
 
   const copyRow = (result: PredictionSuccess) => {
-    const text = `${result.peptide},${result.predicted_tr.toFixed(2)},${
-      result.smiles
-    },${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(
-      4
-    )},${result.clog_p.toFixed(4)}`;
+    const text = `${result.peptide},${result.predicted_tr.toFixed(2)},${result.smiles},${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(4)},${result.clog_p.toFixed(4)}`;
     navigator.clipboard.writeText(text);
   };
 
@@ -344,6 +338,11 @@ const PeptideRetention: React.FC = () => {
 
     event.target.value = "";
   };
+
+  const ClearFunc = () => {
+      setPeptides([]);
+      setResults([]);
+  }
 
   const generateChromatogramData = () => {
     const scalingFactor = 6.5;
@@ -478,22 +477,24 @@ const PeptideRetention: React.FC = () => {
             <Checkbox
               checked={useCached}
               onChange={(e) => setUseCached(e.target.checked)}
-              sx={{
-                color: "var(--accent)",
-                "&.Mui-checked": {
+              sx={
+                {
                   color: "var(--accent)",
-                },
-                "& .MuiSvgIcon-root": {
-                  fill: "var(--accent)",
-                },
-              }}
+                  "&.Mui-checked": {
+                    color: "var(--accent)",
+                  },
+                  "& .MuiSvgIcon-root": {
+                    fill: "var(--accent)",
+                  },
+                }
+              }
             />
           }
           label="Use Cached"
         />
         <Button
           variant="contained"
-          onClick={() => setPeptides([])}
+          onClick={() => ClearFunc()}
           disabled={peptides.length === 0}
           className="predict-button"
           startIcon={<ClearAll />}
@@ -607,26 +608,20 @@ const PeptideRetention: React.FC = () => {
                     <TableCell>
                       <>
                         <b>{item.peptide}</b>
-                        {item.result &&
-                          "fromCache" in item.result &&
-                          item.result.fromCache && (
-                            <BTooltip
-                              title="Loaded from cache"
-                              arrow
-                              placement="top"
+                        {item.result && "fromCache" in item.result && item.result.fromCache && (
+                          <BTooltip title="Loaded from cache" arrow placement="top">
+                            <span
+                              style={{
+                                marginLeft: "5px",
+                                cursor: "help",
+                                display: "inline-flex",
+                                alignItems: "center",
+                              }}
                             >
-                              <span
-                                style={{
-                                  marginLeft: "5px",
-                                  cursor: "help",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <Info fontSize="small" color="success" />
-                              </span>
-                            </BTooltip>
-                          )}
+                              <Info fontSize="small" color="success" />
+                            </span>
+                          </BTooltip>
+                        )}
                       </>
                     </TableCell>
                     {item.result ? (
@@ -649,12 +644,7 @@ const PeptideRetention: React.FC = () => {
                           <TableCell>{item.result.clog_p.toFixed(4)}</TableCell>
                           <TableCell>
                             <BTooltip title="Copy Row" arrow placement="top">
-                              <IconButton
-                                onClick={() =>
-                                  copyRow(item.result as PredictionSuccess)
-                                }
-                                sx={{ color: "var(--text)" }}
-                              >
+                              <IconButton onClick={() => copyRow(item.result as PredictionSuccess)} sx={{ color: 'var(--text)' }}>
                                 <ContentCopy />
                               </IconButton>
                             </BTooltip>
