@@ -1,7 +1,7 @@
 # JBioFramework Web Application
 > The JBioFramework Web Application is a more efficient method of performing 1-Dimensional
-> through the use of a browser and file selection in the format of 
-> FASTA files. This document will contain information regarding [Download and Installation](#download-and-installation), 
+> through the use of a browser and file selection in the format of
+> FASTA files. This document will contain information regarding [Download and Installation](#download-and-installation),
 > [Usage for Development](#usage-for-development), and [Testing Usage](#testing-usage) for the application.
 
 ## Project Sponsor
@@ -35,13 +35,24 @@ python -m pip install -r requirements.txt
 Windows may have python set to be under `py` instead of `python`. If this is the case, simply
 replace all calls to `python` with `py`.
 
+### Installing Pre-Commit Hooks
+
+This repository has several checks which run before approval is allowed. These are included by
+python's Pre-Commit. To install the hooks, run the following in your shell:
+
+```bash
+pre-commit install
+```
+
+This will install all the hooks. Any freshly committed files should have the hooks fix and apply.
+
 ### Software Requirements
 - Python 3.7 or higher
 - Node.js 20.11.0 or higher
 - React 18.2.0 or higher
 
 ## Usage for Development
-Navigate to the top level directory by typing in the command line 
+Navigate to the top level directory by typing in the command line
 
 ```bash
 cd ProSep
@@ -53,7 +64,7 @@ Launch the API server by typing in the command line:
 uvicorn server:app --reload
 ```
 
-Navigate to the jbio-app subdirectory by typing in the command line 
+Navigate to the jbio-app subdirectory by typing in the command line
 
 ```bash
 cd frontend/jbio-app

@@ -4,6 +4,7 @@ pydantic~=1.10.7
 bio~=1.6.2
 uvicorn~=0.21.1
 python-multipart
+pre-commit>=4.3.0
 numpy
 pandas
 scikit-learn
