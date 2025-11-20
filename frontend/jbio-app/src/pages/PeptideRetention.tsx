@@ -64,7 +64,10 @@ type PredictionSuccess = {
   log_vdw_vol: number;
   clog_p: number;
   predicted_tr: number;
+  fromCache: boolean;
 };
+
+type CachedPrediction = Omit<PredictionSuccess, "fromCache">;
 
 type PredictionError = {
   peptide: string;
@@ -82,7 +85,6 @@ const BTooltip = styled(({ className, ...props }: TooltipProps) => (
   },
 }));
 
-
 export type PredictionResult = PredictionSuccess | PredictionError;
 
 const PeptideRetention: React.FC = () => {
@@ -99,7 +101,7 @@ const PeptideRetention: React.FC = () => {
   const abortRef = useRef<AbortController | null>(null);
   const chartRef = useRef<any>(null);
 
-  const getCache = (): Record<string, PredictionSuccess> => {
+  const getCache = (): Record<string, CachedPrediction> => {
     try {
       return JSON.parse(localStorage.getItem("peptideCache") || "{}");
     } catch {
@@ -107,7 +109,7 @@ const PeptideRetention: React.FC = () => {
     }
   };
 
-  const setCache = (cache: Record<string, PredictionSuccess>) => {
+  const setCache = (cache: Record<string, CachedPrediction>) => {
     localStorage.setItem("peptideCache", JSON.stringify(cache));
   };
 
@@ -191,7 +193,7 @@ const PeptideRetention: React.FC = () => {
   const chunkPredict = async (
     peps: string[],
     size?: number,
-    cache?: Record<string, PredictionSuccess>
+    cache?: Record<string, CachedPrediction>
   ) => {
     const step = size ?? peps.length;
 
@@ -210,12 +212,16 @@ const PeptideRetention: React.FC = () => {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      setResults((prev) => [...prev, ...data]);
+      setResults((prev) => [
+        ...prev,
+        ...data.map((r: PredictionResult) => ({ ...r, fromCache: false })),
+      ]);
 
       if (cache) {
         data.forEach((result: PredictionResult) => {
           if ("predicted_tr" in result) {
-            cache[result.peptide] = result;
+            const { fromCache, ...toCache } = result;
+            cache[result.peptide] = toCache;
           }
         });
         setCache(cache);
@@ -247,7 +253,7 @@ const PeptideRetention: React.FC = () => {
       if (useCached) {
         peptides.forEach((peptide) => {
           if (cache[peptide]) {
-            cachedResults.push(cache[peptide]);
+            cachedResults.push({ ...cache[peptide], fromCache: true });
             // console.log("found a peptide in cache: " + peptide);
           }
         });
@@ -310,7 +316,11 @@ const PeptideRetention: React.FC = () => {
   };
 
   const copyRow = (result: PredictionSuccess) => {
-    const text = `${result.peptide},${result.predicted_tr.toFixed(2)},${result.smiles},${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(4)},${result.clog_p.toFixed(4)}`;
+    const text = `${result.peptide},${result.predicted_tr.toFixed(2)},${
+      result.smiles
+    },${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(
+      4
+    )},${result.clog_p.toFixed(4)}`;
     navigator.clipboard.writeText(text);
   };
 
@@ -468,17 +478,15 @@ const PeptideRetention: React.FC = () => {
             <Checkbox
               checked={useCached}
               onChange={(e) => setUseCached(e.target.checked)}
-              sx={
-                {
+              sx={{
+                color: "var(--accent)",
+                "&.Mui-checked": {
                   color: "var(--accent)",
-                  "&.Mui-checked": {
-                    color: "var(--accent)",
-                  },
-                  "& .MuiSvgIcon-root": {
-                    fill: "var(--accent)",
-                  },
-                }
-              }
+                },
+                "& .MuiSvgIcon-root": {
+                  fill: "var(--accent)",
+                },
+              }}
             />
           }
           label="Use Cached"
@@ -599,30 +607,26 @@ const PeptideRetention: React.FC = () => {
                     <TableCell>
                       <>
                         <b>{item.peptide}</b>
-                        {useCached &&
-                          (() => {
-                            try {
-                              const cache = JSON.parse(localStorage.getItem("peptideCache") || "{}");
-                              if (cache && cache[item.peptide]) {
-                                return (
-                                  <BTooltip title="Loaded from cache" arrow placement="top">
-                                    <span
-                                      style={{
-                                        marginLeft: "5px",
-                                        cursor: "help",
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                      }}
-                                    >
-                                      <Info fontSize="small" color="success" />
-                                    </span>
-                                  </BTooltip>
-                                );
-                              }
-                            } catch {
-                            }
-                            return null;
-                          })()}
+                        {item.result &&
+                          "fromCache" in item.result &&
+                          item.result.fromCache && (
+                            <BTooltip
+                              title="Loaded from cache"
+                              arrow
+                              placement="top"
+                            >
+                              <span
+                                style={{
+                                  marginLeft: "5px",
+                                  cursor: "help",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <Info fontSize="small" color="success" />
+                              </span>
+                            </BTooltip>
+                          )}
                       </>
                     </TableCell>
                     {item.result ? (
@@ -645,7 +649,12 @@ const PeptideRetention: React.FC = () => {
                           <TableCell>{item.result.clog_p.toFixed(4)}</TableCell>
                           <TableCell>
                             <BTooltip title="Copy Row" arrow placement="top">
-                              <IconButton onClick={() => copyRow(item.result as PredictionSuccess)} sx={{ color: 'var(--text)' }}>
+                              <IconButton
+                                onClick={() =>
+                                  copyRow(item.result as PredictionSuccess)
+                                }
+                                sx={{ color: "var(--text)" }}
+                              >
                                 <ContentCopy />
                               </IconButton>
                             </BTooltip>
