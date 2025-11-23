@@ -1,0 +1,62 @@
+name: Scan
+on:
+  pull_request:
+    branches: [ main ]
+jobs:
+  njsscan:
+    runs-on: ubuntu-latest
+    name: njsscan check
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v4.2.2
+    - uses: ./.github/workflows/common
+    - name: nodejsscan scan
+      id: njsscan
+      uses: ajinabraham/njsscan-action@master
+      with:
+        args: '.'
+  eslint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/jbio-app
+    name: ESLint + Prettier
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4.2.2
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Install dependencies
+      run: npm ci
+    - name: Run ESLint
+      run: npx eslint .
+    - name: Check Prettier formatting
+      run: npx prettier --check src
+      continue-on-error: true
+  python-linter:
+    runs-on: ubuntu-latest
+    name: python linter
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v4.2.2
+    - uses: ./.github/workflows/common
+    - name: Install libraries
+      run: |
+        pip install ruff
+    - name: Analyse with ruff
+      run: |
+        ruff check backend/
+  shell:
+    runs-on: ubuntu-latest
+    name: shell linter
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4.2.2
+      - name: Run Shellcheck
+        uses: Azbagheri/shell-linter@v0.8.0
+        with:
+          exclude-paths: ".devcontainer"
+          path: "scripts"
+        continue-on-error: true
