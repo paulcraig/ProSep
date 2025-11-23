@@ -4,7 +4,6 @@ import numpy as np
 from io import StringIO
 from typing import Any
 from typing import List
-import numpy as np
 import matplotlib.pyplot as plt
 from backend.logic.one_de_simulation import Simulation_1de
 from backend.utility.protein import Protein
@@ -42,9 +41,8 @@ class ProteolyticDigestion():
 
                
                 namesList = []
-                for i, seq_id in enumerate(protein_dict.keys()):
+                for _, seq_id in enumerate(protein_dict.keys()):
                     header = protein_dict[seq_id][0]
-                    header_parts = header.split('|')
 
                     entry = {
                         'name': ' '.join(header.split(' ')[1:]),

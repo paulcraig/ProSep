@@ -1,4 +1,3 @@
-import json
 from typing import Any
 from fastapi import APIRouter, UploadFile
 from pydantic import BaseModel
