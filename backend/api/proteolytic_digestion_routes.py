@@ -10,7 +10,7 @@ router = APIRouter(
 
 
 @router.post('/parse_fasta', response_model=list[Any])
-async def fileGetProteinInfo(file: UploadFile) -> Any:
+async def getProteinInfoFromFile(file: UploadFile) -> Any:
     return ProteolyticDigestion.fileGetProteinInfo(file)
 
 
@@ -19,9 +19,9 @@ class ProteinRequest(BaseModel):
     aminoAcid: str
 
 @router.post('/seperateProtein', response_model=list[Any])
-async def fileGetProteinInfo(req: ProteinRequest) -> Any:
+async def breakProteinIntoPeptides(req: ProteinRequest) -> Any:
     return ProteolyticDigestion.breakUpProtein(req.sequence, req.aminoAcid)
 
 @router.get('/resetProteinGraph')
-async def fileGetProteinInfo():
+async def resetProteinGraph():
     ProteolyticDigestion.updateGraph([])
