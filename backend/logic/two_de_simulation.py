@@ -1,9 +1,10 @@
-import math, re
+import math
+import re
 
 import numpy as np
 from io import StringIO
 from typing import Any, Dict, List
-
+from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from Bio import SeqIO
 from backend.utility.protein import Protein
 
@@ -101,54 +102,47 @@ class Simulation_2de():
     
 
     @staticmethod
-    def parse_fasta(sequences,new_proteins):
-            # Collect all IDs from this file
-        id_list = [seq['header'].split("|")[1] for seq in sequences]
-
-        # Fetch links for all IDs in this file
-        links_dict = Protein.find_links(id_list)
+    def parse_fasta(sequences, new_proteins):
+        """
+        Parses sequences and uses accession numbers to make NCBI links.
+        """
+        links_dict = Protein.find_links(sequences)
 
         for seq in sequences:
-            pid = seq['header'].split("|")[1]
-            display_name = seq['header'].split("|")[-1]
+            header = seq.get('header', 'Unknown')
+            match = re.search(r'\|([A-Z0-9]+\.\d+)\|', header)
+            short_id = match.group(1) if match else header[:10]
 
-            # Extract UniProt ID if present
-            uniprot_match = re.search(
-                r'[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}',
-                seq['header']
-            )
-            uniprotId = uniprot_match.group(0) if uniprot_match else "N/A"
-
-            protein_info = {}
-            protein_info['name'] = seq['name']
-            protein_info['fullName'] = seq['name']
-            protein_info['organism'] = seq['organism']
-            protein_info['uniprotId'] = uniprotId
-            protein_info['mw'] = seq['mw']
-            protein_info['pH'] = seq['pH']
-            protein_info['color'] = Simulation_2de.COLOR_PALETTE[len(new_proteins) % len(Simulation_2de.COLOR_PALETTE)]
-            protein_info['sequence'] = seq['sequence']
-            protein_info['x'] = 50
-            protein_info['y'] = 300
-            protein_info['currentpH'] = 7
-            protein_info['velocity'] = 0
-            protein_info['settled'] = False
-            protein_info['ID'] = pid
-            protein_info['Link'] = links_dict.get(pid) or "N/A"
-            protein_info['display_name'] = display_name
+            protein_info = {
+                'name': seq.get('name', header),
+                'fullName': seq.get('name', header),
+                'organism': seq.get('organism', 'Unknown organism'),
+                'uniprotId': "N/A",
+                'mw': seq.get('mw'),
+                'pH': seq.get('pH'),
+                'color': Simulation_2de.COLOR_PALETTE[len(new_proteins) % len(Simulation_2de.COLOR_PALETTE)],
+                'sequence': seq.get('sequence', ''),
+                'x': 50,
+                'y': 300,
+                'currentpH': 7,
+                'velocity': 0,
+                'settled': False,
+                'ID': short_id,
+                'Link': links_dict.get(short_id, "N/A"),
+                'display_name': header
+            }
 
             new_proteins.append(protein_info.copy())
-
         
     @staticmethod
     def parse_fasta_content(content: str) -> List[Dict[str, Any]]:
         sequences = []
-        fasta_io = StringIO(content)
-        for record in SeqIO.parse(fasta_io, "fasta"):
+        file = StringIO(content)
+        for record in SeqIO.parse(file, "fasta"):
             header = str(record.description)
             sequence = str(record.seq)
-            print(sequence)
-            mw = Protein.calculate_molecular_weight(sequence)
+            mw = ProteinAnalysis(sequence).molecular_weight()
+            
             pH = Protein.calculate_theoretical_pi(sequence)
 
             info = Protein.extract_protein_info(header)
@@ -169,11 +163,17 @@ class Simulation_2de():
         return 50 + ((clampedPH - min_ph) / (max_ph - min_ph)) * (canvas_width - 100)
 
 
+    '''
+    The two functions below calculate the Y position on the gel based on molecular weight or distance traveled.
+    '''
     @staticmethod
     def get_mw_position(mw, canvas_height, acrylamide_percentage, min_mw = 1000, max_mw = 1000000):
         log_mw = math.log10(min(max(mw, min_mw), max_mw))
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 15
-        return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(min_mw))) * (canvas_height - 220) * acrylamide_factor
+        try:
+            return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(min_mw))) * (canvas_height - 220) * acrylamide_factor
+        except ZeroDivisionError:
+            return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(max_mw))) * (canvas_height - 220) * acrylamide_factor
 
 
     @staticmethod
@@ -182,3 +182,7 @@ class Simulation_2de():
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 10
         distance = max_distance_traveled * (1 - normalized_mw) * acrylamide_factor
         return 170 + (distance / (max_distance_traveled * acrylamide_factor)) * (canvas_height - 220)
+
+if (__name__ == '__main__'):
+    print(Simulation_2de().parse_fasta_content("tests\data\singleProtein.fasta"))
+    

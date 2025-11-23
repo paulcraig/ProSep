@@ -3,6 +3,7 @@ from rdkit.Chem import Descriptors, AllChem
 import math
 from pyPept.sequence import Sequence, correct_pdb_atoms
 from pyPept.molecule import Molecule
+from concurrent.futures import ThreadPoolExecutor
 
 class PeptideRetentionPredictor:
     AA_RETENTION_TIMES = {
@@ -11,6 +12,7 @@ class PeptideRetentionPredictor:
         'Y': 8.63, 'V': 4.17
     }
 
+    @staticmethod
     def normalize_to_biln(peptide: str) -> str:
         seq = peptide.strip()
         has_ac = seq.startswith("Ac-")
@@ -26,6 +28,7 @@ class PeptideRetentionPredictor:
         else:
             return aa_chain
 
+    @staticmethod
     def peptide_to_smiles(peptide):
         try:
             biln = PeptideRetentionPredictor.normalize_to_biln(peptide)
@@ -33,15 +36,17 @@ class PeptideRetentionPredictor:
             seq = correct_pdb_atoms(seq)
             mol = Molecule(seq).get_molecule(fmt='ROMol')
             return Chem.MolToSmiles(mol, isomericSmiles=True)
-        except Exception as e:
+        except Exception:
             return None
 
+    @staticmethod
     def log_sum_aa(peptide):
         total = sum(PeptideRetentionPredictor.AA_RETENTION_TIMES.get(aa.upper(), 0) for aa in peptide)
         if total == 0:
             raise ValueError("log_sum_aa total is 0. Invalid peptide?")
         return math.log10(total)
 
+    @staticmethod
     def compute_rdkit_features(smiles):
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
@@ -51,29 +56,33 @@ class PeptideRetentionPredictor:
         vdw_vol = AllChem.ComputeMolVolume(mol, confId=cids[0])
         clog_p = Descriptors.MolLogP(mol)
         return math.log10(vdw_vol), clog_p
+    
+    @staticmethod
+    def predict(peptide: str) -> dict:
+        try:
+            smiles = PeptideRetentionPredictor.peptide_to_smiles(peptide)
+            if not smiles:
+                raise ValueError("Invalid peptide sequence")
+            log_sum = PeptideRetentionPredictor.log_sum_aa(peptide)
+            log_vdw, clog_p = PeptideRetentionPredictor.compute_rdkit_features(smiles)
+            tr_pred = 8.02 + 14.86 * log_sum - 5.77 * log_vdw + 0.28 * clog_p
+            return {
+                'peptide': peptide,
+                'smiles': smiles,
+                'log_sum_aa': log_sum,
+                'log_vdw_vol': log_vdw,
+                'clog_p': clog_p,
+                'predicted_tr': tr_pred
+            }
+        except Exception as e:
+            return {
+                'peptide': peptide,
+                'error': str(e)
+            }
 
     @staticmethod
-    def predict(peptides: list[str]) -> list[dict]:
+    def predict_multiple(peptides: list[str]) -> list[dict]:
         results = []
-        for peptide in peptides:
-            try:
-                smiles = PeptideRetentionPredictor.peptide_to_smiles(peptide)
-                if not smiles:
-                    raise ValueError("Invalid peptide sequence")
-                log_sum = PeptideRetentionPredictor.log_sum_aa(peptide)
-                log_vdw, clog_p = PeptideRetentionPredictor.compute_rdkit_features(smiles)
-                tr_pred = 8.02 + 14.86 * log_sum - 5.77 * log_vdw + 0.28 * clog_p
-                results.append({
-                    'peptide': peptide,
-                    'smiles': smiles,
-                    'log_sum_aa': log_sum,
-                    'log_vdw_vol': log_vdw,
-                    'clog_p': clog_p,
-                    'predicted_tr': tr_pred
-                })
-            except Exception as e:
-                results.append({
-                    'peptide': peptide,
-                    'error': str(e)
-                })
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(PeptideRetentionPredictor.predict, peptides))
         return results
