@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./ProteolyticDigestion.css";
 import { API_URL } from "../config";
-import download from "./download.png";
-import { colors, FormControl, Grid, MenuItem, Select } from "@mui/material";
-import { stringify } from "querystring";
+import graph from  "../assets/proteinGraph.png"
+import emptyGraph from "../assets/EmptyProteinGraph.png"
+import { FormControl, Grid, MenuItem, Select } from "@mui/material";
 
 const ProteolyticDigestion: React.FC = () => {
   const [uploading, setUploading] = useState(false);
@@ -11,12 +11,16 @@ const ProteolyticDigestion: React.FC = () => {
   const [proteins, setProteins] = useState([]);
   const [currentSeq, setSequence] = useState("");
   const [aminoAcids, setAminoAcids] = useState([]);
+  const [graphKey, setGraphKey] = useState(0);
+  
 
   const PROTEASES = new Map<string, string>();
   PROTEASES.set("PreScission", "Q");
   PROTEASES.set("Thrombin", "R");
   PROTEASES.set("Enterokinase", "K");
-  PROTEASES.set("afterGTest", "G");
+ PROTEASES.set("Chymotrypsin", "F");
+ PROTEASES.set("trypsin", "K");
+ PROTEASES.set("pepsin", "R");
 
   const changeSelectedProtease = async (val: unknown) => {
     setUploading(true);
@@ -29,7 +33,7 @@ const ProteolyticDigestion: React.FC = () => {
       };
       console.log(JSON.stringify(payload));
       const response = await fetch(
-        `http://localhost:3001/proteolytic_digestion/seperateProtein`,
+        `${API_URL}/proteolytic_digestion/seperateProtein`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -51,6 +55,10 @@ const ProteolyticDigestion: React.FC = () => {
       setMessage("Error processing sequence.");
     } finally {
       setUploading(false);
+     setGraphKey(prev => prev + 1);
+
+  setGraphKey(prev => prev + 1);   // <-- forces graph to reload
+
     }
   };
   const displaySequence = async (protein: string) => {
@@ -59,6 +67,9 @@ const ProteolyticDigestion: React.FC = () => {
   const isSelected = () => {
     return !(currentSeq == "");
   };
+  const hasProteins = () => {
+    return !(proteins.length == 0);
+  }
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -74,7 +85,7 @@ const ProteolyticDigestion: React.FC = () => {
         formData.append("file", file);
 
         const response = await fetch(
-          `http://localhost:3001/proteolytic_digestion/parse_fasta`,
+          `${API_URL}/proteolytic_digestion/parse_fasta`,
           {
             method: "POST",
             body: formData,
@@ -96,10 +107,15 @@ const ProteolyticDigestion: React.FC = () => {
       setMessage("Error uploading file.");
     } finally {
       setUploading(false);
+      
     }
+  
+
   };
 
+
   return (
+    
     <div className="proteolytic-page">
       <label
         className="twoDE-button icon"
@@ -123,20 +139,30 @@ const ProteolyticDigestion: React.FC = () => {
       </label>
 
       {message && <p style={{ marginTop: "10px" }}>{message}</p>}
-      <Grid container columns={2}>
+      <Grid container columns={3}>
         <Grid className="proteinlist" size={1}>
-          <Grid container>
-            {proteins.map((protein) => (
-              <Grid size={12}>
-                <button
-                  key={protein}
-                  onClick={() => displaySequence(protein["sequence"])}
-                >
-                  {protein["name"]}
-                </button>
-              </Grid>
-            ))}
+          <Grid container columns={1}>
+            <Grid size={1}>
+            <label htmlFor="">Select Specific Protein</label>
+            <FormControl className="word">
+              <Select
+                onChange={(e) => displaySequence((e.target as any).value as string)}
+               
+              >
+                {proteins.map((protein) => (
+                  <MenuItem key={protein["name"]} value={protein["sequence"]}>
+                    {protein["name"]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            </Grid>
+          
           </Grid>
+        </Grid>
+        <Grid  size={1}>
+          {hasProteins() ? <img className="graph" src={`${graph}?v=${graphKey}`}></img> :  <img className="graph" src={`${emptyGraph}`}></img>}
+          
         </Grid>
         <Grid size={1}>
           <Grid container>

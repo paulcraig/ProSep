@@ -22,3 +22,7 @@ class ProteinRequest(BaseModel):
 @router.post('/seperateProtein', response_model=list[Any])
 async def fileGetProteinInfo(req: ProteinRequest) -> Any:
     return ProteolyticDigestion.breakUpProtein(req.sequence, req.aminoAcid)
+
+@router.get('/resetProteinGraph')
+async def fileGetProteinInfo():
+    ProteolyticDigestion.updateGraph([])

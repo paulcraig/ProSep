@@ -1,34 +1,4 @@
-.proteolytic-page {
-  padding: 20px;
-}
 
-.proteolytic-page .page-header {
-  margin-bottom: 16px;
-}
-
-.proteolytic-page .page-header h1 {
-  margin: 0 0 6px 0;
-  font-size: 1.6rem;
-}
-
-.proteolytic-page .subtitle {
-  margin: 0;
-  color: var(--muted-text, #666);
-}
-
-.proteolytic-page .page-content {
-  background: var(--card-bg, #fff);
-  border-radius: 6px;
-  padding: 16px;
-  min-height: 220px;
-}
-
-.placeholder-box {
-  border: 1px dashed var(--muted-text, #bbb);
-  border-radius: 6px;
-  padding: 14px;
-  color: var(--muted-text, #666);
-}
 .selectedProtein {
   color: aliceblue;
   justify-content: center;
@@ -43,4 +13,8 @@
 }
 .word {
   background-color: aliceblue;
+}
+.graph {
+  height: auto;
+  width: 100%;
 }
