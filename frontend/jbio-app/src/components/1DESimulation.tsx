@@ -543,7 +543,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       formData.append('file', file);
 
       try {
-        const response = await fetch(`127.0.0.1:3001/1d/ProteinInfo/File`, {
+        const response = await fetch(`${API_URL}/1d/ProteinInfo/File`, {
           method: 'POST',
           body: formData,
         });
