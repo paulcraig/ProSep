@@ -9,6 +9,9 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import InsertChartIcon from "@mui/icons-material/InsertChart";
 
+import blackWire from '../../assets/electrophoresis/blackwire.png'
+import redWire from '../../assets/electrophoresis/redwire.png'
+
 
 interface IDEProtein {
   name: string;
@@ -49,6 +52,12 @@ export default function OneDESim({
   const GUIDE_MAJOR = BORDER / 2;
   const TICK_MINOR = TICK_MAJOR / 2;
   const GUIDE_MINOR = GUIDE_MAJOR / 2;
+
+  const DOT_RADIUS = BORDER * 0.9;
+
+  const V_SELECT_HEIGHT = 20;
+  const V_END_HEIGHT = 60;
+  const V_END_WIDTH = 60;
 
   const STANDARDS: Record<string, IDEProtein> = {
     "6X1Q": { name: "B-Galactosidase",    molecularWeight: 116250, migrationDistance: 0, color: "#4dd0e1", id_num: "6X1Q", id_str: "pdb", count: 1 },
@@ -103,9 +112,9 @@ export default function OneDESim({
 
       const available = window.innerHeight - rootRect.top;
       const nonSlab = rootRect.height - slabRect.height + buffRect.height + BORDER;
-      const next = Math.max(300, Math.floor(available - nonSlab - 1));
+      const next = Math.max(500, Math.floor(available - nonSlab - 1));
 
-      setSlabHeight(prev => (Math.abs(prev - next) > 0.5 ? next : prev));
+      setSlabHeight(prev => (Math.abs(prev - next) > 2 ? next : prev));
     };
 
     const observer = new ResizeObserver(computeHeight);
@@ -317,7 +326,7 @@ export default function OneDESim({
 
     // Factories:
     const makeBuffers = () => {
-      let path = `M 0 0 L 0 ${wellHeight * 2} L ${TICK_MAJOR} ${wellHeight * 2} L ${TICK_MAJOR} ${wellHeight}`;
+      let path = `M 0 0 L 0 ${wellHeight * 2} L ${TICK_MAJOR} ${wellHeight * 2}`;
       const wellWidth = slabWidth / (2 * numWells + 1);
       const fullWidth = slabWidth + (TICK_MAJOR * 2);
       
@@ -349,30 +358,89 @@ export default function OneDESim({
               position: "absolute", boxSizing: "border-box", zIndex: 0,
               bottom: `-${(wellHeight * 2) - (BORDER / 2)}px`, left: `-${TICK_MAJOR}px`,
               width: `${slabWidth + TICK_MAJOR * 2}px`, height: `${wellHeight * 2}px`,
-              background: "var(--sub-accent)", border: `${BORDER}px solid var(--accent)`, borderRadius: "2px"
+              background: "var(--sub-accent)", border: `${BORDER}px solid var(--accent)`, borderRadius: "2px",
+              display: "flex", alignItems: "center", paddingLeft: "12px"
             }}
-          />
+          >
+            <select
+              value={acrylamide}
+              onChange={(e) => setAcrylamide(Number(e.target.value))}
+              style={{
+                background: "transparent",
+                fontWeight: "bold",
+                color: "var(--text)", cursor: "pointer",
+                border: "none", outline: "none", paddingRight: "4px"
+              }}
+            >
+              <option value={7.5} style={{ background: "var(--sub-background)" }}>Acrylamide 7.5%</option>
+              <option value={10} style={{ background: "var(--sub-background)" }}>Acrylamide 10%</option>
+              <option value={12} style={{ background: "var(--sub-background)" }}>Acrylamide 12%</option>
+              <option value={15} style={{ background: "var(--sub-background)" }}>Acrylamide 15%</option>
+            </select>
+          </div>
         </div>
       );
     }
 
     const makeWellButtons = () => {
-      const r = getY(min / 2, min, max, slabHeight, false);
-      const sidePad = slabWidth / (2 * numWells + 1) / 2;
+      const r = Math.min(getY(min / 2, min, max, slabHeight, false), 20);
+      const wellWidth = slabWidth / (2 * numWells + 1);
+      const sidePad = wellWidth / 2;
 
       return (
         <svg
           width={slabWidth} height={slabHeight}
           style={{ position: "absolute", top: 0, left: 0, zIndex: 3 }}
         >
+          {/* Upload file */}
+          {Array.from({ length: numWells }, (_, index) => {
+            return (
+              <g
+                key={`well-upload-${index}`}
+                transform={`translate(${(2 * index + 1) * wellWidth + wellWidth / 2}, ${r})`}
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  const input = document.createElement('input');
+
+                  input.type = 'file';
+                  input.accept = '.fasta,.fa,.faa,.txt';
+
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) console.log(`TODO ${index}:`, file);
+                  };
+
+                  input.click();
+                }}
+              >
+                <circle r={r * 0.7} fill="var(--accent)" opacity={0.3} />
+                <foreignObject
+                  x={-r / 2} y={-r / 2}
+                  width={r} height={r}
+                  style={{ pointerEvents: "none" }}
+                >
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%", height: "100%"
+                  }}>
+                    <UploadIcon style={{ color: "var(--text)", fontSize: r * 0.8 }} />
+                  </div>
+                </foreignObject>
+                <title>Upload Protein Sequence</title>
+              </g>
+            );
+          })}
+
+          {/* Remove well */}
           {(numWells > MIN_WELLS) &&
             <g
               transform={`translate(${sidePad},${(r * 2) + (GUIDE_MINOR / 2)})`}
               style={{ cursor: "pointer" }}
               onClick={() => addNumWells(-1)}
-
             >
-              <circle r={r * 0.75} fill="var(--accent)" opacity={0.3} />
+              <circle r={r * 0.7} fill="var(--accent)" opacity={0.3} />
               <line
                 x1={-r / 4} y1={0} x2={r / 4} y2={0}
                 strokeLinecap="round"
@@ -382,13 +450,15 @@ export default function OneDESim({
               <title>Remove well</title>
             </g>
           }
+
+          {/* Add well */}
           {(numWells < MAX_WELLS) &&
             <g
               transform={`translate(${slabWidth - sidePad},${(r * 2) + (GUIDE_MINOR / 2)})`}
               style={{ cursor: "pointer" }}
               onClick={() => addNumWells(1)}
             >
-              <circle r={r * 0.75} fill="var(--accent)" opacity={0.3} />
+              <circle r={r * 0.7} fill="var(--accent)" opacity={0.3} />
               <line
                 x1={-r / 4} y1={0} x2={r / 4} y2={0}
                 strokeLinecap="round"
@@ -409,8 +479,12 @@ export default function OneDESim({
     };
 
     const makeDots = (key: string, y: number, radius: number) => {
+      const acrylamideMult = (1.5 - acrylamide / 15);
       const wellWidth = slabWidth / (2 * numWells + 1);
       const gap = wellWidth / 4;
+
+      radius = radius * acrylamideMult;
+
       const amount = Math.floor(slabWidth / gap);
       const offset = (slabWidth - ((amount - 1) * gap + radius * 2)) / 2;
       
@@ -494,7 +568,7 @@ export default function OneDESim({
       const dy = getY(i - dotOffset, min, max, height);
       const y = getY(i, min, max, height);
 
-      dots[dotIdx++] = makeDots(`major-dots-${i}`, dy, BORDER);
+      dots[dotIdx++] = makeDots(`major-dots-${i}`, dy, DOT_RADIUS);
       ticks[tickIdx++] = makeTick(`major-tick-${i}`, y, true, i, (i % numTicks ? wellHeight * 2 : undefined));
       
       if (i < numTicks) {
@@ -504,7 +578,7 @@ export default function OneDESim({
           const dy = getY(i + j / (SUB_TICKS + 1) - dotOffset, min, max, height);
           const y = getY(i + j / (SUB_TICKS + 1), min, max, height);
 
-          dots[dotIdx++] = makeDots(`minor-dots-${i}-${j}`, dy, BORDER);
+          dots[dotIdx++] = makeDots(`minor-dots-${i}-${j}`, dy, DOT_RADIUS);
           ticks[tickIdx++] = makeTick(`minor-tick-${i}-${j}`, y, false);
           lines[lineIdx++] = makeLine(`minor-${i}-${j}`, y, false);
         }
@@ -530,7 +604,8 @@ export default function OneDESim({
         <div
           style={{
             position: "absolute", inset: -1, zIndex: 1,
-            border: `var(--accent) solid ${BORDER}px`
+            borderLeft: `var(--accent) solid ${BORDER}px`,
+            borderRight: `var(--accent) solid ${BORDER}px`
           }}
         />
         {ticks}
@@ -540,7 +615,120 @@ export default function OneDESim({
         {makeWellButtons()}
       </div>
     );
-  }, [slabWidth, slabHeight, numTicks, numWells, zoom, anchor, isDragging]);
+  }, [slabWidth, slabHeight, numTicks, numWells, acrylamide, zoom, anchor, isDragging]);
+
+
+  const voltageCircuit = useMemo(() => {
+    const wellHeight = getY(min / 2, min, max, slabHeight, false) * 2;    
+    const circuitWidth = V_END_WIDTH + TICK_MINOR;
+    const totalHeight = slabHeight + wellHeight;
+    const midPoint = totalHeight / 2;
+
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top: `${wellHeight}px`,
+          left: `${slabWidth + V_END_WIDTH * 0.9}px`,
+          width: `${circuitWidth}px`,
+          height: `${totalHeight}px`,
+          pointerEvents: "none",
+          zIndex: 2
+        }}
+      >
+        <svg
+          width={circuitWidth}
+          height={totalHeight}
+          style={{ overflow: "visible" }}
+        >
+          {/* Black wire */}
+          <line
+            x1={V_END_WIDTH}
+            y1={0}
+            x2={V_END_WIDTH}
+            y2={midPoint - V_SELECT_HEIGHT}
+            stroke="#191919"
+            strokeWidth={BORDER * 2}
+            strokeLinecap="round"
+          />
+          
+          {/* Red wire */}
+          <line
+            x1={V_END_WIDTH}
+            y1={midPoint + V_SELECT_HEIGHT}
+            x2={V_END_WIDTH}
+            y2={totalHeight}
+            stroke="#ff3636"
+            strokeWidth={BORDER * 2}
+            strokeLinecap="round"
+          />
+
+          {/* Voltage connection lines */}
+          <line
+            x1={V_END_WIDTH - TICK_MINOR}
+            y1={midPoint - V_SELECT_HEIGHT}
+            x2={V_END_WIDTH + TICK_MINOR}
+            y2={midPoint - V_SELECT_HEIGHT}
+            stroke="#191919"
+            strokeWidth={BORDER * 2}
+            strokeLinecap="round"
+          />
+          <line
+            x1={V_END_WIDTH - TICK_MAJOR}
+            y1={midPoint + V_SELECT_HEIGHT}
+            x2={V_END_WIDTH + TICK_MAJOR}
+            y2={midPoint + V_SELECT_HEIGHT}
+            stroke="#ff3636"
+            strokeWidth={BORDER * 2}
+            strokeLinecap="round"
+          />
+
+          {/* Voltage selector */}
+          <foreignObject
+            x={V_END_WIDTH / 2}
+            y={midPoint - (V_SELECT_HEIGHT / 2)}
+            width={100}
+            height={32}
+            style={{ pointerEvents: "auto" }}
+          >
+            <select
+              value={voltage}
+              onChange={(e) => setVoltage(Number(e.target.value))}
+              style={{
+                background: "transparent",
+                fontWeight: "bold",
+                color: "var(--text)", cursor: "pointer",
+                border: "none", outline: "none", paddingRight: "4px"
+              }}
+            >
+              <option value={50} style={{ background: "var(--sub-background)" }}>50V</option>
+              <option value={100} style={{ background: "var(--sub-background)" }}>100V</option>
+              <option value={150} style={{ background: "var(--sub-background)" }}>150V</option>
+              <option value={200} style={{ background: "var(--sub-background)" }}>200V</option>
+            </select>
+          </foreignObject>
+
+          {/* Alligator clips */}
+          <image
+            href={blackWire}
+            x={0}
+            y={-V_END_HEIGHT / 2}
+            height={V_END_HEIGHT}
+            width={V_END_WIDTH}
+            preserveAspectRatio="xMidYMid meet"
+          />
+          <image
+            href={redWire}
+            x={0}
+            y={totalHeight - V_END_HEIGHT / 2}
+            height={V_END_HEIGHT}
+            width={V_END_WIDTH}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        </svg>
+      </div>
+    );
+  }, [slabWidth, slabHeight, voltage, min, max]);
 
 
   const standardChips = useMemo(() => {
@@ -639,10 +827,21 @@ export default function OneDESim({
   
 
   /* Render */
-  return (
-    <div ref={rootRef} style={{margin:"4rem", display: "flex", flexDirection: "column", gap: "1rem"}}>
+return (
+    <div
+      ref={rootRef}
+      style={{
+        gap: "1rem",
+        margin: "4rem auto",
+        display: "flex",
+        flexDirection: "column",
+        width: `${slabWidth + V_END_WIDTH + (TICK_MAJOR * 4)}px`
+    }}>
       {toolBar}
-      {acrylamideSlab}
+      <div style={{ position: "relative" }}>
+        {acrylamideSlab}
+        {voltageCircuit}
+      </div>
       {standardChips}
       {helpModal}
     </div>
