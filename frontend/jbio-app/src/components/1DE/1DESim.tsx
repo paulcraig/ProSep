@@ -312,7 +312,7 @@ export default function OneDESim({
 
 
   const acrylamideSlab = useMemo(() => {
-    const width = slabWidth - 1;
+    const width = slabWidth;
     const height = slabHeight + BORDER / 2;
     const wellHeight = getY(min / 2, min, max, slabHeight, false) * 2;
 
@@ -326,10 +326,11 @@ export default function OneDESim({
 
     // Factories:
     const makeBuffers = () => {
-      let path = `M 0 0 L 0 ${wellHeight * 2} L ${TICK_MAJOR} ${wellHeight * 2}`;
       const wellWidth = slabWidth / (2 * numWells + 1);
       const fullWidth = slabWidth + (TICK_MAJOR * 2);
-      
+
+      let path = `M 0 0 L 0 ${wellHeight * 2} L ${TICK_MAJOR} ${wellHeight * 2}`;
+
       for (let i = 0; i <= numWells; i++) {
         const base = (i * wellWidth * 2) + TICK_MAJOR;
         path += ` L ${base} ${wellHeight} L ${base + wellWidth} ${wellHeight} L ${base + wellWidth} ${wellHeight * 2}`;
@@ -350,7 +351,7 @@ export default function OneDESim({
             <path
               d={path}
               fill="var(--sub-accent)" vectorEffect="non-scaling-stroke"
-              stroke="var(--accent)" strokeLinejoin="round" strokeWidth={BORDER - 1}
+              stroke="var(--accent)" strokeLinejoin="round" strokeWidth={BORDER }
             />
           </svg>
           <div
@@ -397,7 +398,7 @@ export default function OneDESim({
             return (
               <g
                 key={`well-upload-${index}`}
-                transform={`translate(${(2 * index + 1) * wellWidth + wellWidth / 2}, ${r})`}
+                transform={`translate(${(2 * (index + 1) + 1) * wellWidth + wellWidth / 2}, ${r})`}
                 style={{ cursor: "pointer" }}
                 onClick={() => {
                   const input = document.createElement('input');
