@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from "react"
 import { Button, Chip } from "@mui/material"
 
-import InfoIcon from '@mui/icons-material/Info';
+import InfoIcon from "@mui/icons-material/Info";
 import StopIcon from "@mui/icons-material/Stop";
 import UploadIcon from "@mui/icons-material/Upload";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
@@ -9,8 +9,8 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import InsertChartIcon from "@mui/icons-material/InsertChart";
 
-import blackWire from '../../assets/electrophoresis/blackwire.png'
-import redWire from '../../assets/electrophoresis/redwire.png'
+import blackWire from "../../assets/electrophoresis/blackwire.png"
+import redWire from "../../assets/electrophoresis/redwire.png"
 
 
 interface IDEProtein {
@@ -302,7 +302,7 @@ export default function OneDESim({
           id="bulk-upload-input"
           type="file"
           multiple
-          accept=".fasta,.txt"
+          accept=".fasta,.fa,.faa,.txt"
           style={{ display: "none" }}
           onChange={handleUpload}
         />
@@ -401,10 +401,10 @@ export default function OneDESim({
                 transform={`translate(${(2 * (index + 1) + 1) * wellWidth + wellWidth / 2}, ${r})`}
                 style={{ cursor: "pointer" }}
                 onClick={() => {
-                  const input = document.createElement('input');
+                  const input = document.createElement("input");
 
-                  input.type = 'file';
-                  input.accept = '.fasta,.fa,.faa,.txt';
+                  input.type = "file";
+                  input.accept = ".fasta,.fa,.faa,.txt";
 
                   input.onchange = (e) => {
                     const file = (e.target as HTMLInputElement).files?.[0];
