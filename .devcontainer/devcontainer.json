@@ -1,5 +1,3 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/anaconda
 {
 	"name": "Python and NodeJS",
 	"build": { 
@@ -7,17 +5,17 @@
 		"dockerfile": "Dockerfile"
 	},
 	"overrideCommand": true,
-
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python"
+			]
+		}
+	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [3000],
+	"forwardPorts": [3000, 8000],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "export BROWSER=none; cd frontend/jbio-app; BROWSER=none npm install && npm start",
-	"postStartCommand": "uvicorn server:app --reload"
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+	"postStartCommand": "supervisord -c /etc/supervisor/supervisord.conf"
 }
