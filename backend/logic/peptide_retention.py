@@ -53,10 +53,16 @@ class PeptideRetentionPredictor:
             raise ValueError("Invalid SMILES")
         mol = Chem.AddHs(mol)
         cids = AllChem.EmbedMultipleConfs(mol, numConfs=10)
-        vdw_vol = AllChem.ComputeMolVolume(mol, confId=cids[0])
+        
+        if not cids:
+            AllChem.EmbedMolecule(mol)
+            vdw_vol = 1
+        else:
+            vdw_vol = AllChem.ComputeMolVolume(mol, confId=cids[0])
         clog_p = Descriptors.MolLogP(mol)
+        
         return math.log10(vdw_vol), clog_p
-    
+
     @staticmethod
     def predict(peptide: str) -> dict:
         try:
@@ -86,3 +92,4 @@ class PeptideRetentionPredictor:
         with ThreadPoolExecutor() as executor:
             results = list(executor.map(PeptideRetentionPredictor.predict, peptides))
         return results
+    
