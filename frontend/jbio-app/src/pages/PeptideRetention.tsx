@@ -20,7 +20,8 @@ import {
   Tooltip,
   styled,
   tooltipClasses,
-  TooltipProps
+  TooltipProps,
+  Icon,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ContentCopy from "@mui/icons-material/ContentCopy";
@@ -34,6 +35,7 @@ import {
   Title,
   Legend,
 } from "chart.js";
+import zoomPlugin, { zoom } from "chartjs-plugin-zoom";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { API_URL } from "../config";
 import "./PeptideRetention.css";
@@ -45,7 +47,10 @@ import {
   StopCircle,
   Timer,
   Info,
+  RemoveRedEye,
+  ZoomOutOutlined,
 } from "@mui/icons-material";
+import { ImageHoverPreview } from "../components/ImageHoverPreview";
 
 ChartJS.register(
   CategoryScale,
@@ -54,7 +59,8 @@ ChartJS.register(
   LineElement,
   Title,
   Legend,
-  annotationPlugin
+  annotationPlugin,
+  zoomPlugin,
 );
 
 type PredictionSuccess = {
@@ -67,7 +73,7 @@ type PredictionSuccess = {
   fromCache: boolean;
 };
 
-type CachedPrediction = Omit<PredictionSuccess, 'fromCache'>;
+type CachedPrediction = Omit<PredictionSuccess, "fromCache">;
 
 type PredictionError = {
   peptide: string;
@@ -85,7 +91,6 @@ const BTooltip = styled(({ className, ...props }: TooltipProps) => (
   },
 }));
 
-
 export type PredictionResult = PredictionSuccess | PredictionError;
 
 const PeptideRetention: React.FC = () => {
@@ -101,6 +106,7 @@ const PeptideRetention: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const chartRef = useRef<any>(null);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   const getCache = (): Record<string, CachedPrediction> => {
     try {
@@ -194,7 +200,7 @@ const PeptideRetention: React.FC = () => {
   const chunkPredict = async (
     peps: string[],
     size?: number,
-    cache?: Record<string, CachedPrediction>
+    cache?: Record<string, CachedPrediction>,
   ) => {
     const step = size ?? peps.length;
 
@@ -213,7 +219,10 @@ const PeptideRetention: React.FC = () => {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      setResults((prev) => [...prev, ...data.map((r: PredictionResult) => ({ ...r, fromCache: false }))]);
+      setResults((prev) => [
+        ...prev,
+        ...data.map((r: PredictionResult) => ({ ...r, fromCache: false })),
+      ]);
 
       if (cache) {
         data.forEach((result: PredictionResult) => {
@@ -300,7 +309,7 @@ const PeptideRetention: React.FC = () => {
       csv += `${result.peptide},${result.predicted_tr.toFixed(2)},${
         result.smiles
       },${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(
-        4
+        4,
       )},${result.clog_p.toFixed(4)}\n`;
     });
 
@@ -330,7 +339,7 @@ const PeptideRetention: React.FC = () => {
           .split(",")
           .map((peptide) => peptide.trim());
         setPeptides((prevPeptides) =>
-          Array.from(new Set([...prevPeptides, ...loadedPeptides]))
+          Array.from(new Set([...prevPeptides, ...loadedPeptides])),
         );
       };
       reader.readAsText(file);
@@ -340,9 +349,9 @@ const PeptideRetention: React.FC = () => {
   };
 
   const ClearFunc = () => {
-      setPeptides([]);
-      setResults([]);
-  }
+    setPeptides([]);
+    setResults([]);
+  };
 
   const generateChromatogramData = () => {
     const scalingFactor = 6.5;
@@ -394,8 +403,11 @@ const PeptideRetention: React.FC = () => {
         {
           label: "Chromatogram",
           data: chromatogram,
-          borderColor: results.length === 0 ? "transparent" : "black",
+          borderColor:
+            results.length === 0 ? "transparent" : "#000000",
           borderWidth: 2,
+          backgroundColor: "#FFFFFF",
+          fill: true,
         },
       ],
       max: maxChrom,
@@ -411,6 +423,17 @@ const PeptideRetention: React.FC = () => {
       a.download = "chromatogram.png";
       a.click();
     }
+  };
+
+  const getPeptideImage = (smiles: string) => {
+    return `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(
+      smiles,
+    )}/PNG?image_size=500x500`;
+  };
+
+  const resetZoom = () => {
+    chartRef.current?.resetZoom();
+    setIsZoomed(false);
   };
 
   return (
@@ -477,17 +500,15 @@ const PeptideRetention: React.FC = () => {
             <Checkbox
               checked={useCached}
               onChange={(e) => setUseCached(e.target.checked)}
-              sx={
-                {
+              sx={{
+                color: "var(--accent)",
+                "&.Mui-checked": {
                   color: "var(--accent)",
-                  "&.Mui-checked": {
-                    color: "var(--accent)",
-                  },
-                  "& .MuiSvgIcon-root": {
-                    fill: "var(--accent)",
-                  },
-                }
-              }
+                },
+                "& .MuiSvgIcon-root": {
+                  fill: "var(--accent)",
+                },
+              }}
             />
           }
           label="Use Cached"
@@ -608,20 +629,26 @@ const PeptideRetention: React.FC = () => {
                     <TableCell>
                       <>
                         <b>{item.peptide}</b>
-                        {item.result && "fromCache" in item.result && item.result.fromCache && (
-                          <BTooltip title="Loaded from cache" arrow placement="top">
-                            <span
-                              style={{
-                                marginLeft: "5px",
-                                cursor: "help",
-                                display: "inline-flex",
-                                alignItems: "center",
-                              }}
+                        {item.result &&
+                          "fromCache" in item.result &&
+                          item.result.fromCache && (
+                            <BTooltip
+                              title="Loaded from cache"
+                              arrow
+                              placement="top"
                             >
-                              <Info fontSize="small" color="success" />
-                            </span>
-                          </BTooltip>
-                        )}
+                              <span
+                                style={{
+                                  marginLeft: "5px",
+                                  cursor: "help",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <Info fontSize="small" color="success" />
+                              </span>
+                            </BTooltip>
+                          )}
                       </>
                     </TableCell>
                     {item.result ? (
@@ -644,9 +671,23 @@ const PeptideRetention: React.FC = () => {
                           <TableCell>{item.result.clog_p.toFixed(4)}</TableCell>
                           <TableCell>
                             <BTooltip title="Copy Row" arrow placement="top">
-                              <IconButton onClick={() => copyRow(item.result as PredictionSuccess)} sx={{ color: 'var(--text)' }}>
+                              <IconButton
+                                onClick={() =>
+                                  copyRow(item.result as PredictionSuccess)
+                                }
+                                sx={{ color: "var(--text)" }}
+                              >
                                 <ContentCopy />
                               </IconButton>
+                            </BTooltip>
+                            <BTooltip
+                              title="View Peptide"
+                              arrow
+                              placement="top"
+                            >
+                              <ImageHoverPreview
+                                url={getPeptideImage(item.result.smiles)}
+                              />
                             </BTooltip>
                           </TableCell>
                         </>
@@ -682,15 +723,28 @@ const PeptideRetention: React.FC = () => {
         <CardHeader
           title="Chromatogram"
           action={
-            <Button
-              variant="contained"
-              startIcon={<DownloadOutlined />}
-              className="predict-button"
-              onClick={exportChromatogram}
-              disabled={results.length === 0}
-            >
-              Export As Image
-            </Button>
+            <div>
+              <Button
+                variant="contained"
+                startIcon={<DownloadOutlined />}
+                className="predict-button"
+                onClick={exportChromatogram}
+                disabled={results.length === 0}
+              >
+                Export As Image
+              </Button>
+              {isZoomed && (
+                <Button
+                  variant="contained"
+                  startIcon={<ZoomOutOutlined />}
+                  className="predict-button"
+                  onClick={resetZoom}
+                  disabled={results.length === 0}
+                >
+                  Reset Zoom
+                </Button>
+              )}
+            </div>
           }
         />
         <CardContent>
@@ -706,73 +760,92 @@ const PeptideRetention: React.FC = () => {
               const chromatogramData = generateChromatogramData();
               var textColor = "#000";
               return (
-                <Line
-                  ref={(chart) => {
-                    if (chart) {
-                      chartRef.current = chart;
-                    }
-                  }}
-                  style={{
-                    backgroundColor: "#fff",
-                    padding: "30px",
-                    borderRadius: "8px",
-                    minHeight: "450px",
-                    width: "100%",
-                  }}
-                  data={chromatogramData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { display: false },
-                      annotation: {
-                        annotations: chromatogramData.annotations,
-                      },
-                    },
-                    elements: {
-                      point: {
-                        radius: 0,
-                      },
-                      line: {
-                        borderWidth: 1,
-                      },
-                    },
-                    scales: {
-                      x: {
-                        title: {
-                          display: true,
-                          text: "Retention Time (min)",
-                          color: textColor,
+                <div>
+                  <Line
+                    ref={(chart) => {
+                      if (chart) {
+                        chartRef.current = chart;
+                      }
+                    }}
+                    style={{
+                      backgroundColor: "#fff",
+                      padding: "30px",
+                      borderRadius: "8px",
+                      minHeight: "450px",
+                      width: "100%",
+                    }}
+                    data={chromatogramData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+
+                      plugins: {
+                        legend: { display: false },
+                        annotation: {
+                          annotations: chromatogramData.annotations,
                         },
-                        min: 0,
-                        max: 100,
-                        grid: {
-                          display: true,
-                        },
-                        ticks: {
-                          maxTicksLimit: 7,
-                          callback: (value) => (Number(value) / 65).toFixed(1),
-                          color: textColor,
-                        },
-                      },
-                      y: {
-                        title: {
-                          display: true,
-                          text: "Relative Intensity",
-                          color: textColor,
-                        },
-                        min: 0,
-                        max: Math.ceil(chromatogramData.max * 1.2),
-                        grid: {
-                          display: true,
-                        },
-                        ticks: {
-                          color: textColor,
+
+                        zoom: {
+                          zoom: {
+                            wheel: {
+                              enabled: true,
+                            },
+                            pinch: {
+                              enabled: true,
+                            },
+                            drag: {
+                              enabled: true,
+                            },
+                            mode: "x",
+                            onZoomComplete() {
+                              setIsZoomed(true);
+                            },
+                          },
+
+                          pan: {
+                            enabled: true,
+                            mode: "x",
+                          },
                         },
                       },
-                    },
-                  }}
-                />
+
+                      elements: {
+                        point: { radius: 0 },
+                        line: { borderWidth: 1 },
+                      },
+
+                      scales: {
+                        x: {
+                          min: 0,
+                          max: 100,
+                          title: {
+                            display: true,
+                            text: "Retention Time (min)",
+                            color: textColor,
+                          },
+                          ticks: {
+                            maxTicksLimit: 7,
+                            callback: (value) =>
+                              (Number(value) / 65).toFixed(1),
+                            color: textColor,
+                          },
+                        },
+                        y: {
+                          min: 0,
+                          max: Math.ceil(chromatogramData.max * 1.2),
+                          title: {
+                            display: true,
+                            text: "Relative Intensity",
+                            color: textColor,
+                          },
+                          ticks: {
+                            color: textColor,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </div>
               );
             })()}
           </div>
