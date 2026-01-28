@@ -32,7 +32,7 @@ const ProteolyticDigestion: React.FC = () => {
       };
       console.log(JSON.stringify(payload));
       const response = await fetch(
-        `http://127.0.0.1:3001/proteolytic_digestion/seperateProtein`,
+        `${API_URL}/proteolytic_digestion/seperateProtein`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -97,7 +97,7 @@ const ProteolyticDigestion: React.FC = () => {
         formData.append("file", file);
 
         const response = await fetch(
-          `http://127.0.0.1:3001/proteolytic_digestion/parse_fasta`,
+          `${API_URL}/proteolytic_digestion/parse_fasta`,
           {
             method: "POST",
             body: formData,
