@@ -12,6 +12,7 @@ const ProteolyticDigestion: React.FC = () => {
   const [currentSeq, setSequence] = useState("");
   const [aminoAcids, setAminoAcids] = useState([]);
   const [graphKey, setGraphKey] = useState(0);
+  const [protease,setProtease] = useState("")
   
 
   const PROTEASES = new Map<string, string>();
@@ -21,19 +22,17 @@ const ProteolyticDigestion: React.FC = () => {
  PROTEASES.set("Chymotrypsin", "F");
  PROTEASES.set("trypsin", "K");
  PROTEASES.set("pepsin", "R");
-
-  const changeSelectedProtease = async (val: unknown) => {
-    setUploading(true);
+ const updateCutProtein = async (sequence: string = currentSeq, protease_val: string = protease) =>{
+   setUploading(true);
     setMessage("Processing...");
-
-    try {
+     try {
       const payload = {
-        sequence: currentSeq,
-        aminoAcid: PROTEASES.get(val as string),
+        sequence: sequence,
+        aminoAcid: protease_val,
       };
       console.log(JSON.stringify(payload));
       const response = await fetch(
-        `${API_URL}/proteolytic_digestion/seperateProtein`,
+        `http://127.0.0.1:3001/proteolytic_digestion/seperateProtein`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -60,9 +59,22 @@ const ProteolyticDigestion: React.FC = () => {
   setGraphKey(prev => prev + 1);   // <-- forces graph to reload
 
     }
+ }
+  const changeSelectedProtease = async (val: unknown) => {
+    let temp = PROTEASES.get(val as string);
+    if (typeof(temp) == "string"){
+      setProtease(temp);
+      await updateCutProtein(currentSeq, temp);
+    }
+    else {
+      console.log(temp)
+    }
+   
   };
   const displaySequence = async (protein: string) => {
     setSequence(protein);
+    await updateCutProtein(protein, protease);
+
   };
   const isSelected = () => {
     return !(currentSeq == "");
@@ -85,7 +97,7 @@ const ProteolyticDigestion: React.FC = () => {
         formData.append("file", file);
 
         const response = await fetch(
-          `${API_URL}/proteolytic_digestion/parse_fasta`,
+          `http://127.0.0.1:3001/proteolytic_digestion/parse_fasta`,
           {
             method: "POST",
             body: formData,
@@ -183,7 +195,7 @@ const ProteolyticDigestion: React.FC = () => {
                   
                   {Array.from(PROTEASES.entries()).map(([key, val]) => (
                     <MenuItem key={key} value={key}>
-                      {key}
+                      {key}: {val}
                     </MenuItem>
                   ))}
                 </Select>
