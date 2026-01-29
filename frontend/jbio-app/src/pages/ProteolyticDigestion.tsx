@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import "./ProteolyticDigestion.css";
 import { API_URL } from "../config";
-import graph from  "../assets/proteinGraph.png"
-import emptyGraph from "../assets/EmptyProteinGraph.png"
-import { FormControl, Grid, MenuItem, Select } from "@mui/material";
+import graph from "../assets/proteinGraph.png";
+import emptyGraph from "../assets/EmptyProteinGraph.png";
+import { Button, FormControl, Grid, MenuItem, Select } from "@mui/material";
+import { Link } from "react-router-dom";
 
 const ProteolyticDigestion: React.FC = () => {
   const [uploading, setUploading] = useState(false);
@@ -12,20 +13,22 @@ const ProteolyticDigestion: React.FC = () => {
   const [currentSeq, setSequence] = useState("");
   const [aminoAcids, setAminoAcids] = useState([]);
   const [graphKey, setGraphKey] = useState(0);
-  const [protease,setProtease] = useState("")
-  
+  const [protease, setProtease] = useState("");
 
   const PROTEASES = new Map<string, string>();
   PROTEASES.set("PreScission", "Q");
   PROTEASES.set("Thrombin", "R");
   PROTEASES.set("Enterokinase", "K");
- PROTEASES.set("Chymotrypsin", "F");
- PROTEASES.set("trypsin", "K");
- PROTEASES.set("pepsin", "R");
- const updateCutProtein = async (sequence: string = currentSeq, protease_val: string = protease) =>{
-   setUploading(true);
+  PROTEASES.set("Chymotrypsin", "F");
+  PROTEASES.set("trypsin", "K");
+  PROTEASES.set("pepsin", "R");
+  const updateCutProtein = async (
+    sequence: string = currentSeq,
+    protease_val: string = protease,
+  ) => {
+    setUploading(true);
     setMessage("Processing...");
-     try {
+    try {
       const payload = {
         sequence: sequence,
         aminoAcid: protease_val,
@@ -37,7 +40,7 @@ const ProteolyticDigestion: React.FC = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -54,36 +57,33 @@ const ProteolyticDigestion: React.FC = () => {
       setMessage("Error processing sequence.");
     } finally {
       setUploading(false);
-     setGraphKey(prev => prev + 1);
+      setGraphKey((prev) => prev + 1);
 
-  setGraphKey(prev => prev + 1);   // <-- forces graph to reload
-
+      setGraphKey((prev) => prev + 1); // <-- forces graph to reload
     }
- }
+  };
   const changeSelectedProtease = async (val: unknown) => {
     let temp = PROTEASES.get(val as string);
-    if (typeof(temp) == "string"){
+    if (typeof temp == "string") {
       setProtease(temp);
       await updateCutProtein(currentSeq, temp);
+    } else {
+      console.log(temp);
     }
-    else {
-      console.log(temp)
-    }
-   
   };
   const displaySequence = async (protein: string) => {
     setSequence(protein);
     await updateCutProtein(protein, protease);
-
   };
   const isSelected = () => {
     return !(currentSeq == "");
   };
+
   const hasProteins = () => {
     return !(proteins.length == 0);
-  }
+  };
   const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -101,7 +101,7 @@ const ProteolyticDigestion: React.FC = () => {
           {
             method: "POST",
             body: formData,
-          }
+          },
         );
 
         if (!response.ok) {
@@ -119,15 +119,13 @@ const ProteolyticDigestion: React.FC = () => {
       setMessage("Error uploading file.");
     } finally {
       setUploading(false);
-      
     }
-  
-
   };
+    const goToPeptideRention = () =>{
 
+  }
 
   return (
-    
     <div className="proteolytic-page">
       <label
         className="twoDE-button icon"
@@ -155,26 +153,29 @@ const ProteolyticDigestion: React.FC = () => {
         <Grid className="proteinlist" size={1}>
           <Grid container columns={1}>
             <Grid size={1}>
-            <label htmlFor="">Select Specific Protein</label>
-            <FormControl className="word">
-              <Select
-                onChange={(e) => displaySequence((e.target as any).value as string)}
-               
-              >
-                {proteins.map((protein) => (
-                  <MenuItem key={protein["name"]} value={protein["sequence"]}>
-                    {protein["name"]}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+              <label htmlFor="">Select Specific Protein</label>
+              <FormControl className="word">
+                <Select
+                  onChange={(e) =>
+                    displaySequence((e.target as any).value as string)
+                  }
+                >
+                  {proteins.map((protein) => (
+                    <MenuItem key={protein["name"]} value={protein["sequence"]}>
+                      {protein["name"]}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
-          
           </Grid>
         </Grid>
-        <Grid  size={1}>
-          {hasProteins() ? <img className="graph" src={`${graph}?v=${graphKey}`}></img> :  <img className="graph" src={`${emptyGraph}`}></img>}
-          
+        <Grid size={1}>
+          {hasProteins() ? (
+            <img className="graph" src={`${graph}?v=${graphKey}`}></img>
+          ) : (
+            <img className="graph" src={`${emptyGraph}`}></img>
+          )}
         </Grid>
         <Grid size={1}>
           <Grid container>
@@ -184,23 +185,31 @@ const ProteolyticDigestion: React.FC = () => {
                 {isSelected() ? currentSeq : "No protein selected"}
               </div>
             </Grid>
-            <Grid size={12}>
-              <div className="word">Select a protease</div>
-              <FormControl className="word">
-                <Select
-                  onChange={(e) => {
-                    changeSelectedProtease(e.target.value);
-                  }}
-                >
-                  
-                  {Array.from(PROTEASES.entries()).map(([key, val]) => (
-                    <MenuItem key={key} value={key}>
-                      {key}: {val}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+            <Grid container>
+              <Grid size={4}>
+                <div className="word">Select a protease</div>
+                <FormControl className="word">
+                  <Select
+                    onChange={(e) => {
+                      changeSelectedProtease(e.target.value);
+                    }}
+                  >
+                    {Array.from(PROTEASES.entries()).map(([key, val]) => (
+                      <MenuItem key={key} value={key}>
+                        {key}: {val}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={4}>
+                <div className="word">Amount of Amino Acids: {aminoAcids.length}</div>
+              </Grid>
+              <Grid size={4}>
+                    <Link to="/peptide-retention" state={{aminoAcids: aminoAcids }}>Export to Oeptide Retention</Link>
+              </Grid>
             </Grid>
+
             <Grid size={12}>
               {aminoAcids.map((value) => (
                 <div className="selectedProtein">{value}</div>
