@@ -1,0 +1,20 @@
+
+.selectedProtein {
+  color: aliceblue;
+  justify-content: center;
+  display: flex;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  max-width:100vw;
+  
+}
+.proteinlist {
+  display: block;
+}
+.word {
+  background-color: aliceblue;
+}
+.graph {
+  height: auto;
+  width: 100%;
+}
