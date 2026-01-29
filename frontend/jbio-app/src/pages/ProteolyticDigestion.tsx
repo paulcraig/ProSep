@@ -3,17 +3,28 @@ import "./ProteolyticDigestion.css";
 import { API_URL } from "../config";
 import graph from "../assets/proteinGraph.png";
 import emptyGraph from "../assets/EmptyProteinGraph.png";
-import { Button, FormControl, Grid, MenuItem, Select } from "@mui/material";
+import { Autocomplete, Button, FormControl, Grid, MenuItem, Select, TextField, Checkbox, Chip } from "@mui/material";
 import { Link } from "react-router-dom";
 
 const ProteolyticDigestion: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [proteins, setProteins] = useState([]);
+  const [selectedProteins, setSelectedProteins] = useState<any[]>([]);
   const [currentSeq, setSequence] = useState("");
   const [aminoAcids, setAminoAcids] = useState([]);
   const [graphKey, setGraphKey] = useState(0);
   const [protease, setProtease] = useState("");
+  // Safe Autocomplete initial values
+  const fixedOptions: any[] = [];
+  const [value, setValue] = React.useState<any[]>([]);
+
+  // Ensure the Autocomplete value only contains options that are available
+  React.useEffect(() => {
+    if (!Array.isArray(value) || !Array.isArray(proteins)) return;
+    const filtered = value.filter((v) => proteins.some((p: any) => p && p.name === v?.name));
+    if (filtered.length !== value.length) setValue(filtered as any[]);
+  }, [proteins]);
 
   const PROTEASES = new Map<string, string>();
   PROTEASES.set("PreScission", "Q");
@@ -71,8 +82,12 @@ const ProteolyticDigestion: React.FC = () => {
       console.log(temp);
     }
   };
-  const displaySequence = async (protein: string) => {
-    setSequence(protein);
+  const displaySequence = async (proteins: any[]) => {
+    let protein = ""
+    proteins.forEach((prot) =>{
+      protein = protein + "\n "+prot["sequence"];
+    });
+    setSequence( protein);
     await updateCutProtein(protein, protease);
   };
   const isSelected = () => {
@@ -121,9 +136,7 @@ const ProteolyticDigestion: React.FC = () => {
       setUploading(false);
     }
   };
-    const goToPeptideRention = () =>{
 
-  }
 
   return (
     <div className="proteolytic-page">
@@ -152,22 +165,47 @@ const ProteolyticDigestion: React.FC = () => {
       <Grid container columns={3}>
         <Grid className="proteinlist" size={1}>
           <Grid container columns={1}>
+            
             <Grid size={1}>
-              <label htmlFor="">Select Specific Protein</label>
-              <FormControl className="word">
-                <Select
-                  onChange={(e) =>
-                    displaySequence((e.target as any).value as string)
-                  }
-                >
-                  {proteins.map((protein) => (
-                    <MenuItem key={protein["name"]} value={protein["sequence"]}>
-                      {protein["name"]}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+              className="word"
+                multiple
+                id="proteins-multi"
+                disableCloseOnSelect
+                value={value}
+                onChange={(_event, newValue) => {
+                  setValue(newValue as any[]);
+              
+                    displaySequence(newValue);
+                  
+                }}
+                options={proteins}
+                getOptionLabel={(option: any) => option?.name ?? ""}
+                isOptionEqualToValue={(o: any, v: any) => o?.name === v?.name}
+                renderOption={(props, option: any, { selected }) => (
+                  <li {...props}>
+                    <Checkbox checked={selected} style={{ marginRight: 8 }} />
+                    {option?.name}
+                  </li>
+                )}
+                renderTags={(values, getTagProps) =>
+                  values.map((option, index) => {
+                    const { key, ...tagProps } = getTagProps({ index });
+                    return (
+                      <Chip key={option?.name ?? index} label={option?.name} {...tagProps} />
+                    );
+                  })
+                }
+                style={{ width: 500 }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Select Proteins" placeholder="Favorites" />
+                )}
+              />
+
             </Grid>
+
+
+
           </Grid>
         </Grid>
         <Grid size={1}>
@@ -211,9 +249,11 @@ const ProteolyticDigestion: React.FC = () => {
             </Grid>
 
             <Grid size={12}>
+              <ol>
               {aminoAcids.map((value) => (
-                <div className="selectedProtein">{value}</div>
+                <li><div className="selectedProtein">{value}</div></li>
               ))}
+              </ol>
             </Grid>
           </Grid>
         </Grid>

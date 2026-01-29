@@ -7,12 +7,13 @@ import matplotlib.pyplot as plt
 from backend.logic.one_de_simulation import Simulation_1de
 from backend.utility.protein import Protein
 import random
+import re
 
 
 class ProteolyticDigestion:
     @staticmethod
     def breakUpProtein(sequence: str, two_animno_acids: str) -> List:
-        seperated: list = sequence.split(two_animno_acids)
+        seperated: list =re.split(f"[{two_animno_acids}|\n]",sequence)
         i = 0
         while i < len(seperated) - 1:
             seperated[i] = seperated[i] + two_animno_acids
