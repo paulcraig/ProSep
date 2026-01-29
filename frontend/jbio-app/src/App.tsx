@@ -9,9 +9,13 @@ import TwoDE from './pages/legacy/2DElectrophoresis.js'
 import GitHubIcon from '@mui/icons-material/GitHub';
 import HomeIcon from '@mui/icons-material/HomeRounded';
 import InsightsIcon from "@mui/icons-material/Insights";
+import HiddenIcon from '@mui/icons-material/Terminal';
+
+import Hidden, { useHiddenUnlock } from './pages/Hidden';
 
 import { ReactComponent as OneDEIcon } from './assets/electrophoresis/1DE.svg';
 import { ReactComponent as TwoDEIcon } from './assets/electrophoresis/2DE.svg';
+
 import PeptideRetention from './pages/PeptideRetention';
 import ProteolyticDigestion from './pages/ProteolyticDigestion';
 

@@ -101,3 +101,110 @@
 .artifact-icon:hover {
   color: var(--text) !important;
 }
+
+.artifact-viewer-container {
+  background: var(--background) !important;
+  border: 4px solid var(--accent);
+  border-radius: 8px;
+  width: 90vw;
+  max-width: 1400px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  outline: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+}
+
+.artifact-viewer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 3px solid var(--accent);
+  background: var(--sub-background);
+  flex-shrink: 0;
+}
+
+.artifact-viewer-title {
+  color: var(--text) !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  margin: 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100% - 60px);
+}
+
+.artifact-viewer-close {
+  color: var(--sub-text) !important;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 1rem;
+}
+
+.artifact-viewer-close:hover {
+  color: var(--text) !important;
+}
+
+.artifact-viewer-content {
+  padding: 0;
+  overflow: auto;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background: var(--background) !important;
+  flex: 1;
+}
+
+.artifact-viewer-content::-webkit-scrollbar {
+  width: 12px;
+}
+
+/* Firefox scrollbar styling */
+.artifact-viewer-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sub-background) var(--background);
+}
+
+.artifact-viewer-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  padding: 1.5rem;
+}
+
+.artifact-viewer-pdf {
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+  border: none;
+  background: white;
+}
+
+.artifact-viewer-text {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: var(--background);
+  color: var(--text);
+  padding: 1.5rem;
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.artifact-viewer-unsupported {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+}

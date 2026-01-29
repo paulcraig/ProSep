@@ -3,14 +3,14 @@ import './Hidden.css';
 
 import ArtifactList, { ArtifactListRef } from '../components/ArtifactList';
 
-import { Box, IconButton, Typography } from '@mui/material';
+import { Box, IconButton } from '@mui/material';
 import UploadIcon from '@mui/icons-material/UploadFile';
 
 const KONAMI = [
-    'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
-    'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
-    'b', 'a'
-  ];
+  'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+  'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
+  'b', 'a'
+];
 
 
 const Hidden: React.FC = () => {
@@ -42,7 +42,13 @@ const Hidden: React.FC = () => {
         <h2 className='section-header'>Artifacts</h2>
       </Box>
 
-      <ArtifactList ref={artifactRef} />
+      <ArtifactList 
+        ref={artifactRef}
+        enableDownload={true}
+        enableReplace={true}
+        enableDelete={true}
+        enableReorder={true}
+      />
     </div>
   );
 };
