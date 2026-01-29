@@ -8,7 +8,7 @@ import backend.api.peptide_retention_routes as peptide_retention_routes
 import backend.api.proteolytic_digestion_routes as proteolytic_digestion_routes
 
 
-'''
+"""
 HOW TO START UP API SERVER:
    
 1. Run the command: uvicorn server:app --reload
@@ -37,17 +37,17 @@ VIEWING API DOCUMENTATION:
    
 Good luck developing!
 -Beck Anderson
-'''
+"""
 
 app = FastAPI()
 
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*'],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Routers
@@ -56,7 +56,7 @@ app.include_router(two_de_routes.router)
 app.include_router(peptide_retention_routes.router)
 app.include_router(proteolytic_digestion_routes.router)
 
-''' 
+""" 
 NOTE FOR FUTURE DEVELOPERS:
 In order to add additional files for the API, such as the addition of 2DE,
 simply do the following:
@@ -65,7 +65,7 @@ simply do the following:
 3. above this comment, add: app.include_router(FILE_VARIABLE_HERE.router)
 
 It should now be all good to go!
-'''
+"""
 
-if __name__ == '__main__':
-     uvicorn.run(app, host='0.0.0.0', port=8000)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
