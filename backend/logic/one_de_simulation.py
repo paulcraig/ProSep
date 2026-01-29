@@ -1,4 +1,5 @@
-import random, logging
+import random
+import logging
 
 from typing import Any
 from io import StringIO
@@ -41,7 +42,7 @@ class Simulation_1de():
                     entry = {
                         'name': ' '.join(header.split(' ')[1:]),
                         'molecularWeight': weight_list[i],
-                        'color': '#' + hex(random.randrange(0, 2**24))[2:],
+                        'color': '#%02x%02x%02x' % tuple(int(x*255) for x in __import__('colorsys').hls_to_rgb(random.random(), 0.5, 0.7)),
                         'id_num': header_parts[1] if len(header_parts) > 1 else header_parts[0],
                         'id_str': header_parts[0] if len(header_parts) > 1 else ''
                     }

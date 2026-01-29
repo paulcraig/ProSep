@@ -218,6 +218,7 @@
   display: flex;
   justify-content: center;
   gap: 8px;
+  color: var(--background);
 }
 
 .twoDE-controls-col {
@@ -246,11 +247,53 @@
   font-size: 12px;
 }
 
-.twoDE-controls-col{
-    background-color:#292b31;
-}
-
 /*this should switch based on theme */
 .control-group{
  color: var(--text);
+}
+
+
+.minus-button{
+  padding: 6px 10px;
+  margin: 40;
+  font-size: 16px;
+  border: none;
+  background: #333;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer
+}
+
+.plus-button{
+  padding: 6px 10px;
+  margin: 40;
+  margin-top: 50;
+  font-size: 16px;
+  border: none;
+  background: #333;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer
+}
+
+.zoom-handler-buttons {
+  position: absolute;
+  top: 10;
+  right: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(20, 20, 20, 0.5);
+  border-radius: 8px;
+  padding: 4px
+}
+
+.zoom-button-container{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 160px;
 }

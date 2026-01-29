@@ -2,16 +2,18 @@ import logo from './assets/basil-logo.png';
 import Dashboard from './components/Dashboard';
 
 import About from './pages/About';
-import Hidden, { useHiddenUnlock } from './pages/Hidden';
-import OneDE from './pages/legacy/1DElectrophoresis.js'
+
+import OneDE from './pages/1DE'
 import TwoDE from './pages/legacy/2DElectrophoresis.js'
 
 import GitHubIcon from '@mui/icons-material/GitHub';
 import HomeIcon from '@mui/icons-material/HomeRounded';
-import HiddenIcon from '@mui/icons-material/Terminal';
-import OneDEIcon from '@mui/icons-material/AlignVerticalTop';
-import TwoDEIcon from '@mui/icons-material/ScatterPlot';
+import InsightsIcon from "@mui/icons-material/Insights";
 
+import { ReactComponent as OneDEIcon } from './assets/electrophoresis/1DE.svg';
+import { ReactComponent as TwoDEIcon } from './assets/electrophoresis/2DE.svg';
+import PeptideRetention from './pages/PeptideRetention';
+import ProteolyticDigestion from './pages/ProteolyticDigestion';
 
 function App() {
   const pages = [
@@ -19,7 +21,9 @@ function App() {
     ...(useHiddenUnlock() ? [{ id: 99, icon: <HiddenIcon />, component: <Hidden />, label: 'Team Information' }] : []),
     { id: 2, icon: <OneDEIcon />, component: <OneDE />, label: '1D Electrophoresis' },
     { id: 3, icon: <TwoDEIcon />, component: <TwoDE />, label: '2D Electrophoresis' },
-    { id: 4, icon: <GitHubIcon />, link: 'https://github.com/paulcraig/ProSep', label: 'GitHub Repository' },
+    { id: 4, icon: <InsightsIcon/>, component: <PeptideRetention />, label: 'Peptide Retention' },
+    { id: 5, icon: <InsightsIcon/>, component: <ProteolyticDigestion />, label: 'Proteolytic Digestion' },
+    { id: 6, icon: <GitHubIcon />, link: 'https://github.com/paulcraig/ProSep', label: 'GitHub Repository' },
   ];
 
   return (
