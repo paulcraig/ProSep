@@ -1,12 +1,37 @@
 .artifact-container {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 16px;
   justify-content: flex-start;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.artifact-container::-webkit-scrollbar {
+  width: 12px;
+}
+
+.artifact-container::-webkit-scrollbar-track {
+  background: var(--background);
+  border-radius: 6px;
+}
+
+.artifact-container::-webkit-scrollbar-thumb {
+  background: var(--sub-background);
+  border-radius: 6px;
+}
+
+.artifact-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text);
+}
+
+.artifact-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sub-background) var(--background);
 }
 
 .artifact-card {
-  width: 320px;
+  min-width: 280px;
   height: 240px;
   background-color: var(--sub-background) !important;
   color: var(--text) !important;
@@ -16,13 +41,11 @@
   flex-direction: column;
   overflow: hidden;
   cursor: grab;
-  transition: border 0.2s ease, transform 0.2s ease;
-  box-shadow: none !important;
+  transition: border 0.2s ease;
 }
 
 .artifact-card.drag-over {
   border-color: var(--text);
-  transform: scale(1.05);
 }
 
 .artifact-card:active {
@@ -162,7 +185,6 @@
   width: 12px;
 }
 
-/* Firefox scrollbar styling */
 .artifact-viewer-content {
   scrollbar-width: thin;
   scrollbar-color: var(--sub-background) var(--background);

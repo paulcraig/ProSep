@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef, useMemo, useRef } from 'react';
 import { API_URL } from '../config';
 import './ArtifactList.css';
 
@@ -23,6 +23,8 @@ interface ArtifactListProps {
   enableReplace?: boolean;
   enableDelete?: boolean;
   enableReorder?: boolean;
+  visibleRows?: number;
+  artifactsPerRow?: number;
 }
 
 export interface ArtifactListRef {
@@ -35,16 +37,35 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   enableDownload = true,
   enableReplace = true,
   enableDelete = true,
-  enableReorder = true
+  enableReorder = true,
+  visibleRows,
+  artifactsPerRow
 }, ref) => {
 
+  const GAP = 16;
+  const CARD_HEIGHT = 250;
+  
+  const fetchingRef = useRef(false);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+
+  const [isDragging, setIsDragging] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerArtifact, setViewerArtifact] = useState<Artifact | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [textContent, setTextContent] = useState<string>('');
+  const [viewerArtifact, setViewerArtifact] = useState<Artifact | null>(null);
+  
+  
+  const gridTemplateColumns = useMemo(() =>
+    artifactsPerRow ? `repeat(${artifactsPerRow}, 1fr)` : `repeat(auto-fill, minmax(280px, 1fr))`,
+    [artifactsPerRow]
+  );
+
+  const maxHeight = useMemo(() =>
+    visibleRows ? (CARD_HEIGHT + GAP) * visibleRows - GAP : undefined,
+    [visibleRows]
+  );
 
   
   function getFileExtension(filename: string): string {
@@ -69,16 +90,25 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
   
   async function fetchArtifacts(): Promise<void> {
+    if (fetchingRef.current) {
+      console.log('Fetch already in progress, skipping...');
+      return;
+    }
+
+    fetchingRef.current = true;
+    
     try {
       const res = await fetch(`${API_URL}/artifacts/${group}`);
 
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
-
       const data = await res.json();
       setArtifacts(data);
 
     } catch (err) {
       console.error(err);
+
+    } finally {
+      fetchingRef.current = false;
     }
   }
 
@@ -319,7 +349,13 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
   return (
     <Box>
-      <Stack direction='row' flexWrap='wrap' gap={2} sx={{ justifyContent: 'flex-start' }}>
+      <Box
+        className='artifact-container'
+        sx={{
+          gridTemplateColumns,
+          maxHeight: maxHeight ? `${maxHeight}px` : 'none',
+        }}
+      >
         {artifacts.map((file, index) => (
           <Card
             key={file.id}
@@ -356,40 +392,18 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
               </Box>
               <Stack direction='row' className='artifact-actions' onClick={(e) => e.stopPropagation()}>
                 {enableDownload && (
-                  <IconButton
-                    size='small'
-                    onClick={() => handleDownload(file.name)}
-                    title='Download'
-                    className='artifact-icon'
-                  >
+                  <IconButton size='small' onClick={() => handleDownload(file.name)} title='Download' className='artifact-icon'>
                     <DownloadIcon fontSize='small' />
                   </IconButton>
                 )}
                 {enableReplace && (
-                  <IconButton
-                    size='small'
-                    component='label'
-                    title='Replace'
-                    className='artifact-icon'
-                  >
+                  <IconButton size='small' component='label' title='Replace' className='artifact-icon'>
                     <ReplaceIcon fontSize='small' />
-                    <input
-                      type='file'
-                      hidden
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleReplace(file.name, f);
-                      }}
-                    />
+                    <input type='file' hidden onChange={(e) => e.target.files?.[0] && handleReplace(file.name, e.target.files[0])}/>
                   </IconButton>
                 )}
                 {enableDelete && (
-                  <IconButton
-                    size='small'
-                    onClick={() => handleDelete(file.name)}
-                    title='Delete'
-                    className='artifact-icon'
-                  >
+                  <IconButton size='small' onClick={() => handleDelete(file.name)} title='Delete' className='artifact-icon'>
                     <DeleteIcon fontSize='small' />
                   </IconButton>
                 )}
@@ -397,7 +411,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
             </CardContent>
           </Card>
         ))}
-      </Stack>
+      </Box>
 
       {viewerOpen && (
         <div

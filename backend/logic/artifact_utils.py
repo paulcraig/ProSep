@@ -20,12 +20,17 @@ class MetadataManager:
     @staticmethod
     def load(group: str) -> dict:
         metadata_file = MetadataManager.__get_metadata_file(group)
+
         if metadata_file.exists():
             try:
                 with open(metadata_file, "r") as f:
-                    return json.load(f)
-            except:
+                    data = json.load(f)
+                    return data
+                
+            except Exception as e:
+                print(f"Error loading metadata for group '{group}': {e}")
                 return {}
+            
         return {}
     
 
@@ -62,6 +67,7 @@ class MetadataManager:
             old_metadata = metadata.pop(old_name)
             metadata[new_name] = old_metadata
             MetadataManager.save(group, metadata)
+
         else:
             MetadataManager.add_file(group, new_name)
     
@@ -69,6 +75,7 @@ class MetadataManager:
     @staticmethod
     def remove_file(group: str, filename: str) -> None:
         metadata = MetadataManager.load(group)
+
         if filename in metadata:
             metadata.pop(filename)
             MetadataManager.save(group, metadata)
@@ -99,10 +106,16 @@ class MetadataManager:
     @staticmethod
     def reorder_files(group: str, file_order: list[str]) -> None:
         metadata = MetadataManager.load(group)
-        
+
         for index, filename in enumerate(file_order):
             if filename in metadata:
                 metadata[filename]["upload_order"] = index
+
+            else:
+                metadata[filename] = {
+                    "upload_time": time.time(),
+                    "upload_order": index
+                }
         
         MetadataManager.save(group, metadata)
 

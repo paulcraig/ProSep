@@ -39,7 +39,7 @@ const Hidden: React.FC = () => {
           <UploadIcon />
           <input type='file' hidden multiple onChange={handleFileChange} />
         </IconButton>
-        <h2 className='section-header'>Artifacts</h2>
+        <h2 className='section-header'>About Page Artifacts</h2>
       </Box>
 
       <ArtifactList

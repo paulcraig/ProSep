@@ -3,6 +3,7 @@ import "./About.css";
 
 import Profile from "../components/Profile";
 import profiles from "../assets/profiles/profiles.json";
+import ArtifactList from '../components/ArtifactList';
 
 type Person = {
   photo?: string;
@@ -76,7 +77,17 @@ const About: React.FC = () => {
             modern web application with a JavaScript front-end and Python back-end.
             It is used in biochemistry, bioinformatics, and chemistry education at
             RIT and beyond.
-          </p><br/>
+          </p>
+          <br/>
+          <ArtifactList
+            group='about'
+            artifactsPerRow={4}
+            visibleRows={1}
+            enableReplace={false}
+            enableDelete={false}
+            enableReorder={false}
+          />
+          <br/>
           <h2 className="section-header">Commercial Use</h2>
           <p>
             Use by individual <strong>students and teachers</strong> is{" "}
