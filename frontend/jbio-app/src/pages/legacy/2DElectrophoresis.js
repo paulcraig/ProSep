@@ -1141,8 +1141,9 @@ const TwoDE = () => {
           <div className="control-group">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
               <label className="twoDE-control-label" style={{ opacity: simulationState === 'ready' ? 1 : 0.5 }}>Acrylamide %:</label>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                <input
+                {/* <input
                   type="number"
                   min="5"
                   max="20"
@@ -1151,17 +1152,29 @@ const TwoDE = () => {
                   onChange={(e) => setAcrylamidePercentage(parseFloat(e.target.value))}
                   className="twoDE-input"
                   disabled={simulationState !== 'ready'} // Disable during simulation
-                />
-                <input
-                  type="range"
-                  min="5"
-                  max="20"
-                  step="0.5"
-                  value={acrylamidePercentage}
-                  onChange={handleAcrylamideChange}
-                  className="twoDE-range"
-                  disabled={simulationState !== 'ready'} // Disable during simulation
-                />
+                /> */}
+
+
+                  <select
+                    name="acrylamide-percentage-dropdown"
+                    id="acrylamide-percentage-dropdown"
+                    onChange={handleAcrylamideChange}
+                    disabled={simulationState !== 'ready'}
+                    value={acrylamidePercentage}
+                    style={{
+                      // padding: '4px',
+                      // borderRadius: '4px',
+                      // border: '1px solid #3a3a3a',
+                      // backgroundColor: '#1a1a1a',
+                      // color: '#ffffff'
+                    }}
+                  >
+                    <option value={7.5}>7.5%</option>
+                    <option value={10}>10%</option>
+                    <option value={12.5}>12.5%</option>
+                    <option value={15}>15%</option>
+                  </select>
+
                 <div className="twoDE-acrylic-desc" style={{ opacity: simulationState === 'ready' ? 0.8 : 0.4 }}>
                   {acrylamidePercentage < 7 ? 'Resolves large proteins' :
                     acrylamidePercentage < 12 ? 'Medium range separation' :
