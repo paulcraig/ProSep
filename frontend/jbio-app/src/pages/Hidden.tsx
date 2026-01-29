@@ -42,7 +42,8 @@ const Hidden: React.FC = () => {
         <h2 className='section-header'>Artifacts</h2>
       </Box>
 
-      <ArtifactList 
+      <ArtifactList
+        group='about'
         ref={artifactRef}
         enableDownload={true}
         enableReplace={true}

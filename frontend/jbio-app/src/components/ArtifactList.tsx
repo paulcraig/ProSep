@@ -18,6 +18,7 @@ interface Artifact {
 }
 
 interface ArtifactListProps {
+  group: string;
   enableDownload?: boolean;
   enableReplace?: boolean;
   enableDelete?: boolean;
@@ -30,6 +31,7 @@ export interface ArtifactListRef {
 
 
 const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
+  group,
   enableDownload = true,
   enableReplace = true,
   enableDelete = true,
@@ -68,7 +70,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   
   async function fetchArtifacts(): Promise<void> {
     try {
-      const res = await fetch(`${API_URL}/artifacts`);
+      const res = await fetch(`${API_URL}/artifacts/${group}`);
 
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
 
@@ -83,14 +85,14 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
   useEffect(() => {
     fetchArtifacts();
-  }, []);
+  }, [group]);
 
 
   async function handleUpload(file: File): Promise<void> {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/artifacts`, {
+      const res = await fetch(`${API_URL}/artifacts/${group}`, {
         method: 'POST',
         body: formData,
       });
@@ -112,7 +114,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
   async function handleDelete(name: string): Promise<void> {
     try {
-      const res = await fetch(`${API_URL}/artifacts/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(name)}`, { method: 'DELETE' });
 
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
 
@@ -128,7 +130,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/artifacts/${encodeURIComponent(name)}/replace`, {
+      const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(name)}/replace`, {
         method: 'PUT',
         body: formData,
       });
@@ -145,7 +147,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
   async function handleDownload(name: string): Promise<void> {
     try {
-      const res = await fetch(`${API_URL}/artifacts/${encodeURIComponent(name)}`);
+      const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(name)}`);
       if (!res.ok) throw new Error(`Download failed (${res.status})`);
 
       const blob = await res.blob();
@@ -166,7 +168,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   async function saveOrder(newOrder: Artifact[]): Promise<void> {
     try {
       const fileOrder = newOrder.map(f => f.name);
-      const res = await fetch(`${API_URL}/artifacts/reorder`, {
+      const res = await fetch(`${API_URL}/artifacts/${group}/reorder`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ file_order: fileOrder }),
@@ -247,13 +249,13 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
       
       if (getFileType(artifact.name) === 'text') {
         try {
-          const res = await fetch(`${API_URL}/artifacts/${encodeURIComponent(artifact.name)}`);
+          const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(artifact.name)}`);
 
           if (res.ok) {
             const text = await res.text();
             setTextContent(text);
           }
-
+          
         } catch (err) {
           console.error('Failed to load text content:', err);
           setTextContent('Failed to load file content');
@@ -267,7 +269,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     if (!viewerArtifact) return null;
 
     const fileType = getFileType(viewerArtifact.name);
-    const fileUrl = `${API_URL}/artifacts/${encodeURIComponent(viewerArtifact.name)}`;
+    const fileUrl = `${API_URL}/artifacts/${group}/${encodeURIComponent(viewerArtifact.name)}`;
 
     switch (fileType) {
       case 'image':
@@ -339,7 +341,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
               <CardMedia
                 component='img'
                 className='artifact-media'
-                src={`${API_URL}/artifacts/${encodeURIComponent(file.name)}/preview`}
+                src={`${API_URL}/artifacts/${group}/${encodeURIComponent(file.name)}/preview`}
                 alt={file.name}
               />
             </Box>
