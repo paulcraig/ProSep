@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useMemo, useRef } from 'react';
+import { Document, Page } from 'react-pdf';
+import { pdfjs } from 'react-pdf';
+
 import { API_URL } from '../config';
 import './ArtifactList.css';
 
@@ -31,6 +34,8 @@ export interface ArtifactListRef {
   uploadFile: (file: File) => Promise<void>;
 }
 
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
 
 const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   group,
@@ -54,6 +59,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [textContent, setTextContent] = useState<string>('');
+  const [numPages, setNumPages] = useState<number | null>(null);
   const [viewerArtifact, setViewerArtifact] = useState<Artifact | null>(null);
   
   
@@ -313,8 +319,21 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
       
       case 'pdf':
         return (
-          <Box sx={{ width: '100%', height: '100%', minHeight: '600px', background: 'white', display: 'flex' }}>
-            Broken...
+          <Box sx={{ overflow: 'auto', height: '100%' }}>
+            <Document
+              file={fileUrl}
+              loading="Loading PDF..."
+              onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+            >
+              {Array.from(new Array(numPages), (_, index) => (
+                <Page
+                  key={`page_${index + 1}`}
+                  pageNumber={index + 1}
+                  renderTextLayer
+                  renderAnnotationLayer
+                />
+              ))}
+            </Document>
           </Box>
         );
       

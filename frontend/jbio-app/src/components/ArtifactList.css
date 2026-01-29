@@ -7,29 +7,6 @@
   overscroll-behavior: contain;
 }
 
-.artifact-container::-webkit-scrollbar {
-  width: 12px;
-}
-
-.artifact-container::-webkit-scrollbar-track {
-  background: var(--background);
-  border-radius: 6px;
-}
-
-.artifact-container::-webkit-scrollbar-thumb {
-  background: var(--sub-background);
-  border-radius: 6px;
-}
-
-.artifact-container::-webkit-scrollbar-thumb:hover {
-  background: var(--text);
-}
-
-.artifact-container {
-  scrollbar-width: thin;
-  scrollbar-color: var(--sub-background) var(--background);
-}
-
 .artifact-card {
   min-width: 280px;
   height: 240px;
