@@ -1,6 +1,6 @@
 {
 	"name": "Python and NodeJS",
-	"build": { 
+	"build": {
 		"context": "..",
 		"dockerfile": "Dockerfile"
 	},
