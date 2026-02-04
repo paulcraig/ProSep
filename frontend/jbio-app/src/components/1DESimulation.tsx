@@ -16,6 +16,17 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import CloseIcon from '@mui/icons-material/Close'
 
+// --- Sample prep / fractionation (for running fractions as separate lanes) ---
+const [prepFile, setPrepFile]  = useState<File |null>(null);
+const [prepMethod, setPrepMethod] = useState<'ion_exchange' | 'size_exclusion' | 'affinity'>('size_exclusion');
+const [prepIonMode, setPrepIonMode] = useState<'cation' | 'anion'>('cation');
+const [prepPh, setPrepPh] = useState<number>(7.0);
+const [prepMinKda, setPrepMinKda] = useState<number>(20.0);
+const [prepMaxKda, setPrepMaxKda] = useState<number>(200.0);
+const [prepFractions, setPrepFractions] = useState<any[]>([]);
+const [prepBusy, setPrepBusy] = useState<boolean>(false);
+const [prepError, setPrepError] = useState<string | null>(null); 
+
 
 const standards = [
   { name: 'B-Galactosidase',    molecularWeight: 116250,  migrationDistance: 0, color: '#4dd0e1',   id_num: '6X1Q', id_str: 'pdb' },
@@ -569,6 +580,81 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     });
   };
 
+  const loadProteinsToWell = (wellIndex: number, laneName: string, proteins: any[], fastaFilename?: string) => {
+    if (wellIndex <= 0) return;
+
+    setUploadedProteins((prev) => ({
+      ...prev,
+      [wellIndex]: { name: fastaFilename ?? laneName, proteins },
+    }));
+
+    const newPositions: Record<string, number> = {};
+    proteins.forEach((p: any) => {
+      newPositions[p.id_num] = 0;
+    });
+
+    setPositions((prev) => ({
+      ...prev,
+      [wellIndex]: newPositions,
+    }));
+  };
+
+  const downloadFasta = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const runSamplePrep = async () => {
+    setPrepError(null);
+
+    if (!prepFile) {
+      setPrepError('Please choose a FASTA file to fractionate.');
+      return;
+    }
+
+    try {
+      setPrepBusy(true);
+
+      const fd = new FormData();
+      fd.append('file', prepFile);
+      fd.append('method', prepMethod);
+      fd.append('fraction_count', '7');
+
+      if (prepMethod === 'ion_exchange') {
+        fd.append('ph', String(prepPh));
+        fd.append('ion_mode', prepIonMode);
+      }
+      if (prepMethod === 'size_exclusion') {
+        fd.append('min_kda', String(prepMinKda));
+        fd.append('max_kda', String(prepMaxKda));
+      }
+
+      const res = await fetch(`${API_URL}/sample_prep/run`, {
+        method: 'POST',
+        body: fd,
+      });
+
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Sample prep request failed.');
+      }
+
+      const json = await res.json();
+      setPrepFractions(json.fractions ?? []);
+    } catch (e: any) {
+      setPrepError(e?.message ?? 'Sample prep failed.');
+    } finally {
+      setPrepBusy(false);
+    }
+  };
+
 
   const buildWells = () => {
     let fill = `M0,${wellH}`;
@@ -958,6 +1044,178 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           e.target.value = '';
         }}
       />
+
+      {/* Sample prep / fractionation: generates fraction FASTA files and lets you load fractions into lanes */}
+      <div
+        style={{
+          width: slabW,
+          margin: '0 auto 1rem auto',
+          padding: '0.75rem 1rem',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem'}}>
+          <div style={{ fontWeight: 600 }}>SamplePrep → Fractions (FASTA)</div>
+          <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+            Outputs FASTA only · Fractions run as separate lanes · 7 fractions
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.75rem', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>Input FASTA</div>
+            <input
+              type="file"
+              accept=".fasta,.fa"
+              onChange={(e) => setPrepFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>Method</div>
+            <select
+              value={prepMethod}
+              onChange={(e) => {
+                setPrepMethod(e.target.value as any);
+                setPrepError(null);
+              }}
+            >
+              <option value="size_exclusion">Size exclusion</option>
+              <option value="ion_exchange">Ion exchange</option>
+              <option value="affinity">Affinity (His)</option>
+            </select>
+          </div>
+
+          {prepMethod === 'size_exclusion' && (
+            <>
+              <div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>Min MW (kDa)</div>
+                <input
+                  type="number"
+                  value={prepMinKda}
+                  onChange={(e) => setPrepMinKda(Number(e.target.value))}
+                  style={{ width: '110px' }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>Max MW (kDa)</div>
+                <input
+                  type="number"
+                  value={prepMaxKda}
+                  onChange={(e) => setPrepMaxKda(Number(e.target.value))}
+                  style={{ width: '110px' }}
+                />
+              </div>
+            </>
+          )}
+
+          {prepMethod === 'ion_exchange' && (
+            <>
+              <div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>pH</div>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={prepPh}
+                  onChange={(e) => setPrepPh(Number(e.target.value))}
+                  style={{ width: '90px' }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>Mode</div>
+                <select value={prepIonMode} onChange={(e) => setPrepIonMode(e.target.value as any)}>
+                  <option value="cation">Cation exchange</option>
+                  <option value="anion">Anion exchange</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          <Button variant="contained" onClick={runSamplePrep} disabled={prepBusy || !prepFile}>
+            {prepBusy ? 'Running…' : 'Run Sample Prep'}
+          </Button>
+
+          {prepFractions.length > 0 && (
+            <Button
+              variant="outlined"
+              onClick={() => {
+                // Ensure enough lanes: lane 0 is standards, so we need +1
+                setWellsCount((prev) => Math.max(prev, prepFractions.length + 1));
+                prepFractions.forEach((f, i) => {
+                  loadProteinsToWell(i + 1, f.display_name ?? f.name, f.proteins ?? [], f.filename);
+                });
+              }}
+              disabled={prepFractions.length + 1 > maxWells}
+            >
+              Load all fractions into lanes 1–7
+            </Button>
+          )}
+        </div>
+
+        {prepError && (
+          <div style={{ marginTop: '0.5rem', color: '#b00020' }}>
+            {prepError}
+          </div>
+        )}
+
+        {prepFractions.length > 0 && (
+          <div style={{ marginTop: '0.75rem' }}>
+            <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Fractions</div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {prepFractions.map((f, idx) => (
+                <div
+                  key={f.name ?? idx}
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                    alignItems: 'center',
+                    padding: '0.5rem 0.75rem',
+                    border: '1px solid rgba(0,0,0,0.12)',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div style={{ minWidth: '140px', fontWeight: 600 }}>
+                    {f.display_name ?? f.name}
+                  </div>
+                  <div style={{ opacity: 0.85 }}>
+                    {f.count ?? (f.proteins?.length ?? 0)} proteins
+                  </div>
+
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => downloadFasta(f.fasta ?? '', f.filename ?? `${f.name ?? `fraction_${idx + 1}`}.fasta`)}
+                    disabled={!f.fasta}
+                  >
+                    Download FASTA
+                  </Button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>Load to lane</span>
+                    <select
+                      defaultValue={idx + 1}
+                      onChange={(e) => {
+                        const lane = Number(e.target.value);
+                        setWellsCount((prev) => Math.max(prev, lane + 1));
+                        loadProteinsToWell(lane, f.display_name ?? f.name, f.proteins ?? [], f.filename);
+                      }}
+                    >
+                      {Array.from({ length: Math.min(maxWells - 1, 20) }, (_, i) => i + 1).map((lane) => (
+                        <option key={lane} value={lane}>
+                          {lane}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Simulation */}
       <div className='gel-container' onClick={() => setTooltipData(null)} >
