@@ -116,3 +116,127 @@ def _bin_sorted(entries: List[ProteinEntry], fraction_count: int) -> List[List[P
         bin_idx = min(fraction_count - 1, max(0, bin_idx))
         bins[bin_idx].append(e)
     return bins
+
+def _entries_to_fasta(entries: List[ProteinEntry]) -> str:
+    out = StringIO()
+    recs = []
+    for e in entries:
+        recs.append(SeqRecord(seq=e.seq, id=e.id_str, description=""))
+        
+    # SeqRecord(seq=...) expects Seq; BioPython accepts str too, but be explicit if needed.
+    # To keep dependency minimal, just write manually if SeqRecord complains.
+    
+    try: 
+        SeqIO.write(recs, out, "fasta")
+        return out.getvalue()
+    except Exception:
+        # manual FASTA fallback
+        lines = []
+        for e in entries:
+            lines.append(f">{e.id_str}")
+            s = e.seq
+            for i in range(0, len(s), 60):
+                lines.append(s[i : i + 60])
+        return "\n".join(lines) + ("\n" if lines else "")
+
+def _entries_to_1de_protein_dicts(entries: List[ProteinEntry], *, start_id_num: int = 1) -> List[Dict]:
+    out: List[Dict] = []
+    for i, e in enumerate(entries):
+        out.append(
+            {
+                "name": e.name,
+                "moleularWeight": float(e.mw),
+                "color": "blue",
+                "id_num": start_id_num + i,
+                "id_str": e.id_str,
+            }
+        )
+    return out
+        
+def run_sample_prep(fasta_text: str, *, method: Method, fraction_count: int = 7, ph: float = 7.0, ion_mode: IonMode = "cation", min_kda: float = 20.0, max_kda: float = 200.0) -> List[Dict]:
+    if fraction_count != 7:
+        # Per current UI decision: keep 7 fractions fixed for now.
+        fraction_count = 7
+    
+    entries = _to_entries_from_fasta_text(fasta_text)
+    
+    # Produce fraction bins (list[list[ProteinEntry]])
+    bins: List[List[ProteinEntry]]
+    
+    if method == "size_exclusion":
+        # Convert kDa to Da
+        min_da = float(min_kda) * 1000.0
+        max_da = float(max_kda) * 1000.0
+        below = [e for e in entries if e.mw < min_da]
+        above = [e for e in entries if e.mw > max_da]
+        inside = [e for e in entries if min_da <= e.mw <= max_da]
+        inside_sorted = sorted(inside, key=lambda e: e.mw)
+        
+        # Two fixed buckets + remaining bins
+        remaining = max(0, fraction_count - 2)
+        inside_bins = _bin_sorted(inside_sorted, remaining) if remaining > 0 else []
+        
+        bins = []
+        bins.append(sorted(below, key=lambda e: e.mw))
+        bins.extend(inside_bins)
+        bins.append(sorted(above, key=lambda e: e.mw))
+        
+        # Ensure excatly fraction_count
+        if len(bins) < fraction_count:
+            bins.extend([[] for _ in range(fraction_count - len(bins))])
+        if len(bins) > fraction_count:
+            bins = bins[:fraction_count]
+    elif method == "ion_exchange":
+        # Compute net charge and sort depending on mode.
+        scored: List[Tuple[ProteinEntry, float]] = [(e, _estimate_net_charge(e.seq, ph)) for e in entries]
+        if ion_mode == "cation":
+            scored.sort(key=lambda t: t[1], reverse=True) # most positive first
+        else:
+            scored.sort(key=lambda t: t[1]) # most negative first
+        sorted_entries = [e for e, _ in scored]
+        bins = _bin_sorted(sorted_entries, fraction_count)
+    elif method == "affinity":
+        scored = [(e, _his_affinity_score(e.seq)) for e in entries]
+        scored.sort(key=lambda t: t[1], reverse=True)
+        sorted_entries = [e for e, _ in scored]
+        bins = _bin_sorted(sorted_entries, fraction_count) 
+    else:
+        raise ValueError(f"Unknown method: {method}")
+    
+    #Build response
+    out: List[Dict] = []
+    
+    # Keep id_num stable per fraction starting at 1 (each lane independent)
+    for i, b in enumerate(bins, start=1):
+        frac_name = f"fraction_{i}"
+        fasta = _entries_to_fasta(b)
+        proteins = _entries_to_1de_protein_dicts(b, start_id_num=1)
+        out.append(
+            {
+                "name": frac_name,
+                "display_name": frac_name,
+                "count": len(b),
+                "filename": f"{frac_name}.fasta",
+                "fasta": fasta,
+                "proteins": proteins,
+            }
+        )
+    return out
+
+def build_fractions_from_upload(upload_file, *, method: Method, fraction_count: int = 7, ph: float = 7.0, ion_mode: IonMode = "cation", min_kda: float = 20.0, max_kda: float = 200.0) -> List[Dict]:
+    try:
+        upload_file.file.seek(0)
+        raw = upload_file.file.read()
+        if isinstance(raw, bytes):
+            text = raw.decode("utf-8", errors="replace")
+        else:
+            text = str(raw)
+    except Exception as e:
+        raise ValueError(f"Failed to read uploaded file: {e}") from e
+    
+    return run_sample_prep(text, method=method, fraction_count=fraction_count, ph=ph, ion_mode=ion_mode, min_kda=min_kda, max_kda=max_kda)
+
+    
+
+
+            
