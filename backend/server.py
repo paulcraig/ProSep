@@ -1,10 +1,12 @@
 import uvicorn
 from fastapi import FastAPI
+from fastapi import Response
 from fastapi.middleware.cors import CORSMiddleware
 
 import backend.api.one_de_routes as one_de_routes
 import backend.api.two_de_routes as two_de_routes
 import backend.api.peptide_retention_routes as peptide_retention_routes
+import backend.api.sample_prep_routes as sample_prep_routes
 
 
 
@@ -41,6 +43,15 @@ Good luck developing!
 
 app = FastAPI()
 
+# @app.get("/")
+# def root():
+#     return {"message": "Ready to go"}
+
+# @app.get("/favicon.ico")
+# def favicon():
+#     # prevents the browser from spamming your logs with 404 for favicon
+#     return Response(status_code=204)
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
@@ -54,6 +65,7 @@ app.add_middleware(
 app.include_router(one_de_routes.router)
 app.include_router(two_de_routes.router)
 app.include_router(peptide_retention_routes.router)
+app.include_router(sample_prep_routes.router)
 
 ''' 
 NOTE FOR FUTURE DEVELOPERS:

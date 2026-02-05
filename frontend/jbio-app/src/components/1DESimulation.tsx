@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { API_URL } from '../config';
-import './1DESimulation.css'
+import './1DESimulation.css';
 
 import blackWire from '../assets/electrophoresis/blackwire.png'
 import redWire from '../assets/electrophoresis/redwire.png'
@@ -15,18 +15,6 @@ import UploadIcon from '@mui/icons-material/Upload';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import CloseIcon from '@mui/icons-material/Close'
-
-// --- Sample prep / fractionation (for running fractions as separate lanes) ---
-const [prepFile, setPrepFile]  = useState<File |null>(null);
-const [prepMethod, setPrepMethod] = useState<'ion_exchange' | 'size_exclusion' | 'affinity'>('size_exclusion');
-const [prepIonMode, setPrepIonMode] = useState<'cation' | 'anion'>('cation');
-const [prepPh, setPrepPh] = useState<number>(7.0);
-const [prepMinKda, setPrepMinKda] = useState<number>(20.0);
-const [prepMaxKda, setPrepMaxKda] = useState<number>(200.0);
-const [prepFractions, setPrepFractions] = useState<any[]>([]);
-const [prepBusy, setPrepBusy] = useState<boolean>(false);
-const [prepError, setPrepError] = useState<string | null>(null); 
-
 
 const standards = [
   { name: 'B-Galactosidase',    molecularWeight: 116250,  migrationDistance: 0, color: '#4dd0e1',   id_num: '6X1Q', id_str: 'pdb' },
@@ -58,6 +46,17 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const [wellsCount, setWellsCount] = useState(wells);
   const [voltageAmt, setVoltageAmt] = useState(voltage);
   const [acrylamidePct, setAcrylamidePct] = useState(acrylamide);
+
+  // --- Sample prep / fractionation (for running fractions as separate lanes) ---
+  const [prepFile, setPrepFile]  = useState<File |null>(null);
+  const [prepMethod, setPrepMethod] = useState<'ion_exchange' | 'size_exclusion' | 'affinity'>('size_exclusion');
+  const [prepIonMode, setPrepIonMode] = useState<'cation' | 'anion'>('cation');
+  const [prepPh, setPrepPh] = useState<number>(7.0);
+  const [prepMinKda, setPrepMinKda] = useState<number>(20.0);
+  const [prepMaxKda, setPrepMaxKda] = useState<number>(200.0);
+  const [prepFractions, setPrepFractions] = useState<any[]>([]);
+  const [prepBusy, setPrepBusy] = useState<boolean>(false);
+  const [prepError, setPrepError] = useState<string | null>(null); 
 
   const [zoom, setZoom] = useState(1);
   const [anchor, setAnchor] = useState(0.5);
