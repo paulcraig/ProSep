@@ -17,7 +17,7 @@ const TwoDE = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
-  const [simulationState, setSimulationState] = useState('ready'); // 'ready', 'ief-running', 'ief-complete', 'sds-running', 'complete'
+  const [simulationState, setSimulationState] = useState('ready'); // 'ready', 'ief-running', 'ief-complete', 'sds-transitioning', 'sds-running', 'complete'
   const [simulationProgress, setSimulationProgress] = useState(0);
 
   const [phRange, setPhRange] = useState({ min: 0, max: 14 });
@@ -257,8 +257,12 @@ const TwoDE = () => {
   const startSDS = () => {
     if (simulationState !== 'ief-complete') return;
 
+    // Go straight to SDS running with loading screen
     setSimulationState('sds-running');
+    proceedWithSDS();
+  };
 
+  const proceedWithSDS = () => {
     // Prepare data to send to the backend
     const data = {
       proteins: dots.map(dot => ({
@@ -604,6 +608,38 @@ const TwoDE = () => {
       ctx.fillStyle = CANVAS_BG_COLOR;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Show loading screen during SDS simulation
+      if (simulationState === 'sds-running') {
+        // Draw loading indicator
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const spinnerRadius = 30;
+        const spinnerLineWidth = 4;
+
+        // Rotating spinner
+        const rotation = (Date.now() % 2000) / 2000 * Math.PI * 2;
+        ctx.strokeStyle = 'rgba(100, 150, 200, 0.8)';
+        ctx.lineWidth = spinnerLineWidth;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, spinnerRadius, rotation, rotation + Math.PI * 1.5);
+        ctx.stroke();
+
+        // Loading text
+        ctx.fillStyle = '#B0C4DE';
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Running Second Dimension...', centerX, centerY + 60);
+        
+        // Progress percentage
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#A0AEC0';
+        ctx.fillText('Computing protein positions', centerX, centerY + 85);
+
+        requestAnimationFrame(draw);
+        return;
+      }
+
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'left';
 
@@ -691,7 +727,18 @@ const TwoDE = () => {
             ctx.save();
             ctx.fillStyle = '#FFFFFF';
             ctx.translate(15, y + 5);
-            ctx.fillText(`${Math.round(mw).toLocaleString()} Da.`, 0, 0);
+            
+            
+            var short_value = Math.round(mw).toLocaleString()
+
+            //if short_value is greater than 1000 then display in KDa
+            if(mw >= 1000){
+              short_value = (mw / 1000).toFixed(2) + ' KDa';
+            }else{
+              short_value = short_value + ' Da';
+            }
+
+            ctx.fillText(`${short_value}`, 0, 0);
             ctx.restore();
           }
         } else {
@@ -780,6 +827,9 @@ const TwoDE = () => {
 
       // Labels
       const drawLabels = () => {
+        // Only show labels during SDS phases
+        if (!['sds-running', 'complete'].includes(simulationState)) return;
+        
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.fillText('pI', canvas.width / 2, canvas.height - 10);
@@ -920,6 +970,8 @@ const TwoDE = () => {
         }
       };
 
+
+
       // Perform drawing steps
       drawLoadingZone();
       drawIEFAndGradient();
@@ -1029,33 +1081,47 @@ const TwoDE = () => {
               />
             </label>
 
-            <button
-              className="twoDE-button"
-              style={{
-                opacity: simulationState === 'ief-running' ? 0.5 : 1,
-                cursor: simulationState === 'ready' ? 'pointer' : 'not-allowed'
-              }}
-              onClick={startIEF}
-              disabled={simulationState !== 'ready'}
-              onMouseOver={buttonHoverEffect}
-              onMouseOut={buttonLeaveEffect}
-            >
-              First Dimension
-            </button>
-            {/* Second dimension button */}
-            <button
-              className="twoDE-button"
-              style={{
-                opacity: simulationState !== 'ief-complete' ? 0.5 : 1,
-                cursor: simulationState === 'ief-complete' ? 'pointer' : 'not-allowed'
-              }}
-              onClick={startSDS}
-              disabled={simulationState !== 'ief-complete'}
-              onMouseOver={buttonHoverEffect}
-              onMouseOut={buttonLeaveEffect}
-            >
-              Second Dimension
-            </button>
+            <div className="dimension-button-group">
+              
+              <button
+                
+                className={`twoDE-button dimension-button ${
+                  simulationState === 'ready' ? 'ready' : 
+                  simulationState === 'ief-running' ? 'running' : 
+                  'disabled'
+                }`}
+                
+                style={{cursor: simulationState === 'ready' ? 'pointer' : 'not-allowed'}}
+                onClick={startIEF}
+                disabled={simulationState !== 'ready'}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  First Dimension   
+                  </span>
+              </button>
+
+              <div className={`dimension-separator ${simulationState !== 'ready' ? 'active' : ''}`}></div>
+
+              <button
+                className={`twoDE-button dimension-button ${
+                  simulationState === 'ief-complete' ? 'ready' : 
+                  simulationState === 'sds-running' ? 'running' : 
+                  simulationState === 'complete' ? 'active' :
+                  'disabled'
+                }`}
+                style={{
+                  cursor: simulationState === 'ief-complete' ? 'pointer' : 'not-allowed'
+                }}
+                onClick={startSDS}
+                disabled={simulationState !== 'ief-complete'}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Second Dimension
+                  </span>
+              </button>
+            </div>
+
+
             {/* Reset button */}
             <button
               className="twoDE-button icon"
