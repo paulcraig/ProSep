@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# This file exists to set variables, so SC thinks they are unused
+# shellcheck disable=SC2034
 
 BACKEND_SERVICE="prosep-backend.service"
 APACHE_SERVICE="apache2"
