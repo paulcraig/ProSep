@@ -56,6 +56,6 @@ jobs:
       - name: Scripts Folder Shellcheck
         uses: ludeeus/action-shellcheck@2.0.0
         env:
-          SHELLCHECK_OPTS: -x
+          SHELLCHECK_OPTS: -x -P scripts
         with:
           scandir: "scripts"
