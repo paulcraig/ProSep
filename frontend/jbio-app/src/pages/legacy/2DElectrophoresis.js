@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import './2DElectrophoresis.extracted.css';
 import { API_URL } from '../../config';
 import axios from 'axios';
-
+import ProteolyticDigestion from '../ProteolyticDigestion';
+import { Button, Grid } from '@mui/material';
 
 const TwoDE = () => {
   // A bunch of frontend states to control the UI
@@ -19,7 +20,7 @@ const TwoDE = () => {
   const [dragCounter, setDragCounter] = useState(0);
   const [simulationState, setSimulationState] = useState('ready'); // 'ready', 'ief-running', 'ief-complete', 'sds-transitioning', 'sds-running', 'complete'
   const [simulationProgress, setSimulationProgress] = useState(0);
-
+const [showProteinSepertion,setshowProteinSepertion] = useState(false);
   const [phRange, setPhRange] = useState({ min: 0, max: 14 });
   const [yAxisMode, setYAxisMode] = useState('mw'); // 'mw' or 'distance'
   const [isUploading, setIsUploading] = useState(false);
@@ -1048,6 +1049,8 @@ const TwoDE = () => {
 
   return (
     <div>
+      <Grid container size={12}>
+      <Grid size={showProteinSepertion ? 8 : 12}>
       <div className='simulatorBoxTwoDE'>
 
         <div className="twoDE-controls-col" >
@@ -1127,6 +1130,9 @@ const TwoDE = () => {
               {yAxisMode === 'mw' ? 'Show Distance' : 'Show MW'}
               {/* YAXIS BUTTON ABOVE ME */}
             </button> 
+            <Button onClick={() => {
+              setshowProteinSepertion(!showProteinSepertion)
+            }}>show Protein Sepertion</Button>
           </div>
 
           {/* pH Range Slider, disabled during simulation */}
@@ -1397,6 +1403,13 @@ const TwoDE = () => {
 
 
       </div>
+       </Grid>
+       {showProteinSepertion ? <Grid size={4}>
+        <ProteolyticDigestion protein={selectedDot}></ProteolyticDigestion>
+
+       </Grid> : <div></div>}
+       
+       </Grid>
     </div>
   );
 };
