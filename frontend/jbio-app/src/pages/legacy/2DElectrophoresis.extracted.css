@@ -300,8 +300,7 @@
 
 /* Dimension button transitions and states */
 .dimension-button {
-  position: relative;
-  transition: all 0.3s ease;
+
 }
 
 .dimension-button.disabled {
@@ -314,31 +313,6 @@
   border-color: #3a3a3a;
 }
 
-.dimension-button.active {
-  background: linear-gradient(135deg, #2a5f3a 0%, #1a3a2a 100%);
-  border-color: #4a7a5a;
-  color: #90EE90;
-}
-
-.dimension-button.active:hover {
-  background: linear-gradient(135deg, #3a7f4a 0%, #2a5a3a 100%);
-  border-color: #6a9a7a;
-}
-
-.dimension-button.ready {
-  background: linear-gradient(135deg, #3a5a7a 0%, #1a3a5a 100%);
-  border-color: #4a7a9a;
-  color: #B0C4DE;
-}
-
-.dimension-button.ready:hover {
-  background: linear-gradient(135deg, #4a7a9a 0%, #2a5a7a 100%);
-  border-color: #6a9aba;
-}
-
-.dimension-button.running {
-  animation: pulse-button 1.5s ease-in-out infinite;
-}
 
 @keyframes pulse-button {
   0%, 100% {
@@ -365,71 +339,11 @@
   margin-left: 6px;
 }
 
-.dimension-indicator.active {
-  background-color: #4CAF50;
-  color: #ffffff;
-}
-
-.dimension-indicator.waiting {
-  background-color: #FF9800;
-  color: #ffffff;
-  animation: pulse-badge 1.5s ease-in-out infinite;
-}
-
 @keyframes pulse-badge {
   0%, 100% {
     transform: scale(1);
   }
   50% {
     transform: scale(1.1);
-  }
-}
-
-/* Dimension separator */
-.dimension-separator {
-  width: 1px;
-  height: 40px;
-  background: linear-gradient(to bottom, transparent, #4a4a4a, transparent);
-  margin: 0 8px;
-  opacity: 0.5;
-  transition: opacity 0.3s ease;
-}
-
-.dimension-separator.active {
-  opacity: 1;
-  background: linear-gradient(to bottom, transparent, #6aaa6a, transparent);
-}
-
-/* Dimension wrapper for grouped buttons */
-.dimension-button-group {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-
-.dimension-transition-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background-color: rgba(58, 58, 58, 0.3);
-  border-radius: 4px;
-  font-size: 12px;
-  color: #A0AEC0;
-  transition: all 0.3s ease;
-}
-
-.dimension-transition-indicator.showing {
-  background-color: rgba(100, 150, 200, 0.2);
-  color: #B0C4DE;
-  animation: fadeInOut 2s ease-in-out;
-}
-
-@keyframes fadeInOut {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
   }
 }

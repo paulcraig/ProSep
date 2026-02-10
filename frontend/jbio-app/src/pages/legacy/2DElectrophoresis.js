@@ -1082,42 +1082,19 @@ const TwoDE = () => {
             </label>
 
             <div className="dimension-button-group">
-              
               <button
-                
-                className={`twoDE-button dimension-button ${
-                  simulationState === 'ready' ? 'ready' : 
-                  simulationState === 'ief-running' ? 'running' : 
-                  'disabled'
-                }`}
-                
-                style={{cursor: simulationState === 'ready' ? 'pointer' : 'not-allowed'}}
-                onClick={startIEF}
-                disabled={simulationState !== 'ready'}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  First Dimension   
+                className={`twoDE-button dimension-button ${simulationState === 'ready' ? 'ready' : simulationState === 'ief-running' ? 'running' : 'disabled'}`} style={{cursor: simulationState === 'ready' ? 'pointer' : 'not-allowed'}} onClick={startIEF} disabled={simulationState !== 'ready'}>
+                  <span>
+                    {/* nbsp is a non breaking space. it's invisibile and i did it so the button fits. kind of jank but it works */}
+                  First Dimension&nbsp; 
                   </span>
               </button>
+            </div>
 
-              <div className={`dimension-separator ${simulationState !== 'ready' ? 'active' : ''}`}></div>
-
-              <button
-                className={`twoDE-button dimension-button ${
-                  simulationState === 'ief-complete' ? 'ready' : 
-                  simulationState === 'sds-running' ? 'running' : 
-                  simulationState === 'complete' ? 'active' :
-                  'disabled'
-                }`}
-                style={{
-                  cursor: simulationState === 'ief-complete' ? 'pointer' : 'not-allowed'
-                }}
-                onClick={startSDS}
-                disabled={simulationState !== 'ief-complete'}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  Second Dimension
-                  </span>
+            <div className="dimension-button-group">
+              <button 
+                className={`twoDE-button dimension-button ${simulationState === 'ief-complete' ? 'ready' : simulationState === 'sds-running' ? 'running' : simulationState === 'complete' ? 'active' :'disabled'}`} style={{cursor: simulationState === 'ief-complete' ? 'pointer' : 'not-allowed'}} onClick={startSDS} disabled={simulationState !== 'ief-complete'}>
+                <span> Second Dimension </span>
               </button>
             </div>
 
