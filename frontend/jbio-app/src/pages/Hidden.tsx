@@ -10,6 +10,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import CloseIcon from '@mui/icons-material/Close';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const KONAMI = [
   'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
@@ -29,6 +30,7 @@ const Hidden: React.FC = () => {
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [verifyPassword, setVerifyPassword] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Modal states:
   const [confirmModal, setConfirmModal] = useState<{show: boolean; title: string; message: string; action: () => void; isCheckout?: boolean; isDanger?: boolean; }>
@@ -59,6 +61,7 @@ const Hidden: React.FC = () => {
       } else {
         setPasswordStatus('wrong');
         setIsAuthenticated(false);
+        setShowPasswordReset(false);
         // Don't cache failed auth:
         localStorage.removeItem('admin-authenticated');
       }
@@ -137,6 +140,17 @@ const Hidden: React.FC = () => {
     });
 
     e.target.value = '';
+  };
+
+  const handleRefresh = () => {
+    if (!isAuthenticated) return;
+    
+    setIsRefreshing(true);
+    console.log('Refreshing app status and danger zone data...');
+    // API calls to refresh data TODO
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
   };
 
   // Mock data
@@ -274,7 +288,6 @@ const Hidden: React.FC = () => {
             {showPasswordReset && (
               <div className='password-reset-inputs'>
                 <div className='password-input-group'>
-                  <label className='reset-label'>New Password</label>
                   <input
                     type='password'
                     className='admin-input'
@@ -284,7 +297,6 @@ const Hidden: React.FC = () => {
                   />
                 </div>
                 <div className='password-input-group'>
-                  <label className='reset-label'>Verify Password</label>
                   <input
                     type='password'
                     className='admin-input'
@@ -302,7 +314,7 @@ const Hidden: React.FC = () => {
                 className='auth-button confirm-reset-button'
                 disabled={!newPassword || !verifyPassword || newPassword !== verifyPassword}
               >
-                Confirm Reset
+                Reset
               </button>
             )}
           </div>
@@ -314,7 +326,18 @@ const Hidden: React.FC = () => {
         {/* Server Health Section */}
         <div className='admin-section flex-section'>
           <div className={`admin-card ${!isAuthenticated ? 'disabled' : ''}`}>
-            <h3 className='section-header-inside'>App Status</h3>
+            <div className='status-header-with-refresh'>
+              <h3 className='section-header-inside'>App Status</h3>
+              <IconButton
+                size='small'
+                className={`refresh-button ${isRefreshing ? 'spinning' : ''}`}
+                onClick={handleRefresh}
+                disabled={!isAuthenticated || isRefreshing}
+                title='Refresh Status'
+              >
+                <RefreshIcon fontSize='small' />
+              </IconButton>
+            </div>
             
             <div className='health-grid'>
               {/* Version Info Box */}
@@ -335,7 +358,7 @@ const Hidden: React.FC = () => {
                 <div className='version-notes'>{versionInfo.notes}</div>
                 <div className='pr-list-compact'>
                   {versionInfo.prs.map(pr => (
-                    <a key={pr.id} href={pr.url} className='pr-link'>
+                    <a key={pr.id} href={pr.url} className='pr-link' target='_blank' rel='noopener noreferrer'>
                       #{pr.id} - {pr.title}
                     </a>
                   ))}
@@ -539,6 +562,7 @@ const Hidden: React.FC = () => {
       <div className='admin-section full-width'>
         <div className={`admin-card ${!isAuthenticated ? 'disabled' : ''}`}>
           <div className='section-header-with-upload'>
+            <h3 className='section-header-inside'>Home Page</h3>
             <input
               type='file'
               id='document-upload'
@@ -556,7 +580,6 @@ const Hidden: React.FC = () => {
             >
               <UploadFileIcon fontSize='small' />
             </IconButton>
-            <h3 className='section-header-inside'>Home Page</h3>
           </div>
 
           <ArtifactList

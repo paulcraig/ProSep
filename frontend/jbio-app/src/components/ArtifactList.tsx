@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef, useMemo, useRef, useCallback } from 'react';
 import { Document, Page } from 'react-pdf';
 import { pdfjs } from 'react-pdf';
 
@@ -51,6 +51,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   const CARD_HEIGHT = 250;
   
   const fetchingRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);  // New ref for the artifact-container
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -72,6 +73,21 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     visibleRows ? (CARD_HEIGHT + GAP) * visibleRows - GAP : undefined,
     [visibleRows]
   );
+
+  
+  // Function to check overflow and set overscroll behavior
+  const updateOverscrollBehavior = useCallback(() => {
+    const container = containerRef.current;
+    if (container) {
+      const hasOverflow = container.scrollHeight > container.clientHeight;
+      container.style.overscrollBehavior = hasOverflow ? 'contain' : 'auto';
+    }
+  }, []);
+
+  // Check overflow on mount and whenever artifacts or grid sizing changes
+  useEffect(() => {
+    updateOverscrollBehavior();
+  }, [artifacts, gridTemplateColumns, maxHeight, updateOverscrollBehavior]);
 
   
   function getFileExtension(filename: string): string {
@@ -370,6 +386,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     <Box>
       <Box
         className='artifact-container'
+        ref={containerRef}  // Attach the ref
         sx={{
           gridTemplateColumns,
           maxHeight: maxHeight ? `${maxHeight}px` : 'none',

@@ -175,16 +175,29 @@
 .section-header-with-upload {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
 .section-header-with-upload .section-header-inside { margin: 0; }
+
+/* Status Header with Refresh */
+.status-header-with-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.status-header-with-refresh .section-header-inside { margin: 0; }
+
 .hidden-file-input { display: none; }
 
 /* Icon Buttons */
 .upload-icon-button,
-.lock-toggle {
+.lock-toggle,
+.refresh-button {
   color: var(--text) !important;
   transition: color 0.2s ease !important;
   padding: 0.125rem !important;
@@ -196,25 +209,41 @@
 }
 
 .upload-icon-button:hover:not(:disabled),
-.lock-toggle:hover:not(:disabled) {
+.lock-toggle:hover:not(:disabled),
+.refresh-button:hover:not(:disabled) {
   color: var(--accent) !important;
 }
 
 .upload-icon-button:hover:not(:disabled) { background-color: transparent !important; }
 
 .upload-icon-button:focus,
-.lock-toggle:focus {
+.lock-toggle:focus,
+.refresh-button:focus {
   outline: none !important;
 }
 
 .upload-icon-button:disabled,
 .lock-toggle:disabled,
+.refresh-button:disabled,
 .reset-password-toggle:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-.upload-icon-button .MuiTouchRipple-root { display: none !important; }
+.upload-icon-button .MuiTouchRipple-root,
+.refresh-button .MuiTouchRipple-root { 
+  display: none !important; 
+}
+
+/* Refresh Button Spinning Animation */
+.refresh-button.spinning svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 .reset-password-toggle {
   color: var(--text) !important;
@@ -424,7 +453,6 @@
 .interval-input {
   background: var(--sub-background);
   border: none;
-  text-decoration: underline;
   color: var(--text);
   font-size: 0.85rem;
   width: 2ch;

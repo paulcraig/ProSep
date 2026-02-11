@@ -23,10 +23,10 @@ function App() {
   const pages = [
     { id: 1, icon: <HomeIcon />, component: <About />, label: 'Project Information' },
     ...(useHiddenUnlock() ? [{ id: 99, icon: <HiddenIcon />, component: <Hidden />, label: 'Team Information' }] : []),
-    { id: 2, icon: <OneDEIcon />, component: <OneDE />, label: '1D Electrophoresis' },
-    { id: 3, icon: <TwoDEIcon />, component: <TwoDE />, label: '2D Electrophoresis' },
-    { id: 4, icon: <InsightsIcon/>, component: <PeptideRetention />, label: 'Peptide Retention' },
-    { id: 5, icon: <InsightsIcon/>, component: <ProteolyticDigestion />, label: 'Proteolytic Digestion' },
+    { id: 2, icon: <OneDEIcon width="48" height="48" />, component: <OneDE />, label: '1D Electrophoresis' },
+    { id: 3, icon: <TwoDEIcon width="48" height="48" />, component: <TwoDE />, label: '2D Electrophoresis' },
+    { id: 4, icon: <InsightsIcon />, component: <PeptideRetention />, label: 'Peptide Retention' },
+    { id: 5, icon: <InsightsIcon />, component: <ProteolyticDigestion />, label: 'Proteolytic Digestion' },
     { id: 6, icon: <GitHubIcon />, link: 'https://github.com/paulcraig/ProSep', label: 'GitHub Repository' },
   ];
 
