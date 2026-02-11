@@ -48,9 +48,9 @@ class TestProtein(unittest.TestCase):
              self.assertEqual(achual.keys(),expected.keys()) #had trouble comparing entire dict when I know they would be the same
     def test_find_one_link(self):
         #Tests finding links to external websites for each protein
-        protiens:dict = Protein.parse_protein("backend/tests\data/twoProteins.fasta")
+        proteins: dict = Protein.parse_protein("backend/tests/data/twoProteins.fasta")
         notExpected = 0
-        for key in protiens.keys():
+        for key in proteins.keys():
             achual = Protein.find_links(key)
             self.assertNotEqual(notExpected,achual)
     def test_get_mw(self):
