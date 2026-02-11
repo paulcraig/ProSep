@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import backend.api.auth_routes as auth_routes
 import backend.api.one_de_routes as one_de_routes
 import backend.api.two_de_routes as two_de_routes
 import backend.api.artifact_routes as artifact_routes
@@ -52,6 +53,7 @@ app.add_middleware(
 )
 
 # Routers
+app.include_router(auth_routes.router)
 app.include_router(one_de_routes.router)
 app.include_router(two_de_routes.router)
 app.include_router(artifact_routes.router)

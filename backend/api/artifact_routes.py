@@ -2,8 +2,11 @@ import os, shutil
 
 from pathlib import Path
 from pydantic import BaseModel
+
 from fastapi.responses import FileResponse
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+
+from backend.api.auth_routes import verify_admin_header
 from backend.logic.artifact_utils import MetadataManager, PreviewGenerator
 
 
@@ -20,7 +23,7 @@ def list_artifacts(group: str) -> list[dict]:
 
 
 @router.post("/{group}/reorder")
-def reorder_artifacts(group: str, request: ReorderRequest) -> dict:
+def reorder_artifacts(group: str, request: ReorderRequest, admin_hash: str = Depends(verify_admin_header)) -> dict:
     MetadataManager.reorder_files(group, request.file_order)
     return {"success": True, "reordered": len(request.file_order)}
 
@@ -42,7 +45,7 @@ def download_artifact(group: str, filename: str):
 
 
 @router.post("/{group}")
-def upload_artifact(group: str, file: UploadFile = File(...)) -> dict:
+def upload_artifact(group: str, file: UploadFile = File(...), admin_hash: str = Depends(verify_admin_header)) -> dict:
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing filename")
 
@@ -60,7 +63,7 @@ def upload_artifact(group: str, file: UploadFile = File(...)) -> dict:
 
 
 @router.put("/{group}/{filename}/replace")
-def replace_artifact(group: str, filename: str, file: UploadFile = File(...)) -> dict:
+def replace_artifact(group: str, filename: str, file: UploadFile = File(...), admin_hash: str = Depends(verify_admin_header)) -> dict:
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing uploaded filename")
 
@@ -87,7 +90,7 @@ def replace_artifact(group: str, filename: str, file: UploadFile = File(...)) ->
 
 
 @router.delete("/{group}/{filename}")
-def delete_artifact(group: str, filename: str) -> dict:
+def delete_artifact(group: str, filename: str, admin_hash: str = Depends(verify_admin_header)) -> dict:
     safe_name = Path(filename).name
     files_dir = MetadataManager.get_group_dir(group)
     path = files_dir / safe_name

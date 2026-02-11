@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+
 import ArtifactList, { ArtifactListRef } from '../components/ArtifactList';
+import { API_URL } from '../config';
 import './Hidden.css';
 
 import { IconButton } from '@mui/material';
@@ -12,6 +14,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
+
 const KONAMI = [
   'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
   'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
@@ -20,19 +23,22 @@ const KONAMI = [
 
 
 const Hidden: React.FC = () => {
-  const [password, setPassword] = useState('');
-  const [passwordStatus, setPasswordStatus] = useState<'idle' | 'checking' | 'correct' | 'wrong'>('idle');
-  const [isAuthenticated, setIsAuthenticated] = useState(() => { return localStorage.getItem('admin-authenticated') === 'true'; });
-  const [isLocked, setIsLocked] = useState(true);
-  const [updateServiceActive, setUpdateServiceActive] = useState(true);
-  const [updateInterval, setUpdateInterval] = useState(1);
-  const [checkoutVersion, setCheckoutVersion] = useState('v5.1.2');
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [verifyPassword, setVerifyPassword] = useState('');
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [password, setPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [authed, setAuthed] = useState(false);
+  const [verifyPw, setVerifyPw] = useState('');
+
+  const [showReset, setShowReset] = useState(false);
+  const [pwStatus, setPwStatus] = useState<'idle' | 'checking' | 'correct' | 'wrong'>('idle');
+  const [resetStatus, setResetStatus] = useState<'idle' | 'resetting' | 'success' | 'error'>('idle');
   
-  // Modal states:
+  const [updateInterval, setUpdateInterval] = useState(1);
+  const [updateServiceActive, setUpdateServiceActive] = useState(true);
+  
+  const [isLocked, setIsLocked] = useState(true);
+  const [checkoutVersion, setCheckoutVersion] = useState('v5.1.2');
+  
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{show: boolean; title: string; message: string; action: () => void; isCheckout?: boolean; isDanger?: boolean; }>
   ({
     show: false, title: '', message: '', action: () => {}, isCheckout: false, isDanger: false
@@ -40,38 +46,100 @@ const Hidden: React.FC = () => {
   const [lockOnCheckout, setLockOnCheckout] = useState(false);
   const artifactRef = useRef<ArtifactListRef>(null);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      setPasswordStatus('correct');
-      setPassword('admin'); // Set the cached password TODO
-    }
-  }, []);
-
-  // Mock password
-  const handlePasswordCheck = () => {
-    if (!password) return;
-    
-    setPasswordStatus('checking');
-    setTimeout(() => {
-      if (password === 'admin') {
-        setPasswordStatus('correct');
-        setIsAuthenticated(true);
-        // Cache successful auth:
-        localStorage.setItem('admin-authenticated', 'true');
-      } else {
-        setPasswordStatus('wrong');
-        setIsAuthenticated(false);
-        setShowPasswordReset(false);
-        // Don't cache failed auth:
-        localStorage.removeItem('admin-authenticated');
-      }
-    }, 500);
+  const hashPw = async (pw: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pw);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
-  const handleResetPassword = () => {
-    setShowPasswordReset(!showPasswordReset);
-    setNewPassword('');
-    setVerifyPassword('');
+  const updateAuthState = (success: boolean, hash?: string) => {
+    if (success) {
+      setPwStatus('correct');
+      setAuthed(true);
+      if (hash) localStorage.setItem('admin-password-hash', hash);
+    } else {
+      setPwStatus('wrong');
+      setAuthed(false);
+      setShowReset(false);
+      localStorage.removeItem('admin-password-hash');
+    }
+  };
+
+  const checkPw = async () => {
+    if (!password) return;
+    setPwStatus('checking');
+    
+    try {
+      const hash = await hashPw(password);
+      const statusRes = await fetch(`${API_URL}/admin/status`);
+      const statusData = await statusRes.json();
+
+      const endpoint = statusData.password_set ? '/admin/verify' : '/admin/set-initial';
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hashed_password: hash }),
+      });
+
+      const data = await res.json();
+      const valid = statusData.password_set ? data.valid : data.success;
+      updateAuthState(res.ok && valid, hash);
+    } catch (err) {
+      console.error('Password verification error:', err);
+      updateAuthState(false);
+    }
+  };
+
+  const toggleReset = () => {
+    setShowReset(!showReset);
+    setNewPw('');
+    setVerifyPw('');
+    setResetStatus('idle');
+  };
+
+  const submitReset = async () => {
+    if (!newPw || !verifyPw || newPw !== verifyPw) return;
+    setResetStatus('resetting');
+    
+    try {
+      const currentHash = localStorage.getItem('admin-password-hash');
+      if (!currentHash) {
+        setResetStatus('error');
+        return;
+      }
+
+      const newHash = await hashPw(newPw);
+      const res = await fetch(`${API_URL}/admin/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          current_hashed_password: currentHash,
+          new_hashed_password: newHash,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setResetStatus('success');
+        localStorage.setItem('admin-password-hash', newHash);
+        setPw(newPw);
+        setNewPw('');
+        setVerifyPw('');
+        setShowReset(false);
+        setTimeout(() => setResetStatus('idle'), 1500);
+        toggleReset();
+      } else {
+        setResetStatus('error');
+        setTimeout(() => setResetStatus('idle'), 2000);
+      }
+    } catch (err) {
+      console.error('Password reset error:', err);
+      setResetStatus('error');
+      setTimeout(() => setResetStatus('idle'), 2000);
+    }
   };
 
   const showConfirmation = (title: string, message: string, action: () => void, isCheckout = false, isDanger = false) => {
@@ -143,7 +211,7 @@ const Hidden: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    if (!isAuthenticated) return;
+    if (!authed) return;
     
     setIsRefreshing(true);
     console.log('Refreshing app status and danger zone data...');
@@ -244,55 +312,56 @@ const Hidden: React.FC = () => {
           
           {/* Authentication Row */}
           <div className='password-auth-container'>
-            {/* Row 1, Col 1: Single Password Input */}
+            {/* Single Password Input */}
             <div className='password-auth-inputs'>
               <div className='password-input-group'>
                 <div className='password-input-wrapper'>
                   <input
                     type='password'
-                    className={`admin-input password-input ${passwordStatus}`}
+                    className={`admin-input password-input ${pwStatus}`}
                     value={password}
                     onChange={(e) => {
-                      setPassword(e.target.value);
-                      setPasswordStatus('idle');
+                      setPw(e.target.value);
+                      setPwStatus('idle');
                     }}
-                    onKeyPress={(e) => e.key === 'Enter' && handlePasswordCheck()}
+                    onKeyPress={(e) => e.key === 'Enter' && checkPw()}
                     placeholder='Enter admin password'
                   />
-                  <div className={`password-status-indicator ${passwordStatus}`} />
+                  <div className={`password-status-indicator ${pwStatus}`} />
                 </div>
               </div>
             </div>
 
-            {/* Row 1, Col 2: Authenticate Button */}
+            {/* Authenticate Button */}
             <button 
               className='auth-button'
-              onClick={handlePasswordCheck}
+              onClick={checkPw}
               disabled={!password}
             >
               Authenticate
             </button>
 
-            {/* Row 1, Col 3: Reset Toggle */}
+            {/* Reset Toggle */}
             <IconButton
               size='small'
-              className='reset-password-toggle'
-              onClick={handleResetPassword}
-              disabled={!isAuthenticated}
-              title={showPasswordReset ? 'Cancel' : 'Reset Password'}
+              className={`reset-password-toggle ${resetStatus === 'success' || resetStatus === 'error' ? `flash-${resetStatus}` : ''}`}
+              onClick={toggleReset}
+              disabled={!authed}
+              title={showReset ? 'Cancel' : 'Reset Password'}
             >
-              {showPasswordReset ? <CloseIcon /> : <LockResetIcon />}
+              {showReset ? <CloseIcon /> : <LockResetIcon />}
             </IconButton>
 
-            {/* Row 2, Col 1: Password Reset Inputs */}
-            {showPasswordReset && (
+            {/* Password Reset Inputs */}
+            {showReset && (
               <div className='password-reset-inputs'>
                 <div className='password-input-group'>
                   <input
                     type='password'
                     className='admin-input'
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    value={newPw}
+                    onChange={(e) => setNewPw(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && submitReset()}
                     placeholder='Enter new password'
                   />
                 </div>
@@ -300,19 +369,21 @@ const Hidden: React.FC = () => {
                   <input
                     type='password'
                     className='admin-input'
-                    value={verifyPassword}
-                    onChange={(e) => setVerifyPassword(e.target.value)}
+                    value={verifyPw}
+                    onChange={(e) => setVerifyPw(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && submitReset()}
                     placeholder='Re-enter new password'
                   />
                 </div>
               </div>
             )}
 
-            {/* Row 2, Col 2: Confirm Reset Button */}
-            {showPasswordReset && (
+            {/* Confirm Reset Button */}
+            {showReset && (
               <button 
                 className='auth-button confirm-reset-button'
-                disabled={!newPassword || !verifyPassword || newPassword !== verifyPassword}
+                disabled={!newPw || !verifyPw || newPw !== verifyPw || resetStatus === 'resetting'}
+                onClick={submitReset}
               >
                 Reset
               </button>
@@ -325,14 +396,14 @@ const Hidden: React.FC = () => {
       <div className='dual-section-row'>
         {/* Server Health Section */}
         <div className='admin-section flex-section'>
-          <div className={`admin-card ${!isAuthenticated ? 'disabled' : ''}`}>
+          <div className={`admin-card ${!authed ? 'disabled' : ''}`}>
             <div className='status-header-with-refresh'>
               <h3 className='section-header-inside'>App Status</h3>
               <IconButton
                 size='small'
                 className={`refresh-button ${isRefreshing ? 'spinning' : ''}`}
                 onClick={handleRefresh}
-                disabled={!isAuthenticated || isRefreshing}
+                disabled={!authed || isRefreshing}
                 title='Refresh Status'
               >
                 <RefreshIcon fontSize='small' />
@@ -349,7 +420,7 @@ const Hidden: React.FC = () => {
                     className='lock-toggle'
                     onClick={() => setIsLocked(!isLocked)}
                     title={isLocked ? 'Version Locked' : 'Version Unlocked'}
-                    disabled={!isAuthenticated || !updateServiceActive}
+                    disabled={!authed || !updateServiceActive}
                   >
                     {isLocked ? <LockIcon fontSize='small' /> : <LockOpenIcon fontSize='small' />}
                   </IconButton>
@@ -427,7 +498,7 @@ const Hidden: React.FC = () => {
                       className='service-toggle-inline'
                       onClick={() => setUpdateServiceActive(!updateServiceActive)}
                       title={updateServiceActive ? 'Pause Service' : 'Resume Service'}
-                      disabled={!isAuthenticated}
+                      disabled={!authed}
                     >
                       {updateServiceActive ? <PauseIcon fontSize='small' /> : <PlayArrowIcon fontSize='small' />}
                     </IconButton>
@@ -435,7 +506,7 @@ const Hidden: React.FC = () => {
                 </div>
                 <div className='metric-item'>
                   <span className='metric-label'>Update Interval:</span>
-                  <div className={`interval-wrapper ${!updateServiceActive || !isAuthenticated ? 'disabled' : ''}`}>
+                  <div className={`interval-wrapper ${!updateServiceActive || !authed ? 'disabled' : ''}`}>
                     <input
                       type='number'
                       className='interval-input'
@@ -443,7 +514,7 @@ const Hidden: React.FC = () => {
                       onChange={(e) => setUpdateInterval(Number(e.target.value))}
                       min='1'
                       max='60'
-                      disabled={!updateServiceActive || !isAuthenticated}
+                      disabled={!updateServiceActive || !authed}
                     />
                     <span className='interval-unit'>min</span>
                   </div>
@@ -461,7 +532,7 @@ const Hidden: React.FC = () => {
 
         {/* Danger Zone Section */}
         <div className='admin-section danger-zone flex-section'>
-          <div className={`admin-card danger-card ${!isAuthenticated ? 'disabled' : ''}`}>
+          <div className={`admin-card danger-card ${!authed ? 'disabled' : ''}`}>
             <h3 className='section-header-inside danger-header'>Danger Zone</h3>
             
             <div className='danger-grid'>
@@ -473,7 +544,7 @@ const Hidden: React.FC = () => {
                     className='version-dropdown'
                     value={checkoutVersion}
                     onChange={(e) => setCheckoutVersion(e.target.value)}
-                    disabled={!isAuthenticated}
+                    disabled={!authed}
                   >
                     {availableVersions.map(version => (
                       <option key={version} value={version}>
@@ -483,7 +554,7 @@ const Hidden: React.FC = () => {
                   </select>
                   <button 
                     className='danger-button checkout-button' 
-                    disabled={!isAuthenticated || checkoutVersion === versionInfo.version}
+                    disabled={!authed || checkoutVersion === versionInfo.version}
                     onClick={() => showConfirmation(
                       'Checkout Version',
                       `Are you sure you want to checkout version ${checkoutVersion}? This will restart the application.`,
@@ -502,7 +573,7 @@ const Hidden: React.FC = () => {
                 <div className='metric-section-title danger-section-title'>Services</div>
                 <button 
                   className='danger-button restart-button' 
-                  disabled={!isAuthenticated}
+                  disabled={!authed}
                   onClick={() => showConfirmation(
                     'Restart Apache',
                     'Are you sure you want to restart the Apache (Frontend) service? This may cause brief downtime.',
@@ -516,7 +587,7 @@ const Hidden: React.FC = () => {
                 
                 <button 
                   className='danger-button restart-button' 
-                  disabled={!isAuthenticated}
+                  disabled={!authed}
                   onClick={() => showConfirmation(
                     'Restart Uvicorn',
                     'Are you sure you want to restart the Uvicorn (Backend) service? This may cause brief downtime.',
@@ -530,7 +601,7 @@ const Hidden: React.FC = () => {
                 
                 <button 
                   className='danger-button restart-button critical' 
-                  disabled={!isAuthenticated}
+                  disabled={!authed}
                   onClick={() => showConfirmation(
                     'Restart Application',
                     'Are you sure you want to restart BOTH services? This will cause downtime.',
@@ -543,7 +614,7 @@ const Hidden: React.FC = () => {
                 </button>
                 <button 
                   className='danger-button restart-button critical' 
-                  disabled={!isAuthenticated}
+                  disabled={!authed}
                   onClick={() => showConfirmation(
                     'Delete ALL Document Uploads',
                     'Are you sure you want to delete ALL uploaded files? This action cannot be undone!',
@@ -560,7 +631,7 @@ const Hidden: React.FC = () => {
         </div>
       </div>
       <div className='admin-section full-width'>
-        <div className={`admin-card ${!isAuthenticated ? 'disabled' : ''}`}>
+        <div className={`admin-card ${!authed ? 'disabled' : ''}`}>
           <div className='section-header-with-upload'>
             <h3 className='section-header-inside'>Home Page</h3>
             <input
@@ -569,13 +640,13 @@ const Hidden: React.FC = () => {
               className='hidden-file-input'
               onChange={handleFileChange}
               multiple
-              disabled={!isAuthenticated}
+              disabled={!authed}
             />
             <IconButton
               size='small'
               className='upload-icon-button'
               onClick={() => document.getElementById('document-upload')?.click()}
-              disabled={!isAuthenticated}
+              disabled={!authed}
               title='Upload Documents'
             >
               <UploadFileIcon fontSize='small' />
@@ -590,6 +661,7 @@ const Hidden: React.FC = () => {
             enableReplace={true}
             enableDelete={true}
             enableReorder={true}
+            passwordHash={localStorage.getItem('admin-password-hash') || undefined}
           />
         </div>
       </div>

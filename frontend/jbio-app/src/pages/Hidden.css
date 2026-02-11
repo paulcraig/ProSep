@@ -252,6 +252,21 @@
 
 .reset-password-toggle:hover:not(:disabled) { color: var(--accent) !important; }
 
+.reset-password-toggle.flash-success {
+  color: #27ae60 !important;
+  animation: flash 1.5s ease-in-out;
+}
+
+.reset-password-toggle.flash-error {
+  color: #e74c3c !important;
+  animation: flash 2s ease-in-out;
+}
+
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .lock-toggle:disabled { opacity: 0.5; }
 
 /* Divider */
@@ -455,9 +470,8 @@
   border: none;
   color: var(--text);
   font-size: 0.85rem;
-  width: 2ch;
-  min-width: 2ch;
-  max-width: 4ch;
+  min-width: 1ch;
+  max-width: 2ch;
   text-align: center;
   line-height: 1.5;
   border-radius: 0.25rem;

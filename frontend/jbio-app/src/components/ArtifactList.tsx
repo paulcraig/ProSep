@@ -28,6 +28,7 @@ interface ArtifactListProps {
   enableReorder?: boolean;
   visibleRows?: number;
   artifactsPerRow?: number;
+  passwordHash?: string;
 }
 
 export interface ArtifactListRef {
@@ -44,14 +45,15 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   enableDelete = true,
   enableReorder = true,
   visibleRows,
-  artifactsPerRow
+  artifactsPerRow,
+  passwordHash
 }, ref) => {
 
   const GAP = 16;
   const CARD_HEIGHT = 250;
   
   const fetchingRef = useRef(false);
-  const containerRef = useRef<HTMLDivElement>(null);  // New ref for the artifact-container
+  const containerRef = useRef<HTMLDivElement>(null);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -74,8 +76,6 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     [visibleRows]
   );
 
-  
-  // Function to check overflow and set overscroll behavior
   const updateOverscrollBehavior = useCallback(() => {
     const container = containerRef.current;
     if (container) {
@@ -84,7 +84,6 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     }
   }, []);
 
-  // Check overflow on mount and whenever artifacts or grid sizing changes
   useEffect(() => {
     updateOverscrollBehavior();
   }, [artifacts, gridTemplateColumns, maxHeight, updateOverscrollBehavior]);
@@ -143,9 +142,13 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   async function handleUpload(file: File): Promise<void> {
     const formData = new FormData();
     formData.append('file', file);
+    const headers: HeadersInit = {};
+    if (passwordHash) headers['X-Hashed-Password'] = passwordHash;
+    
     try {
       const res = await fetch(`${API_URL}/artifacts/${group}`, {
         method: 'POST',
+        headers,
         body: formData,
       });
 
@@ -165,8 +168,14 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
 
   async function handleDelete(name: string): Promise<void> {
+    const headers: HeadersInit = {};
+    if (passwordHash) headers['X-Hashed-Password'] = passwordHash;
+    
     try {
-      const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers
+      });
 
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
 
@@ -181,9 +190,13 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   async function handleReplace(name: string, file: File): Promise<void> {
     const formData = new FormData();
     formData.append('file', file);
+    const headers: HeadersInit = {};
+    if (passwordHash) headers['X-Hashed-Password'] = passwordHash;
+    
     try {
       const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(name)}/replace`, {
         method: 'PUT',
+        headers,
         body: formData,
       });
 
@@ -218,11 +231,14 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
 
   async function saveOrder(newOrder: Artifact[]): Promise<void> {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (passwordHash) headers['X-Hashed-Password'] = passwordHash;
+    
     try {
       const fileOrder = newOrder.map(f => f.name);
       const res = await fetch(`${API_URL}/artifacts/${group}/reorder`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ file_order: fileOrder }),
       });
 
