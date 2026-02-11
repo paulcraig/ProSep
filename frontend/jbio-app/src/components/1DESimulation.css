@@ -91,3 +91,26 @@
 /* .gel-wrapper, .gel-container, .toolbar, .chips {
   border: 1px solid red;
 } */
+
+.sample-prep-panel {
+  width: calc(100% - 2rem);
+  margin: 0 auto 1rem;
+  padding: 12px 14px;
+  border: 2px solid var(--accent, #6f7fd5);
+  border-radius: 8px;
+  background: rgba(30, 33, 38, 0.85);
+  color: #fff;
+}
+
+.sample-prep-panel h3,
+.sample-prep-panel p {
+  margin: 0 0 8px 0;
+}
+
+.sample-prep-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 8px;
+}

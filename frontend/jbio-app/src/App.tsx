@@ -2,8 +2,9 @@ import logo from './assets/basil-logo.png';
 import Dashboard from './components/Dashboard';
 import About from './pages/About';
 
-// import OneDE from './pages/1DE'
-import OneDESim from './components/1DE/1DESim';
+//import OneDE from './pages/1DE'
+//import OneDESim from './components/1DE/1DESim';
+import OneDESim from './pages/1DE';
 import TwoDE from './pages/legacy/2DElectrophoresis.js'
 
 import GitHubIcon from '@mui/icons-material/GitHub';
