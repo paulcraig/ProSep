@@ -1,7 +1,7 @@
 import unittest
 
-from two_de_simulation import Simulation_2de
-class Test_2d_Simulation(unittest.TestCase):
+from backend.logic.two_de_simulation import Simulation_2de
+class Test2dSimulation(unittest.TestCase):
     def test_parse_fasta_content(self):
         '''Given an amino acid sequence parse_fasta_content should parse it into a dict with relent information stored'''
         expected = [{'header': 
