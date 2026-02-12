@@ -1,4 +1,4 @@
-import subprocess, re, json, time
+import subprocess, re, json
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 
@@ -174,14 +174,32 @@ class StatusService:
 
     @classmethod
     def _is_service_active(cls, service_name: str) -> bool:
-        output = cls._run_command(["systemctl", "is-active", service_name])
-        return output == "active"
+        try:
+            result = subprocess.run(
+                ["systemctl", "is-active", service_name],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            return result.stdout.strip() == "active"
+        
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return False
     
 
     @classmethod
     def _is_service_enabled(cls, service_name: str) -> bool:
-        output = cls._run_command(["systemctl", "is-enabled", service_name])
-        return output == "enabled"
+        try:
+            result = subprocess.run(
+                ["systemctl", "is-enabled", service_name],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            return result.stdout.strip() == "enabled"
+        
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return False
     
 
     @classmethod
@@ -252,13 +270,17 @@ class StatusService:
             result.append(f"{days}d")
         
         if len(time_components) == 3:  # hh:mm:ss
-            hours, minutes, seconds = time_components
+            hours, minutes, _ = time_components
+
             if int(hours) > 0:
                 result.append(f"{int(hours)}h")
+
             if int(minutes) > 0:
                 result.append(f"{int(minutes)}m")
+
         elif len(time_components) == 2:  # mm:ss
-            minutes, seconds = time_components
+            minutes, _ = time_components
+
             if int(minutes) > 0:
                 result.append(f"{int(minutes)}m")
         
@@ -277,10 +299,6 @@ class StatusService:
 
     @classmethod
     def _parse_apache_metrics(cls) -> dict:
-        """
-        Parse Apache ProSep access logs for request metrics.
-        Returns: {requests_per_minute, error_rate, avg_response_time}
-        """
         try:
             result = subprocess.run(
                 ["tail", "-n", "1000", "/var/log/apache2/prosep_access.log"],
@@ -293,6 +311,7 @@ class StatusService:
                 return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
             
             lines = result.stdout.strip().split('\n')
+
             if not lines or lines == ['']:
                 return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
             
@@ -304,6 +323,7 @@ class StatusService:
                 status_match = re.search(r'" (\d{3}) ', line)
                 if status_match:
                     status = int(status_match.group(1))
+
                     if status >= 400:
                         error_count += 1
             
@@ -322,10 +342,6 @@ class StatusService:
 
     @classmethod
     def _parse_uvicorn_metrics(cls) -> dict:
-        """
-        Parse uvicorn.log file for request metrics.
-        Returns: {requests_per_minute, error_rate, avg_response_time}
-        """
         uvicorn_log = cls.SERVER_REPO_DIR / "uvicorn.log"
         
         try:
@@ -361,8 +377,6 @@ class StatusService:
                 return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
             
             error_rate = (error_count / total_requests * 100) if total_requests > 0 else 0.0
-            
-            # Estimate requests per minute from last 1000 lines
             requests_per_minute = min(total_requests, 100)
             
             return {
@@ -500,6 +514,7 @@ class StatusService:
             apache_metrics = cls._parse_apache_metrics() if apache_running else {
                 "requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0
             }
+
             uvicorn_metrics = cls._parse_uvicorn_metrics() if uvicorn_running else {
                 "requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0
             }
@@ -549,12 +564,16 @@ class StatusService:
     @classmethod
     def _get_timer_interval(cls) -> int:
         try:
-            output = cls._run_command([
-                "systemctl", "show", cls.DEPLOY_TIMER, 
-                "--property=TimersCalendar", "--value"
-            ])
+            result = subprocess.run(
+                ["systemctl", "show", cls.DEPLOY_TIMER, "--property=TimersCalendar", "--value"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
             
-            if output: # Parse systemd timer format ("*:0/5" = every 5 minutes):
+            # Parse systemd timer format ("*:0/5" = every 5 minutes):
+            if result.returncode == 0 and result.stdout.strip():
+                output = result.stdout.strip()
                 match = re.search(r'/(\d+)', output)
                 if match: return int(match.group(1))
 
