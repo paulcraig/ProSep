@@ -52,7 +52,10 @@ interface ServerHealth {
 
 
 const Hidden: React.FC = () => {
-  const [password, setPw] = useState("");
+  const [password, setPw] = useState(() => {
+    // Load cached password on mount
+    return localStorage.getItem("admin-cached-password") || "";
+  });
   const [newPw, setNewPw] = useState("");
   const [authed, setAuthed] = useState(false);
   const [authedPw, setAuthedPw] = useState("");
@@ -79,6 +82,15 @@ const Hidden: React.FC = () => {
   ({
     show: false, title: "", message: "", action: () => {}, isCheckout: false, isDanger: false
   });
+
+  // Cache password to localStorage whenever it changes
+  useEffect(() => {
+    if (password) {
+      localStorage.setItem("admin-cached-password", password);
+    } else {
+      localStorage.removeItem("admin-cached-password");
+    }
+  }, [password]);
 
 
   const getAuthHeaders = (): HeadersInit => {
@@ -178,6 +190,7 @@ const Hidden: React.FC = () => {
       setAuthedPw("");
       setShowReset(false);
       localStorage.removeItem("admin-encrypted-password");
+      localStorage.removeItem("admin-cached-password"); // Clear cached password on failed auth
     }
   };
 
@@ -474,14 +487,14 @@ const Hidden: React.FC = () => {
     if (process.env.NODE_ENV === "development") return "Local";
     
     const apacheHealthy = serverHealth.apache.serviceRunning && 
-                          serverHealth.apache.errorRate < 1;
+                          serverHealth.apache.errorRate <= 5;
 
     const uvicornHealthy = serverHealth.uvicorn.processRunning && 
-                           serverHealth.uvicorn.errorRate < 1;
+                           serverHealth.uvicorn.errorRate <= 5;
     
     if (apacheHealthy && uvicornHealthy) return "Good";
     if (!serverHealth.apache.serviceRunning || !serverHealth.uvicorn.processRunning) return "Bad";
-    if (serverHealth.apache.errorRate > 2 || serverHealth.uvicorn.errorRate > 2) return "Bad";
+    if (serverHealth.apache.errorRate > 10 || serverHealth.uvicorn.errorRate > 10) return "Bad";
     
     return "Poor";
   };
