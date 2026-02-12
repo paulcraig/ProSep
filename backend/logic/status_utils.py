@@ -1,12 +1,11 @@
 import subprocess, re, json
-
+from threading import Timer
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 
+from pathlib import Path
 from typing import Optional, Tuple
 from datetime import datetime
-from threading import Timer
-from pathlib import Path
 
 
 class StatusService:
@@ -339,12 +338,11 @@ class StatusService:
             )
             
             if result.returncode != 0 or not result.stdout.strip():
-                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+                return {"requests_per_minute": 0, "error_rate": 0.0}
             
             lines = result.stdout.strip().split('\n')
             total_requests = 0
             error_count = 0
-            response_times = []
             
             for line in lines:
                 if filter_requests and not any(m in line for m in ['"GET ', '"POST ', '"PUT ', '"DELETE ', '"PATCH ']):
@@ -357,24 +355,17 @@ class StatusService:
 
                 if status_match and int(status_match.group(1)) >= 500:
                     error_count += 1
-                
-                time_match = re.search(r' (\d+)$', line)
-
-                if time_match:
-                    try: response_times.append(int(time_match.group(1)) / 1000)
-                    except ValueError: pass
             
             if total_requests == 0:
-                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+                return {"requests_per_minute": 0, "error_rate": 0.0}
             
             return {
                 "requests_per_minute": min(total_requests, 100),
-                "error_rate": round((error_count / total_requests * 100), 2),
-                "avg_response_time": int(sum(response_times) / len(response_times)) if response_times else 0
+                "error_rate": round((error_count / total_requests * 100), 2)
             }
         
         except Exception:
-            return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            return {"requests_per_minute": 0, "error_rate": 0.0}
     
 
     @classmethod
@@ -498,6 +489,41 @@ class StatusService:
     
 
     @classmethod
+    def _get_service_memory(cls, service_name: str) -> int:
+        """Get memory usage in MB for a systemd service."""
+        try:
+            result = subprocess.run(
+                ["systemctl", "show", service_name, "--property=MainPID", "--value"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0 or not result.stdout.strip():
+                return 0
+            
+            pid = result.stdout.strip()
+            if pid == "0":
+                return 0
+            
+            mem_result = subprocess.run(
+                ["ps", "-o", "rss=", "-p", pid],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if mem_result.returncode == 0 and mem_result.stdout.strip():
+                kb = int(mem_result.stdout.strip())
+                return kb // 1024  # Convert to MB.
+            
+            return 0
+        
+        except Exception:
+            return 0
+    
+
+    @classmethod
     def get_performance_metrics(cls) -> dict:
         is_server = cls._is_server_environment()
         uvicorn_running = False
@@ -509,30 +535,35 @@ class StatusService:
             uptime_str = cls._get_build_age()
             
             apache_metrics = cls._parse_apache_metrics() if apache_running else {
-                "requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0
+                "requests_per_minute": 0, "error_rate": 0.0
             }
             uvicorn_metrics = cls._parse_uvicorn_metrics() if uvicorn_running else {
-                "requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0
+                "requests_per_minute": 0, "error_rate": 0.0
             }
+            
+            apache_memory = cls._get_service_memory(cls.APACHE_SERVICE) if apache_running else 0
+            uvicorn_memory = cls._get_service_memory(cls.BACKEND_SERVICE) if uvicorn_running else 0
 
         else:
             uvicorn_running = cls._is_uvicorn_running_dev()
             uptime_str = cls._get_uvicorn_uptime_dev() if uvicorn_running else "None"
-            apache_metrics = {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
-            uvicorn_metrics = {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            apache_metrics = {"requests_per_minute": 0, "error_rate": 0.0}
+            uvicorn_metrics = {"requests_per_minute": 0, "error_rate": 0.0}
+            apache_memory = 0
+            uvicorn_memory = 0
 
         return {
             "uptime": uptime_str,
             "apache": {
                 "requests_per_minute": apache_metrics["requests_per_minute"],
                 "error_rate": apache_metrics["error_rate"],
-                "avg_response_time": apache_metrics["avg_response_time"],
+                "memory_mb": apache_memory,
                 "service_running": apache_running
             },
             "uvicorn": {
                 "requests_per_minute": uvicorn_metrics["requests_per_minute"],
                 "error_rate": uvicorn_metrics["error_rate"],
-                "avg_response_time": uvicorn_metrics["avg_response_time"],
+                "memory_mb": uvicorn_memory,
                 "process_running": uvicorn_running
             }
         }

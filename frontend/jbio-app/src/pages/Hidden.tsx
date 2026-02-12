@@ -39,7 +39,7 @@ interface VersionInfo {
 interface ServiceMetrics {
   requestsPerMinute: number;
   errorRate: number;
-  avgResponseTime: number;
+  memoryMb: number;
   serviceRunning?: boolean;
   processRunning?: boolean;
 }
@@ -126,13 +126,13 @@ const Hidden: React.FC = () => {
           apache: {
             requestsPerMinute: data.apache.requests_per_minute,
             errorRate: data.apache.error_rate,
-            avgResponseTime: data.apache.avg_response_time,
+            memoryMb: data.apache.memory_mb,
             serviceRunning: data.apache.service_running
           },
           uvicorn: {
             requestsPerMinute: data.uvicorn.requests_per_minute,
             errorRate: data.uvicorn.error_rate,
-            avgResponseTime: data.uvicorn.avg_response_time,
+            memoryMb: data.uvicorn.memory_mb,
             processRunning: data.uvicorn.process_running
           }
         });
@@ -481,12 +481,10 @@ const Hidden: React.FC = () => {
     if (process.env.NODE_ENV === "development") return "Local";
     
     const apacheHealthy = serverHealth.apache.serviceRunning && 
-                          serverHealth.apache.errorRate < 1 && 
-                          serverHealth.apache.avgResponseTime < 100;
+                          serverHealth.apache.errorRate < 1;
 
     const uvicornHealthy = serverHealth.uvicorn.processRunning && 
-                           serverHealth.uvicorn.errorRate < 1 && 
-                           serverHealth.uvicorn.avgResponseTime < 100;
+                           serverHealth.uvicorn.errorRate < 1;
     
     if (apacheHealthy && uvicornHealthy) return "Good";
     if (!serverHealth.apache.serviceRunning || !serverHealth.uvicorn.processRunning) return "Bad";
@@ -674,11 +672,11 @@ const Hidden: React.FC = () => {
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">Error Rate:</span>
-                  <span className="metric-value">{serverHealth?.apache?.errorRate ?? "..."}%</span>
+                  <span className="metric-value">{serverHealth?.apache?.errorRate ?? "0"}%</span>
                 </div>
                 <div className="metric-item">
-                  <span className="metric-label">Response Time:</span>
-                  <span className="metric-value">{serverHealth?.apache?.avgResponseTime ?? "..."}ms</span>
+                  <span className="metric-label">Memory:</span>
+                  <span className="metric-value">{serverHealth?.apache?.memoryMb ?? "0"}MB</span>
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">Service Running:</span>
@@ -697,11 +695,11 @@ const Hidden: React.FC = () => {
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">Error Rate:</span>
-                  <span className="metric-value">{serverHealth?.uvicorn?.errorRate ?? "..."}%</span>
+                  <span className="metric-value">{serverHealth?.uvicorn?.errorRate ?? "0"}%</span>
                 </div>
                 <div className="metric-item">
-                  <span className="metric-label">Response Time:</span>
-                  <span className="metric-value">{serverHealth?.uvicorn?.avgResponseTime ?? "..."}ms</span>
+                  <span className="metric-label">Memory:</span>
+                  <span className="metric-value">{serverHealth?.uvicorn?.memoryMb ?? "0"}MB</span>
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">Process Running:</span>
