@@ -792,24 +792,11 @@ class StatusService:
                 "message": "Service restart only available on server"
             }
         
-        def _do_restart():
-            try:
-                subprocess.Popen(
-                    ["/usr/local/bin/prosep-control.sh", "restart"],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-
-            except Exception as e:
-                print(f"Restart error: {e}")
-        
-        # Schedule restart to run 2 seconds later:
-        timer = Timer(2.0, _do_restart)
-        timer.daemon = True
-        timer.start()
+        apache_result = cls.restart_apache()
+        uvicorn_result = cls.restart_uvicorn()
         
         return {
-            "success": True,
+            "success": apache_result["success"] and uvicorn_result["success"],
             "services": ["apache", "uvicorn"],
-            "message": "Application restart queued (2 second delay)"
+            "message": "Application restart initiated"
         }
