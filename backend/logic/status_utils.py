@@ -1,10 +1,12 @@
 import subprocess, re, json
+
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 
-from pathlib import Path
 from typing import Optional, Tuple
 from datetime import datetime
+from threading import Timer
+from pathlib import Path
 
 
 class StatusService:
@@ -250,9 +252,6 @@ class StatusService:
 
     @classmethod
     def _parse_elapsed_time(cls, etime: str) -> str:
-        """
-        Parse ps elapsed time to readable format like "2d 3h 45m"
-        """
         parts = etime.strip().split('-')
         
         if len(parts) == 2:  # Days present
@@ -288,106 +287,104 @@ class StatusService:
     
 
     @classmethod
-    def _get_system_uptime(cls) -> str:
-        uptime_output = cls._run_command(["uptime", "-p"])
-
-        if uptime_output:
-            return uptime_output.replace("up ", "")
+    def _get_build_age(cls) -> str:
+        repo_dir = cls._get_repo_dir()
+        if not repo_dir: return "Unknown"
         
-        return "Unknown"
-    
-
-    @classmethod
-    def _parse_apache_metrics(cls) -> dict:
+        current_tag, _ = cls._get_deployed_tag()
+        if not current_tag: return "Unknown"
+        
         try:
             result = subprocess.run(
-                ["tail", "-n", "1000", "/var/log/apache2/prosep_access.log"],
+                ["git", "log", "-1", "--format=%ct", current_tag],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
+                cwd=repo_dir
             )
             
-            if result.returncode != 0:
-                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            if result.returncode != 0 or not result.stdout.strip():
+                return "Unknown"
             
-            lines = result.stdout.strip().split('\n')
-
-            if not lines or lines == ['']:
-                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            tag_timestamp = int(result.stdout.strip())
+            tag_datetime = datetime.fromtimestamp(tag_timestamp)
+            now = datetime.now()
             
-            total_requests = len(lines)
-            error_count = 0
+            delta = now - tag_datetime
+            total_seconds = int(delta.total_seconds())
             
-            for line in lines:
-                # Count errors (4xx, 5xx status codes):
-                status_match = re.search(r'" (\d{3}) ', line)
-                if status_match:
-                    status = int(status_match.group(1))
-
-                    if status >= 400:
-                        error_count += 1
+            days = total_seconds // 86400
+            hours = (total_seconds % 86400) // 3600
             
-            error_rate = (error_count / total_requests * 100) if total_requests > 0 else 0.0
-            requests_per_minute = min(total_requests, 100)
+            if days >= 7:
+                weeks = days // 7
+                remaining_days = days % 7
+                return f"{weeks} week{'s' if weeks != 1 else ''}, {remaining_days} day{'s' if remaining_days != 1 else ''}"
             
-            return {
-                "requests_per_minute": requests_per_minute,
-                "error_rate": round(error_rate, 2),
-                "avg_response_time": 0  # Need %D or %T in LogFormat to get this...
-            }
+            else:
+                return f"{days} day{'s' if days != 1 else ''}, {hours} hour{'s' if hours != 1 else ''}"
         
         except Exception:
-            return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            return "Unknown"
     
 
     @classmethod
-    def _parse_uvicorn_metrics(cls) -> dict:
-        uvicorn_log = cls.SERVER_REPO_DIR / "uvicorn.log"
-        
+    def _parse_log_metrics(cls, log_path: str, filter_requests: bool = False) -> dict:
         try:
             result = subprocess.run(
-                ["tail", "-n", "1000", str(uvicorn_log)],
+                ["tail", "-n", "1000", log_path],
                 capture_output=True,
                 text=True,
                 timeout=5
             )
             
-            if result.returncode != 0:
+            if result.returncode != 0 or not result.stdout.strip():
                 return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
             
             lines = result.stdout.strip().split('\n')
-            if not lines or lines == ['']:
-                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
-            
             total_requests = 0
             error_count = 0
+            response_times = []
             
             for line in lines:
-                if '"GET ' in line or '"POST ' in line or '"PUT ' in line or '"DELETE ' in line or '"PATCH ' in line:
-                    total_requests += 1
-                    
-                    # Check for error status codes (4xx, 5xx):
-                    status_match = re.search(r'" (\d{3}) ', line)
-                    if status_match:
-                        status = int(status_match.group(1))
-                        if status >= 400:
-                            error_count += 1
+                if filter_requests and not any(m in line for m in ['"GET ', '"POST ', '"PUT ', '"DELETE ', '"PATCH ']):
+                    continue
+                
+                total_requests += 1
+                
+                # Count only 5xx errors:
+                status_match = re.search(r'" (\d{3}) ', line)
+
+                if status_match and int(status_match.group(1)) >= 500:
+                    error_count += 1
+                
+                time_match = re.search(r' (\d+)$', line)
+
+                if time_match:
+                    try: response_times.append(int(time_match.group(1)) / 1000)
+                    except ValueError: pass
             
             if total_requests == 0:
                 return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
             
-            error_rate = (error_count / total_requests * 100) if total_requests > 0 else 0.0
-            requests_per_minute = min(total_requests, 100)
-            
             return {
-                "requests_per_minute": requests_per_minute,
-                "error_rate": round(error_rate, 2),
-                "avg_response_time": 0 # Change later (no resp time)
+                "requests_per_minute": min(total_requests, 100),
+                "error_rate": round((error_count / total_requests * 100), 2),
+                "avg_response_time": int(sum(response_times) / len(response_times)) if response_times else 0
             }
         
         except Exception:
             return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
     
+
+    @classmethod
+    def _parse_apache_metrics(cls) -> dict:
+        return cls._parse_log_metrics("/var/log/apache2/prosep_access.log")
+    
+
+    @classmethod
+    def _parse_uvicorn_metrics(cls) -> dict:
+        return cls._parse_log_metrics(str(cls.SERVER_REPO_DIR / "uvicorn.log"), filter_requests=True)
     
 
     @classmethod
@@ -509,12 +506,11 @@ class StatusService:
         if is_server:
             apache_running = cls._is_service_active(cls.APACHE_SERVICE)
             uvicorn_running = cls._is_service_active(cls.BACKEND_SERVICE)
-            uptime_str = cls._get_system_uptime()
+            uptime_str = cls._get_build_age()
             
             apache_metrics = cls._parse_apache_metrics() if apache_running else {
                 "requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0
             }
-
             uvicorn_metrics = cls._parse_uvicorn_metrics() if uvicorn_running else {
                 "requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0
             }
@@ -796,11 +792,24 @@ class StatusService:
                 "message": "Service restart only available on server"
             }
         
-        apache_result = cls.restart_apache()
-        uvicorn_result = cls.restart_uvicorn()
+        def _do_restart():
+            try:
+                subprocess.Popen(
+                    ["/usr/local/bin/prosep-control.sh", "restart"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+
+            except Exception as e:
+                print(f"Restart error: {e}")
+        
+        # Schedule restart to run 2 seconds later:
+        timer = Timer(2.0, _do_restart)
+        timer.daemon = True
+        timer.start()
         
         return {
-            "success": apache_result["success"] and uvicorn_result["success"],
+            "success": True,
             "services": ["apache", "uvicorn"],
-            "message": "Application restart initiated"
+            "message": "Application restart queued (2 second delay)"
         }
