@@ -140,6 +140,7 @@ if [[ "$TAGLESS_DEPLOY" == true ]]; then
   echo "Restarting backend..."
   sudo systemctl restart "$BACKEND_SERVICE"
   
+  sudo systemctl start "$APACHE_SERVICE"
   sudo systemctl reload "$APACHE_SERVICE"
 
   echo "Tagless deploy complete: $CURRENT_BRANCH @ $CURRENT_COMMIT"
