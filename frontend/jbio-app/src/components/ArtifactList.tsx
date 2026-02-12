@@ -33,6 +33,7 @@ interface ArtifactListProps {
 
 export interface ArtifactListRef {
   uploadFile: (file: File) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -53,7 +54,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   const CARD_HEIGHT = 250;
   
   const fetchingRef = useRef(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);  // New ref for the artifact-container
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -71,11 +72,13 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     [artifactsPerRow]
   );
 
+  
   const maxHeight = useMemo(() =>
     visibleRows ? (CARD_HEIGHT + GAP) * visibleRows - GAP : undefined,
     [visibleRows]
   );
 
+  
   const updateOverscrollBehavior = useCallback(() => {
     const container = containerRef.current;
     if (container) {
@@ -83,6 +86,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
       container.style.overscrollBehavior = hasOverflow ? 'contain' : 'auto';
     }
   }, []);
+
 
   useEffect(() => {
     updateOverscrollBehavior();
@@ -164,6 +168,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
   useImperativeHandle(ref, () => ({
     uploadFile: handleUpload,
+    refresh: fetchArtifacts,
   }));
 
 

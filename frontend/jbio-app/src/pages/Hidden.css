@@ -254,12 +254,17 @@
 
 .reset-password-toggle.flash-success {
   color: #27ae60 !important;
-  animation: flash 1.5s ease-in-out;
+  animation: flash-subtle 1.5s ease-in-out;
 }
 
 .reset-password-toggle.flash-error {
   color: #e74c3c !important;
-  animation: flash 2s ease-in-out;
+  animation: flash-subtle 2s ease-in-out;
+}
+
+@keyframes flash-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 @keyframes flash {

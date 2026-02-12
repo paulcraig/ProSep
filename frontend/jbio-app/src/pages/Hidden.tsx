@@ -21,11 +21,40 @@ const KONAMI = [
   'b', 'a'
 ];
 
+interface PRInfo {
+  id: number;
+  title: string;
+  url: string;
+}
+
+interface VersionInfo {
+  version: string;
+  remoteVersion: string;
+  creationDate: string;
+  notes: string;
+  prs: PRInfo[];
+}
+
+interface ServiceMetrics {
+  requestsPerMinute: number;
+  errorRate: number;
+  avgResponseTime: number;
+  serviceRunning?: boolean;
+  processRunning?: boolean;
+}
+
+interface ServerHealth {
+  uptime: string;
+  apache: ServiceMetrics;
+  uvicorn: ServiceMetrics;
+}
+
 
 const Hidden: React.FC = () => {
   const [password, setPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [authed, setAuthed] = useState(false);
+  const [authedPw, setAuthedPw] = useState('');
   const [verifyPw, setVerifyPw] = useState('');
 
   const [showReset, setShowReset] = useState(false);
@@ -36,15 +65,92 @@ const Hidden: React.FC = () => {
   const [updateServiceActive, setUpdateServiceActive] = useState(true);
   
   const [isLocked, setIsLocked] = useState(true);
+  const [lockOnCheckout, setLockOnCheckout] = useState(false);
   const [checkoutVersion, setCheckoutVersion] = useState('v5.1.2');
+
+  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+  const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
+  const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   
+  const artifactRef = useRef<ArtifactListRef>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{show: boolean; title: string; message: string; action: () => void; isCheckout?: boolean; isDanger?: boolean; }>
   ({
     show: false, title: '', message: '', action: () => {}, isCheckout: false, isDanger: false
   });
-  const [lockOnCheckout, setLockOnCheckout] = useState(false);
-  const artifactRef = useRef<ArtifactListRef>(null);
+
+
+  const getAuthHeaders = (): HeadersInit => {
+    const headers: HeadersInit = {};
+    const hash = localStorage.getItem('admin-password-hash');
+    if (hash) headers['X-Hashed-Password'] = hash;
+    return headers;
+  };
+
+
+  const getAuthJsonHeaders = (): HeadersInit => {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    const hash = localStorage.getItem('admin-password-hash');
+    if (hash) headers['X-Hashed-Password'] = hash;
+    return headers;
+  };
+
+
+  const fetchData = async () => {
+    try {
+      const [versionRes, perfRes, autoUpdateRes] = await Promise.all([
+        fetch(`${API_URL}/status/version`),
+        fetch(`${API_URL}/status/performance`),
+        fetch(`${API_URL}/status/auto-update`)
+      ]);
+
+      if (versionRes.ok) {
+        const data = await versionRes.json();
+        setVersionInfo({
+          version: data.version,
+          remoteVersion: data.remote_version,
+          creationDate: data.creation_date,
+          notes: data.notes,
+          prs: data.prs
+        });
+        setAvailableVersions(data.available_versions);
+        setIsLocked(data.locked);
+        setCheckoutVersion(data.version);
+      }
+
+      if (perfRes.ok) {
+        const data = await perfRes.json();
+        setServerHealth({
+          uptime: data.uptime,
+          apache: {
+            requestsPerMinute: data.apache.requests_per_minute,
+            errorRate: data.apache.error_rate,
+            avgResponseTime: data.apache.avg_response_time,
+            serviceRunning: data.apache.service_running
+          },
+          uvicorn: {
+            requestsPerMinute: data.uvicorn.requests_per_minute,
+            errorRate: data.uvicorn.error_rate,
+            avgResponseTime: data.uvicorn.avg_response_time,
+            processRunning: data.uvicorn.process_running
+          }
+        });
+      }
+
+      if (autoUpdateRes.ok) {
+        const data = await autoUpdateRes.json();
+        setUpdateServiceActive(data.active);
+        setUpdateInterval(data.interval_minutes);
+      }
+    } catch (err) {
+      console.error('Failed to fetch status data:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
 
   const hashPw = async (pw: string): Promise<string> => {
     const encoder = new TextEncoder();
@@ -54,18 +160,24 @@ const Hidden: React.FC = () => {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
-  const updateAuthState = (success: boolean, hash?: string) => {
+
+  const updateAuthState = (success: boolean, hash?: string, pw?: string) => {
     if (success) {
       setPwStatus('correct');
       setAuthed(true);
+
       if (hash) localStorage.setItem('admin-password-hash', hash);
+      if (pw) setAuthedPw(pw);
+
     } else {
       setPwStatus('wrong');
       setAuthed(false);
+      setAuthedPw('');
       setShowReset(false);
       localStorage.removeItem('admin-password-hash');
     }
   };
+
 
   const checkPw = async () => {
     if (!password) return;
@@ -85,12 +197,13 @@ const Hidden: React.FC = () => {
 
       const data = await res.json();
       const valid = statusData.password_set ? data.valid : data.success;
-      updateAuthState(res.ok && valid, hash);
+      updateAuthState(res.ok && valid, hash, password);
     } catch (err) {
       console.error('Password verification error:', err);
       updateAuthState(false);
     }
   };
+
 
   const toggleReset = () => {
     setShowReset(!showReset);
@@ -98,6 +211,7 @@ const Hidden: React.FC = () => {
     setVerifyPw('');
     setResetStatus('idle');
   };
+
 
   const submitReset = async () => {
     if (!newPw || !verifyPw || newPw !== verifyPw) return;
@@ -126,21 +240,24 @@ const Hidden: React.FC = () => {
         setResetStatus('success');
         localStorage.setItem('admin-password-hash', newHash);
         setPw(newPw);
+        setAuthedPw(newPw);
         setNewPw('');
         setVerifyPw('');
         setShowReset(false);
         setTimeout(() => setResetStatus('idle'), 1500);
-        toggleReset();
+
       } else {
         setResetStatus('error');
         setTimeout(() => setResetStatus('idle'), 2000);
       }
+
     } catch (err) {
       console.error('Password reset error:', err);
       setResetStatus('error');
       setTimeout(() => setResetStatus('idle'), 2000);
     }
   };
+
 
   const showConfirmation = (title: string, message: string, action: () => void, isCheckout = false, isDanger = false) => {
     setConfirmModal({
@@ -156,6 +273,7 @@ const Hidden: React.FC = () => {
     }
   };
 
+
   const closeModal = () => {
     setConfirmModal({
       show: false,
@@ -168,36 +286,88 @@ const Hidden: React.FC = () => {
     setLockOnCheckout(false);
   };
 
+
   const handleConfirm = () => {
     confirmModal.action();
     closeModal();
   };
 
+
   // Action handlers:
-  const handleRestartApache = () => {
-    console.log('Restarting Apache...');
-    // API call here TODO
+  const handleRestartApache = async () => {
+    try {
+      const res = await fetch(`${API_URL}/status/restart/apache`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) console.log('Apache restart initiated');
+    } catch (err) {
+      console.error('Failed to restart Apache:', err);
+    }
   };
 
-  const handleRestartUvicorn = () => {
-    console.log('Restarting Uvicorn...');
-    // API call here TODO
+
+  const handleRestartUvicorn = async () => {
+    try {
+      const res = await fetch(`${API_URL}/status/restart/uvicorn`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) console.log('Uvicorn restart initiated');
+    } catch (err) {
+      console.error('Failed to restart Uvicorn:', err);
+    }
   };
 
-  const handleRestartBoth = () => {
-    console.log('Restarting both services...');
-    // API call here TODO
+
+  const handleRestartBoth = async () => {
+    try {
+      const res = await fetch(`${API_URL}/status/restart/app`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) console.log('App restart initiated');
+    } catch (err) {
+      console.error('Failed to restart app:', err);
+    }
   };
 
-  const handleDeleteUploads = () => {
-    console.log('Deleting all uploads...');
-    // API call here TODO
+
+  const handleDeleteUploads = async () => {
+    try {
+      const res = await fetch(`${API_URL}/artifacts`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`Deleted ${data.groups_deleted} artifact group(s)`);
+        if (artifactRef.current) {
+          artifactRef.current.refresh();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete uploads:', err);
+    }
   };
 
-  const handleCheckoutVersion = () => {
-    console.log(`Checking out version ${checkoutVersion}, lock: ${lockOnCheckout}`);
-    // API call here TODO
+
+  const handleCheckoutVersion = async () => {
+    try {
+      const res = await fetch(`${API_URL}/status/version/checkout`, {
+        method: 'POST',
+        headers: getAuthJsonHeaders(),
+        body: JSON.stringify({ version: checkoutVersion, lock: lockOnCheckout })
+      });
+      if (res.ok) {
+        console.log(`Checked out version ${checkoutVersion}`);
+        await fetchData();
+      }
+    } catch (err) {
+      console.error('Failed to checkout version:', err);
+    }
   };
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -210,53 +380,71 @@ const Hidden: React.FC = () => {
     e.target.value = '';
   };
 
-  const handleRefresh = () => {
+
+  const handleRefresh = async () => {
     if (!authed) return;
     
     setIsRefreshing(true);
-    console.log('Refreshing app status and danger zone data...');
-    // API calls to refresh data TODO
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1000);
+    await fetchData();
+    setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  // Mock data
-  const versionInfo = {
-    version: 'v5.1.2',
-    remoteVersion: 'v5.1.3',
-    creationDate: '2025-02-08',
-    notes: 'Performance improvements and bug fixes for long running processes with memory optimization',
-    prs: [
-      { id: 142, title: 'Fix memory leak in peptide retention', url: '#' },
-      { id: 141, title: 'Update dependencies', url: '#' },
-      { id: 140, title: 'Improve error handling', url: '#' }
-    ]
-  };
 
-  const availableVersions = ['v5.1.2', 'v5.1.1', 'v5.1.0', 'v5.0.3', 'v5.0.2'];
-
-  const serverHealth = {
-    uptime: '7d 14h 32m',
-    apache: {
-      requestsPerMinute: 3120,
-      errorRate: 0.02,
-      avgResponseTime: 28,
-      serviceRunning: true
-    },
-    uvicorn: {
-      requestsPerMinute: 2450,
-      errorRate: 0.15,
-      avgResponseTime: 42,
-      processRunning: true
+  const handleToggleAutoUpdate = async () => {
+    try {
+      const res = await fetch(`${API_URL}/status/auto-update/activate`, {
+        method: 'POST',
+        headers: getAuthJsonHeaders(),
+        body: JSON.stringify({ active: !updateServiceActive })
+      });
+      if (res.ok) {
+        setUpdateServiceActive(!updateServiceActive);
+      }
+    } catch (err) {
+      console.error('Failed to toggle auto-update:', err);
     }
   };
 
-  // Calculate server health:
+
+  const handleUpdateInterval = async (newInterval: number) => {
+    try {
+      const res = await fetch(`${API_URL}/status/auto-update/interval`, {
+        method: 'POST',
+        headers: getAuthJsonHeaders(),
+        body: JSON.stringify({ interval_minutes: newInterval })
+      });
+      if (res.ok) {
+        setUpdateInterval(newInterval);
+      }
+    } catch (err) {
+      console.error('Failed to update interval:', err);
+    }
+  };
+
+
+  const handleToggleLock = async () => {
+    try {
+      const res = await fetch(`${API_URL}/status/version/lock`, {
+        method: 'POST',
+        headers: getAuthJsonHeaders(),
+        body: JSON.stringify({ locked: !isLocked })
+      });
+      if (res.ok) {
+        setIsLocked(!isLocked);
+      }
+    } catch (err) {
+      console.error('Failed to toggle lock:', err);
+    }
+  };
+
+  
   const getServerHealth = () => {
+    if (!serverHealth) return 'Unknown';
+    
     const apacheHealthy = serverHealth.apache.serviceRunning && 
                           serverHealth.apache.errorRate < 1 && 
                           serverHealth.apache.avgResponseTime < 100;
+
     const uvicornHealthy = serverHealth.uvicorn.processRunning && 
                            serverHealth.uvicorn.errorRate < 1 && 
                            serverHealth.uvicorn.avgResponseTime < 100;
@@ -264,8 +452,10 @@ const Hidden: React.FC = () => {
     if (apacheHealthy && uvicornHealthy) return 'Good';
     if (!serverHealth.apache.serviceRunning || !serverHealth.uvicorn.processRunning) return 'Bad';
     if (serverHealth.apache.errorRate > 2 || serverHealth.uvicorn.errorRate > 2) return 'Bad';
+    
     return 'Poor';
   };
+
 
   return (
     <div className='hidden-page'>
@@ -336,7 +526,7 @@ const Hidden: React.FC = () => {
             <button 
               className='auth-button'
               onClick={checkPw}
-              disabled={!password}
+              disabled={!password || (authed && password === authedPw)}
             >
               Authenticate
             </button>
@@ -385,7 +575,7 @@ const Hidden: React.FC = () => {
                 disabled={!newPw || !verifyPw || newPw !== verifyPw || resetStatus === 'resetting'}
                 onClick={submitReset}
               >
-                Reset
+                Update
               </button>
             )}
           </div>
@@ -414,25 +604,25 @@ const Hidden: React.FC = () => {
               {/* Version Info Box */}
               <div className='metric-section version-box'>
                 <div className='version-header-row'>
-                  <span className='metric-section-title'>Tag {versionInfo.version}</span>
+                  <span className='metric-section-title'>Tag {versionInfo?.version || 'Loading...'}</span>
                   <IconButton
                     size='small'
                     className='lock-toggle'
-                    onClick={() => setIsLocked(!isLocked)}
+                    onClick={handleToggleLock}
                     title={isLocked ? 'Version Locked' : 'Version Unlocked'}
                     disabled={!authed || !updateServiceActive}
                   >
                     {isLocked ? <LockIcon fontSize='small' /> : <LockOpenIcon fontSize='small' />}
                   </IconButton>
                 </div>
-                <span className='version-date'>Created: {versionInfo.creationDate} • Remote {versionInfo.remoteVersion}</span>
-                <div className='version-notes'>{versionInfo.notes}</div>
+                <span className='version-date'>Created: {versionInfo?.creationDate || '...'} • Remote {versionInfo?.remoteVersion || '...'}</span>
+                <div className='version-notes'>{versionInfo?.notes || 'Loading...'}</div>
                 <div className='pr-list-compact'>
-                  {versionInfo.prs.map(pr => (
+                  {versionInfo?.prs?.map(pr => (
                     <a key={pr.id} href={pr.url} className='pr-link' target='_blank' rel='noopener noreferrer'>
                       #{pr.id} - {pr.title}
                     </a>
-                  ))}
+                  )) || null}
                 </div>
               </div>
 
@@ -441,20 +631,20 @@ const Hidden: React.FC = () => {
                 <div className='metric-section-title'>Apache (Frontend)</div>
                 <div className='metric-item'>
                   <span className='metric-label'>Req/min:</span>
-                  <span className='metric-value'>{serverHealth.apache.requestsPerMinute.toLocaleString()}</span>
+                  <span className='metric-value'>{serverHealth?.apache?.requestsPerMinute?.toLocaleString() || '...'}</span>
                 </div>
                 <div className='metric-item'>
                   <span className='metric-label'>Error Rate:</span>
-                  <span className='metric-value'>{serverHealth.apache.errorRate}%</span>
+                  <span className='metric-value'>{serverHealth?.apache?.errorRate ?? '...'}%</span>
                 </div>
                 <div className='metric-item'>
                   <span className='metric-label'>Response Time:</span>
-                  <span className='metric-value'>{serverHealth.apache.avgResponseTime}ms</span>
+                  <span className='metric-value'>{serverHealth?.apache?.avgResponseTime ?? '...'}ms</span>
                 </div>
                 <div className='metric-item'>
                   <span className='metric-label'>Service Running:</span>
-                  <span className={`status-badge ${serverHealth.apache.serviceRunning ? 'running' : 'stopped'}`}>
-                    {serverHealth.apache.serviceRunning ? 'Yes' : 'No'}
+                  <span className={`status-badge ${serverHealth?.apache?.serviceRunning ? 'running' : 'stopped'}`}>
+                    {serverHealth?.apache?.serviceRunning ? 'Yes' : 'No'}
                   </span>
                 </div>
               </div>
@@ -464,20 +654,20 @@ const Hidden: React.FC = () => {
                 <div className='metric-section-title'>Uvicorn (Backend)</div>
                 <div className='metric-item'>
                   <span className='metric-label'>Req/min:</span>
-                  <span className='metric-value'>{serverHealth.uvicorn.requestsPerMinute.toLocaleString()}</span>
+                  <span className='metric-value'>{serverHealth?.uvicorn?.requestsPerMinute?.toLocaleString() || '...'}</span>
                 </div>
                 <div className='metric-item'>
                   <span className='metric-label'>Error Rate:</span>
-                  <span className='metric-value'>{serverHealth.uvicorn.errorRate}%</span>
+                  <span className='metric-value'>{serverHealth?.uvicorn?.errorRate ?? '...'}%</span>
                 </div>
                 <div className='metric-item'>
                   <span className='metric-label'>Response Time:</span>
-                  <span className='metric-value'>{serverHealth.uvicorn.avgResponseTime}ms</span>
+                  <span className='metric-value'>{serverHealth?.uvicorn?.avgResponseTime ?? '...'}ms</span>
                 </div>
                 <div className='metric-item'>
                   <span className='metric-label'>Process Running:</span>
-                  <span className={`status-badge ${serverHealth.uvicorn.processRunning ? 'running' : 'stopped'}`}>
-                    {serverHealth.uvicorn.processRunning ? 'Yes' : 'No'}
+                  <span className={`status-badge ${serverHealth?.uvicorn?.processRunning ? 'running' : 'stopped'}`}>
+                    {serverHealth?.uvicorn?.processRunning ? 'Yes' : 'No'}
                   </span>
                 </div>
               </div>
@@ -487,7 +677,7 @@ const Hidden: React.FC = () => {
                 <div className='metric-section-title'>Sever (Host)</div>
                 <div className='metric-item'>
                   <span className='metric-label'>Uptime:</span>
-                  <span className='metric-value'>{serverHealth.uptime}</span>
+                  <span className='metric-value'>{serverHealth?.uptime || '...'}</span>
                 </div>
                 <div className='metric-item'>
                   <span className='metric-label'>Auto Update:</span>
@@ -496,7 +686,7 @@ const Hidden: React.FC = () => {
                     <IconButton
                       size='small'
                       className='service-toggle-inline'
-                      onClick={() => setUpdateServiceActive(!updateServiceActive)}
+                      onClick={handleToggleAutoUpdate}
                       title={updateServiceActive ? 'Pause Service' : 'Resume Service'}
                       disabled={!authed}
                     >
@@ -512,6 +702,7 @@ const Hidden: React.FC = () => {
                       className='interval-input'
                       value={updateInterval}
                       onChange={(e) => setUpdateInterval(Number(e.target.value))}
+                      onBlur={(e) => handleUpdateInterval(Number(e.target.value))}
                       min='1'
                       max='60'
                       disabled={!updateServiceActive || !authed}
@@ -548,13 +739,13 @@ const Hidden: React.FC = () => {
                   >
                     {availableVersions.map(version => (
                       <option key={version} value={version}>
-                        {version} {version === versionInfo.version ? '(current)' : ''}
+                        {version} {version === versionInfo?.version ? '(current)' : ''}
                       </option>
                     ))}
                   </select>
                   <button 
                     className='danger-button checkout-button' 
-                    disabled={!authed || checkoutVersion === versionInfo.version}
+                    disabled={!authed || checkoutVersion === versionInfo?.version}
                     onClick={() => showConfirmation(
                       'Checkout Version',
                       `Are you sure you want to checkout version ${checkoutVersion}? This will restart the application.`,
@@ -656,7 +847,6 @@ const Hidden: React.FC = () => {
           <ArtifactList
             group='about'
             ref={artifactRef}
-            visibleRows={1}
             enableDownload={true}
             enableReplace={true}
             enableDelete={true}

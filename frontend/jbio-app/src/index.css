@@ -20,25 +20,28 @@ code {
 /* Scrollbar styling */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--sub-background) var(--background);
+  scrollbar-color: var(--sub-background) transparent;
 }
 
 *::-webkit-scrollbar {
   width: 12px;
+  background: transparent;
 }
 
 *::-webkit-scrollbar-track {
-  background: var(--background);
-  border-radius: 6px;
+  background: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
   background: var(--sub-background);
   border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
   background: var(--text);
+  background-clip: padding-box;
 }
 
 /* Site Themes */

@@ -104,6 +104,16 @@ def delete_artifact(group: str, filename: str, admin_hash: str = Depends(verify_
     return {"deleted": safe_name}
 
 
+@router.delete("")
+def delete_all_artifacts(admin_hash: str = Depends(verify_admin_header)) -> dict:
+    groups_deleted = MetadataManager.delete_all()
+    return {
+        "success": True,
+        "groups_deleted": groups_deleted,
+        "message": f"Deleted {groups_deleted} artifact group(s)"
+    }
+
+
 @router.get("/{group}/{filename}/preview")
 def get_artifact_preview(group: str, filename: str):
     safe_name = Path(filename).name

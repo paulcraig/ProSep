@@ -1,4 +1,4 @@
-import fitz, json, time
+import fitz, json, time, shutil
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -118,6 +118,20 @@ class MetadataManager:
                 }
         
         MetadataManager.save(group, metadata)
+
+
+    @staticmethod
+    def delete_all() -> int:
+        if not BASE_DIR.exists():
+            return 0
+        
+        groups_deleted = 0
+        for group_dir in BASE_DIR.iterdir():
+            if group_dir.is_dir():
+                shutil.rmtree(group_dir)
+                groups_deleted += 1
+        
+        return groups_deleted
 
 
 class PreviewGenerator:
