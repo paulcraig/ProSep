@@ -748,24 +748,16 @@ class StatusService:
             }
         
         try:
-            result = subprocess.run(
+            subprocess.Popen(
                 ["systemctl", "restart", cls.BACKEND_SERVICE],
-                capture_output=True,
-                text=True,
-                timeout=30
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
             )
             
-            success = result.returncode == 0
-            
-            # Verify it's running
-            if success:
-                time.sleep(2)  # Give it a moment to start
-                success = cls._is_service_active(cls.BACKEND_SERVICE)
-            
             return {
-                "success": success,
+                "success": True,
                 "service": "uvicorn",
-                "message": "Uvicorn service restarted" if success else f"Restart failed: {result.stderr[:200]}"
+                "message": "Uvicorn service restart initiated"
             }
         
         except Exception as e:
@@ -785,32 +777,11 @@ class StatusService:
                 "message": "Service restart only available on server"
             }
         
-        try:
-            result = subprocess.run(
-                ["/usr/local/bin/prosep-control.sh", "restart"],
-                capture_output=True,
-                text=True,
-                timeout=60
-            )
-            
-            success = result.returncode == 0
-            
-            # Verify both are running
-            if success:
-                time.sleep(2)  # Give services a moment to start
-                apache_running = cls._is_service_active(cls.APACHE_SERVICE)
-                uvicorn_running = cls._is_service_active(cls.BACKEND_SERVICE)
-                success = apache_running and uvicorn_running
-            
-            return {
-                "success": success,
-                "services": ["apache", "uvicorn"],
-                "message": "Application restarted" if success else f"Restart failed: {result.stderr[:200]}"
-            }
+        apache_result = cls.restart_apache()
+        uvicorn_result = cls.restart_uvicorn()
         
-        except Exception as e:
-            return {
-                "success": False,
-                "services": ["apache", "uvicorn"],
-                "message": f"Restart error: {str(e)}"
-            }
+        return {
+            "success": apache_result["success"] and uvicorn_result["success"],
+            "services": ["apache", "uvicorn"],
+            "message": "Application restart initiated"
+        }
