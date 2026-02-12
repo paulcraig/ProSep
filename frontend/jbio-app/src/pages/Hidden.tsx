@@ -97,74 +97,51 @@ const Hidden: React.FC = () => {
   };
 
 
-  const fetchData = async (perfOnly = false) => {
+  const fetchData = async () => {
     try {
-      if (perfOnly) {
-        const perfRes = await fetch(`${API_URL}/status/performance`);
-        
-        if (perfRes.ok) {
-          const data = await perfRes.json();
-          setServerHealth({
-            uptime: data.uptime,
-            apache: {
-              requestsPerMinute: data.apache.requests_per_minute,
-              errorRate: data.apache.error_rate,
-              memoryMb: data.apache.memory_mb,
-              serviceRunning: data.apache.service_running
-            },
-            uvicorn: {
-              requestsPerMinute: data.uvicorn.requests_per_minute,
-              errorRate: data.uvicorn.error_rate,
-              memoryMb: data.uvicorn.memory_mb,
-              processRunning: data.uvicorn.process_running
-            }
-          });
-        }
-      } else {
-        const [versionRes, perfRes, autoUpdateRes] = await Promise.all([
-          fetch(`${API_URL}/status/version`),
-          fetch(`${API_URL}/status/performance`),
-          fetch(`${API_URL}/status/auto-update`)
-        ]);
+      const [versionRes, perfRes, autoUpdateRes] = await Promise.all([
+        fetch(`${API_URL}/status/version`),
+        fetch(`${API_URL}/status/performance`),
+        fetch(`${API_URL}/status/auto-update`)
+      ]);
 
-        if (versionRes.ok) {
-          const data = await versionRes.json();
-          setVersionInfo({
-            version: data.version,
-            remoteVersion: data.remote_version,
-            creationDate: data.creation_date,
-            notes: data.notes,
-            prs: data.prs
-          });
-          setAvailableVersions(data.available_versions);
-          setIsLocked(data.locked);
-          setCheckoutVersion(data.version);
-        }
+      if (versionRes.ok) {
+        const data = await versionRes.json();
+        setVersionInfo({
+          version: data.version,
+          remoteVersion: data.remote_version,
+          creationDate: data.creation_date,
+          notes: data.notes,
+          prs: data.prs
+        });
+        setAvailableVersions(data.available_versions);
+        setIsLocked(data.locked);
+        setCheckoutVersion(data.version);
+      }
 
-        if (perfRes.ok) {
-          const data = await perfRes.json();
-          setServerHealth({
-            uptime: data.uptime,
-            apache: {
-              requestsPerMinute: data.apache.requests_per_minute,
-              errorRate: data.apache.error_rate,
-              memoryMb: data.apache.memory_mb,
-              serviceRunning: data.apache.service_running
-            },
-            uvicorn: {
-              requestsPerMinute: data.uvicorn.requests_per_minute,
-              errorRate: data.uvicorn.error_rate,
-              memoryMb: data.uvicorn.memory_mb,
-              processRunning: data.uvicorn.process_running
-            }
-          });
-        }
+      if (perfRes.ok) {
+        const data = await perfRes.json();
+        setServerHealth({
+          uptime: data.uptime,
+          apache: {
+            requestsPerMinute: data.apache.requests_per_minute,
+            errorRate: data.apache.error_rate,
+            memoryMb: data.apache.memory_mb,
+            serviceRunning: data.apache.service_running
+          },
+          uvicorn: {
+            requestsPerMinute: data.uvicorn.requests_per_minute,
+            errorRate: data.uvicorn.error_rate,
+            memoryMb: data.uvicorn.memory_mb,
+            processRunning: data.uvicorn.process_running
+          }
+        });
+      }
 
-        if (autoUpdateRes.ok) {
-          const data = await autoUpdateRes.json();
-          setUpdateServiceActive(data.active);
-          setUpdateInterval(data.interval_minutes);
-        }
+      if (autoUpdateRes.ok) {
+        const data = await autoUpdateRes.json();
+        setUpdateServiceActive(data.active);
+        setUpdateInterval(data.interval_minutes);
       }
     } catch (err) {
       console.error("Failed to fetch status data:", err);
@@ -337,32 +314,13 @@ const Hidden: React.FC = () => {
   };
 
 
-  const pollForServiceRecovery = () => {
-    let attempts = 0;
-    const maxAttempts = 30;
-    
-    const poll = setInterval(async () => {
-      attempts++;
-      await fetchData(true);
-      
-      if (attempts >= maxAttempts) {
-        clearInterval(poll);
-      }
-    }, 1000);
-  };
-
-
   const handleRestartApache = async () => {
     try {
       const res = await fetch(`${API_URL}/status/restart/apache`, {
         method: "POST",
         headers: getAuthHeaders()
       });
-      if (res.ok) {
-        console.log("Apache restart initiated");
-        fetchData(true);
-        pollForServiceRecovery();
-      }
+      if (res.ok) console.log("Apache restart initiated");
     } catch (err) {
       console.error("Failed to restart Apache:", err);
     }
@@ -380,8 +338,6 @@ const Hidden: React.FC = () => {
       });
       
       console.log("Uvicorn restart initiated - backend will restart shortly");
-      fetchData(true);
-      pollForServiceRecovery();
 
     } catch (err) {
       console.error("Failed to restart Uvicorn:", err);
@@ -400,8 +356,6 @@ const Hidden: React.FC = () => {
       });
       
       console.log("Full app restart initiated - services will restart shortly");
-      fetchData(true);
-      pollForServiceRecovery();
 
     } catch (err) {
       console.error("Failed to restart app:", err);
