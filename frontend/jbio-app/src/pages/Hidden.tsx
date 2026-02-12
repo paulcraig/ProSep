@@ -755,7 +755,7 @@ const Hidden: React.FC = () => {
                     className='version-dropdown'
                     value={checkoutVersion}
                     onChange={(e) => setCheckoutVersion(e.target.value)}
-                    disabled={!authed}
+                    disabled={!authed || !availableVersions?.length}
                   >
                     {availableVersions.map(version => (
                       <option key={version} value={version}>

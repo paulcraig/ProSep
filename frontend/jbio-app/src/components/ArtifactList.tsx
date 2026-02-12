@@ -54,7 +54,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   const CARD_HEIGHT = 250;
   
   const fetchingRef = useRef(false);
-  const containerRef = useRef<HTMLDivElement>(null);  // New ref for the artifact-container
+  const containerRef = useRef<HTMLDivElement>(null);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
 
   const [isDragging, setIsDragging] = useState(false);

@@ -106,8 +106,8 @@
   background: var(--background) !important;
   border: 4px solid var(--accent);
   border-radius: 8px;
-  width: 90vw;
-  max-width: 1400px;
+  width: 50vw;
+  max-width: 50rem;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
