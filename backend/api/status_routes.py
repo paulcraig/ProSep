@@ -49,14 +49,14 @@ class LockResponse(BaseModel):
 class ApacheMetrics(BaseModel):
     requests_per_minute: int
     error_rate: float
-    avg_response_time: int
+    memory_mb: int
     service_running: bool
 
 
 class UvicornMetrics(BaseModel):
     requests_per_minute: int
     error_rate: float
-    avg_response_time: int
+    memory_mb: int
     process_running: bool
 
 
