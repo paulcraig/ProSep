@@ -1385,40 +1385,43 @@ const TwoDE = () => {
                 >
                   <h4>{activeDot?.display_name}</h4>
                   <div className="meta">
+                    <div>
+                      Link:{" "}
+                      {activeDot?.Link && activeDot.Link !== "N/A" ? (<a href={activeDot.Link}>{activeDot.Link}</a>) : ("N/A")}
 
-                  <div>
-                    Link:{" "}
-                    {activeDot?.Link && activeDot.Link !== "N/A" ? (<a href={activeDot.Link}>{activeDot.Link}</a>) : ("N/A")}
+                      <div>MW: {activeDot?.mw != null ? activeDot.mw.toLocaleString() : 'N/A'} Da</div>
+                      <div>pI: {activeDot?.pH != null ? activeDot.pH.toFixed(2) : 'N/A'}</div>
 
-                    <div>MW: {activeDot?.mw != null ? activeDot.mw.toLocaleString() : 'N/A'} Da</div>
-                    <div>pI: {activeDot?.pH != null ? activeDot.pH.toFixed(2) : 'N/A'}</div>
-
-                    {activeDot?.sequence && (
-                      <div style={{ marginTop: '4px' }}>
-                        <div style={{ fontWeight: 500 }}>Sequence Preview:</div>
-                        <div className="sequence-preview">
-                          {activeDot.sequence.substring(0, 50)}...
+                      {activeDot?.sequence && (
+                        <div style={{ marginTop: '4px' }}>
+                          <div style={{ fontWeight: 500 }}>Sequence Preview:</div>
+                          <div className="sequence-preview">
+                            {activeDot.sequence.substring(0, 50)}...
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+
+                      {selectedDot && (
+                        <Button 
+                          onClick={() => setshowProteinSepertion(!showProteinSepertion)}
+                          size="small"
+                          style={{marginTop: '8px', width: '100%'}}
+                        >
+                          {showProteinSepertion ? 'Hide' : 'Show'} Digestion
+                        </Button>
+                      )}
+
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
         </div>
-
-
+        </div>
+        </Grid>   
+        </Grid>
       </div>
-       </Grid>
-       {showProteinSepertion ? <Grid size={4}>
-        <ProteolyticDigestion protein={selectedDot}></ProteolyticDigestion>
-
-       </Grid> : <div></div>}
-       
-       </Grid>
-    </div>
   );
 };
 
