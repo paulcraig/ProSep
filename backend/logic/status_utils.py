@@ -590,20 +590,21 @@ class StatusService:
 
     @classmethod
     def _get_timer_interval(cls) -> int:
+        """
+        Read OnUnitActiveSec from timer file to get interval in minutes.
+        """
+        timer_file = Path("/etc/systemd/system/prosep-deploy.timer")
+        
         try:
-            result = subprocess.run(
-                ["systemctl", "show", cls.DEPLOY_TIMER, "--property=TimersCalendar", "--value"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
+            if not timer_file.exists():
+                return cls._auto_update_interval
             
-            # Parse systemd timer format ("*:0/5" = every 5 minutes):
-            if result.returncode == 0 and result.stdout.strip():
-                output = result.stdout.strip()
-                match = re.search(r'/(\d+)', output)
-                if match: return int(match.group(1))
-
+            with open(timer_file, 'r') as f:
+                content = f.read()
+            
+            match = re.search(r'OnUnitActiveSec=(\d+)m', content)
+            if match: return int(match.group(1))
+        
         except Exception:
             pass
         
@@ -738,13 +739,61 @@ class StatusService:
     @classmethod
     def set_auto_update_interval(cls, interval_minutes: int) -> dict:
         """
-        Note: This is not implemented - timer interval must be changed manually.
+        Updates OnUnitActiveSec in /etc/systemd/system/prosep-deploy.timer
         """
-        return {
-            "success": False,
-            "interval_minutes": interval_minutes,
-            "message": "Changing timer interval requires manual editing of /etc/systemd/system/prosep-deploy.timer"
-        }
+        if not cls._is_server_environment():
+            return {
+                "success": False,
+                "message": "Timer interval can only be changed on server"
+            }
+        
+        timer_file = Path("/etc/systemd/system/prosep-deploy.timer")
+        
+        try:
+            if not timer_file.exists():
+                return {
+                    "success": False,
+                    "message": f"Timer file not found: {timer_file}"
+                }
+            
+            with open(timer_file, 'r') as f:
+                content = f.read()
+            
+            new_content = re.sub(
+                r'OnUnitActiveSec=\d+m',
+                f'OnUnitActiveSec={interval_minutes}m',
+                content
+            )
+            
+            if new_content == content:
+                return {
+                    "success": False,
+                    "message": "OnUnitActiveSec line not found in timer file"
+                }
+            
+            with open(timer_file, 'w') as f:
+                f.write(new_content)
+            
+            subprocess.run(["systemctl", "daemon-reload"], timeout=10, check=True)
+            
+            if cls._is_service_active(cls.DEPLOY_TIMER):
+                subprocess.run(["systemctl", "restart", cls.DEPLOY_TIMER], timeout=10, check=True)
+            
+            return {
+                "success": True,
+                "message": f"Timer interval updated to {interval_minutes} minutes"
+            }
+        
+        except subprocess.CalledProcessError as e:
+            return {
+                "success": False,
+                "message": f"Failed to update systemd: {str(e)}"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Failed to update timer interval: {str(e)}"
+            }
     
 
     @classmethod

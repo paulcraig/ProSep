@@ -338,10 +338,6 @@ const Hidden: React.FC = () => {
       });
       
       console.log("Uvicorn restart initiated - backend will restart shortly");
-      
-      setTimeout(() => {
-        fetchData();
-      }, 5000);
 
     } catch (err) {
       console.error("Failed to restart Uvicorn:", err);
@@ -361,10 +357,6 @@ const Hidden: React.FC = () => {
       
       console.log("Full app restart initiated - services will restart shortly");
 
-      setTimeout(() => {
-        fetchData();
-      }, 10000);
-
     } catch (err) {
       console.error("Failed to restart app:", err);
     }
@@ -380,6 +372,7 @@ const Hidden: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         console.log(`Deleted ${data.groups_deleted} artifact group(s)`);
+
         if (artifactRef.current) {
           artifactRef.current.refresh();
         }
@@ -675,7 +668,7 @@ const Hidden: React.FC = () => {
                   <span className="metric-value">{serverHealth?.apache?.errorRate ?? "0"}%</span>
                 </div>
                 <div className="metric-item">
-                  <span className="metric-label">Memory:</span>
+                  <span className="metric-label">Memory Use:</span>
                   <span className="metric-value">{serverHealth?.apache?.memoryMb ?? "0"}MB</span>
                 </div>
                 <div className="metric-item">
@@ -698,7 +691,7 @@ const Hidden: React.FC = () => {
                   <span className="metric-value">{serverHealth?.uvicorn?.errorRate ?? "0"}%</span>
                 </div>
                 <div className="metric-item">
-                  <span className="metric-label">Memory:</span>
+                  <span className="metric-label">Memory Use:</span>
                   <span className="metric-value">{serverHealth?.uvicorn?.memoryMb ?? "0"}MB</span>
                 </div>
                 <div className="metric-item">
