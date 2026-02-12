@@ -424,7 +424,8 @@
   color: var(--sub-text);
 }
 
-.health-badge.good {
+.health-badge.good, 
+.health-badge.local {
   background: #27ae6020;
   color: #27ae60;
 }
