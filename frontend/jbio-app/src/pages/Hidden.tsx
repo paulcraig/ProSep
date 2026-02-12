@@ -329,11 +329,20 @@ const Hidden: React.FC = () => {
 
   const handleRestartUvicorn = async () => {
     try {
-      const res = await fetch(`${API_URL}/status/restart/uvicorn`, {
+      fetch(`${API_URL}/status/restart/uvicorn`, {
         method: "POST",
         headers: getAuthHeaders()
+
+      }).catch(() => {
+        console.log("Uvicorn restart initiated (connection lost as expected)");
       });
-      if (res.ok) console.log("Uvicorn restart initiated");
+      
+      console.log("Uvicorn restart initiated - backend will restart shortly");
+      
+      setTimeout(() => {
+        fetchData();
+      }, 5000);
+
     } catch (err) {
       console.error("Failed to restart Uvicorn:", err);
     }
@@ -342,11 +351,20 @@ const Hidden: React.FC = () => {
 
   const handleRestartBoth = async () => {
     try {
-      const res = await fetch(`${API_URL}/status/restart/app`, {
+      fetch(`${API_URL}/status/restart/app`, {
         method: "POST",
         headers: getAuthHeaders()
+
+      }).catch(() => {
+        console.log("App restart initiated (connection lost as expected)");
       });
-      if (res.ok) console.log("App restart initiated");
+      
+      console.log("Full app restart initiated - services will restart shortly");
+
+      setTimeout(() => {
+        fetchData();
+      }, 10000);
+
     } catch (err) {
       console.error("Failed to restart app:", err);
     }

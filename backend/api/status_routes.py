@@ -128,11 +128,13 @@ async def restart_apache(admin_hash: str = Depends(verify_admin_header)):
     return StatusService.restart_apache()
 
 
-@router.post("/restart/uvicorn", response_model=SuccessResponse)
+@router.post("/restart/uvicorn", status_code=202)
 async def restart_uvicorn(admin_hash: str = Depends(verify_admin_header)):
-    return StatusService.restart_uvicorn()
+    StatusService.restart_uvicorn()
+    return {"message": "Restart initiated"}
 
 
-@router.post("/restart/app", response_model=SuccessResponse)
+@router.post("/restart/app", status_code=202)
 async def restart_app(admin_hash: str = Depends(verify_admin_header)):
-    return StatusService.restart_app()
+    StatusService.restart_app()
+    return {"message": "Restart initiated"}
