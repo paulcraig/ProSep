@@ -23,7 +23,7 @@ def list_artifacts(group: str) -> list[dict]:
 
 
 @router.post("/{group}/reorder")
-def reorder_artifacts(group: str, request: ReorderRequest, admin_hash: str = Depends(verify_admin_header)) -> dict:
+def reorder_artifacts(group: str, request: ReorderRequest, admin_encrypted: str = Depends(verify_admin_header)) -> dict:
     MetadataManager.reorder_files(group, request.file_order)
     return {"success": True, "reordered": len(request.file_order)}
 
@@ -45,7 +45,7 @@ def download_artifact(group: str, filename: str):
 
 
 @router.post("/{group}")
-def upload_artifact(group: str, file: UploadFile = File(...), admin_hash: str = Depends(verify_admin_header)) -> dict:
+def upload_artifact(group: str, file: UploadFile = File(...), admin_encrypted: str = Depends(verify_admin_header)) -> dict:
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing filename")
 
@@ -63,7 +63,7 @@ def upload_artifact(group: str, file: UploadFile = File(...), admin_hash: str = 
 
 
 @router.put("/{group}/{filename}/replace")
-def replace_artifact(group: str, filename: str, file: UploadFile = File(...), admin_hash: str = Depends(verify_admin_header)) -> dict:
+def replace_artifact(group: str, filename: str, file: UploadFile = File(...), admin_encrypted: str = Depends(verify_admin_header)) -> dict:
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing uploaded filename")
 
@@ -90,7 +90,7 @@ def replace_artifact(group: str, filename: str, file: UploadFile = File(...), ad
 
 
 @router.delete("/{group}/{filename}")
-def delete_artifact(group: str, filename: str, admin_hash: str = Depends(verify_admin_header)) -> dict:
+def delete_artifact(group: str, filename: str, admin_encrypted: str = Depends(verify_admin_header)) -> dict:
     safe_name = Path(filename).name
     files_dir = MetadataManager.get_group_dir(group)
     path = files_dir / safe_name
@@ -105,7 +105,7 @@ def delete_artifact(group: str, filename: str, admin_hash: str = Depends(verify_
 
 
 @router.delete("")
-def delete_all_artifacts(admin_hash: str = Depends(verify_admin_header)) -> dict:
+def delete_all_artifacts(admin_encrypted: str = Depends(verify_admin_header)) -> dict:
     groups_deleted = MetadataManager.delete_all()
     return {
         "success": True,

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import ArtifactList, { ArtifactListRef } from '../components/ArtifactList';
-import { API_URL } from '../config';
+import { API_URL, getPublicKey } from '../config';
 import './Hidden.css';
+import JSEncrypt from 'jsencrypt';
 
 import { IconButton } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
@@ -82,16 +83,16 @@ const Hidden: React.FC = () => {
 
   const getAuthHeaders = (): HeadersInit => {
     const headers: HeadersInit = {};
-    const hash = localStorage.getItem('admin-password-hash');
-    if (hash) headers['X-Hashed-Password'] = hash;
+    const hash = localStorage.getItem('admin-encrypted-password');
+    if (hash) headers['X-Encrypted-Password'] = hash;
     return headers;
   };
 
 
   const getAuthJsonHeaders = (): HeadersInit => {
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    const hash = localStorage.getItem('admin-password-hash');
-    if (hash) headers['X-Hashed-Password'] = hash;
+    const hash = localStorage.getItem('admin-encrypted-password');
+    if (hash) headers['X-Encrypted-Password'] = hash;
     return headers;
   };
 
@@ -152,29 +153,31 @@ const Hidden: React.FC = () => {
   }, []);
 
 
-  const hashPw = async (pw: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(pw);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const encryptPw = async (pw: string): Promise<string | false> => {
+    try {
+      const publicKey = await getPublicKey();
+      const encrypt = new JSEncrypt();
+      encrypt.setPublicKey(publicKey);
+      return encrypt.encrypt(pw);
+    } catch (err) {
+      console.error('Failed to encrypt password:', err);
+      return false;
+    }
   };
 
 
-  const updateAuthState = (success: boolean, hash?: string, pw?: string) => {
+  const updateAuthState = (success: boolean, encrypted?: string, pw?: string) => {
     if (success) {
       setPwStatus('correct');
       setAuthed(true);
-
-      if (hash) localStorage.setItem('admin-password-hash', hash);
+      if (encrypted) localStorage.setItem('admin-encrypted-password', encrypted);
       if (pw) setAuthedPw(pw);
-
     } else {
       setPwStatus('wrong');
       setAuthed(false);
       setAuthedPw('');
       setShowReset(false);
-      localStorage.removeItem('admin-password-hash');
+      localStorage.removeItem('admin-encrypted-password');
     }
   };
 
@@ -184,22 +187,32 @@ const Hidden: React.FC = () => {
     setPwStatus('checking');
     
     try {
-      const hash = await hashPw(password);
-      const statusRes = await fetch(`${API_URL}/admin/status`);
-      const statusData = await statusRes.json();
+      const encrypted = await encryptPw(password);
+      if (!encrypted) {
+        setPwStatus('wrong');
+        return;
+      }
 
-      const endpoint = statusData.password_set ? '/admin/verify' : '/admin/set-initial';
-      const res = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hashed_password: hash }),
-      });
-
-      const data = await res.json();
-      const valid = statusData.password_set ? data.valid : data.success;
-      updateAuthState(res.ok && valid, hash, password);
+      fetch(`${API_URL}/admin/status`)
+        .then(res => res.json())
+        .then(statusData => {
+          const endpoint = statusData.password_set ? '/admin/verify' : '/admin/set-initial';
+          return fetch(`${API_URL}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ encrypted_password: encrypted }),
+          }).then(res => res.json().then(data => ({ res, data, encrypted })));
+        })
+        .then(({ res, data, encrypted }) => {
+          const valid = data.valid !== undefined ? data.valid : data.success;
+          updateAuthState(res.ok && valid, encrypted, password);
+        })
+        .catch(err => {
+          console.error('Password verification error:', err);
+          updateAuthState(false);
+        });
     } catch (err) {
-      console.error('Password verification error:', err);
+      console.error('Password encryption error:', err);
       updateAuthState(false);
     }
   };
@@ -218,41 +231,49 @@ const Hidden: React.FC = () => {
     setResetStatus('resetting');
     
     try {
-      const currentHash = localStorage.getItem('admin-password-hash');
-      if (!currentHash) {
+      const currentEncrypted = localStorage.getItem('admin-encrypted-password');
+      if (!currentEncrypted) {
         setResetStatus('error');
         return;
       }
 
-      const newHash = await hashPw(newPw);
-      const res = await fetch(`${API_URL}/admin/reset-password`, {
+      const newEncrypted = await encryptPw(newPw);
+      if (!newEncrypted) {
+        setResetStatus('error');
+        return;
+      }
+
+      fetch(`${API_URL}/admin/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          current_hashed_password: currentHash,
-          new_hashed_password: newHash,
+          current_encrypted_password: currentEncrypted,
+          new_encrypted_password: newEncrypted,
         }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setResetStatus('success');
-        localStorage.setItem('admin-password-hash', newHash);
-        setPw(newPw);
-        setAuthedPw(newPw);
-        setNewPw('');
-        setVerifyPw('');
-        setShowReset(false);
-        setTimeout(() => setResetStatus('idle'), 1500);
-
-      } else {
-        setResetStatus('error');
-        setTimeout(() => setResetStatus('idle'), 2000);
-      }
-
+      })
+        .then(res => res.json().then(data => ({ res, data })))
+        .then(({ res, data }) => {
+          if (res.ok && data.success) {
+            setResetStatus('success');
+            localStorage.setItem('admin-encrypted-password', newEncrypted);
+            setPw(newPw);
+            setAuthedPw(newPw);
+            setNewPw('');
+            setVerifyPw('');
+            setShowReset(false);
+            setTimeout(() => setResetStatus('idle'), 1500);
+          } else {
+            setResetStatus('error');
+            setTimeout(() => setResetStatus('idle'), 2000);
+          }
+        })
+        .catch(err => {
+          console.error('Password reset error:', err);
+          setResetStatus('error');
+          setTimeout(() => setResetStatus('idle'), 2000);
+        });
     } catch (err) {
-      console.error('Password reset error:', err);
+      console.error('Password encryption error:', err);
       setResetStatus('error');
       setTimeout(() => setResetStatus('idle'), 2000);
     }
@@ -293,7 +314,6 @@ const Hidden: React.FC = () => {
   };
 
 
-  // Action handlers:
   const handleRestartApache = async () => {
     try {
       const res = await fetch(`${API_URL}/status/restart/apache`, {
@@ -851,7 +871,7 @@ const Hidden: React.FC = () => {
             enableReplace={true}
             enableDelete={true}
             enableReorder={true}
-            passwordHash={localStorage.getItem('admin-password-hash') || undefined}
+            encryptedPassword={localStorage.getItem('admin-encrypted-password') || undefined}
           />
         </div>
       </div>

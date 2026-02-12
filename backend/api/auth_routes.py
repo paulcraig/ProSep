@@ -7,8 +7,12 @@ from typing import Optional
 router = APIRouter(prefix="/admin", tags=["admin-auth"])
 
 
+class PublicKeyResponse(BaseModel):
+    public_key: str
+
+
 class VerifyRequest(BaseModel):
-    hashed_password: str
+    encrypted_password: str
 
 
 class StatusResponse(BaseModel):
@@ -16,12 +20,12 @@ class StatusResponse(BaseModel):
 
 
 class SetInitialRequest(BaseModel):
-    hashed_password: str
+    encrypted_password: str
 
 
 class ResetRequest(BaseModel):
-    current_hashed_password: str
-    new_hashed_password: str
+    current_encrypted_password: str
+    new_encrypted_password: str
 
 
 class VerifyResponse(BaseModel):
@@ -34,31 +38,27 @@ class SuccessResponse(BaseModel):
 
 @router.get("/status", response_model=StatusResponse)
 async def get_auth_status():
-    """
-    Check if a password has been set.
-    """
     return StatusResponse(password_set=AuthService.get_stored_hash() is not None)
+
+
+@router.get("/public-key", response_model=PublicKeyResponse)
+async def get_public_key():
+    return PublicKeyResponse(public_key=AuthService.get_public_key_pem())
 
 
 @router.post("/verify", response_model=VerifyResponse)
 async def verify_password(request: VerifyRequest):
-    """
-    Verify a hashed password.
-    """
-    return VerifyResponse(valid=AuthService.verify(request.hashed_password))
+    return VerifyResponse(valid=AuthService.verify(request.encrypted_password))
 
 
 @router.post("/set-initial", response_model=SuccessResponse)
 async def set_initial_password(request: SetInitialRequest):
-    """
-    Set the initial password hash (only if none exists).
-    """
     if AuthService.get_stored_hash() is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Password already set. Use /reset-password instead."
         )
-    success = AuthService.set_hash(request.hashed_password)
+    success = AuthService.set_hash(request.encrypted_password)
 
     if not success:
         raise HTTPException(
@@ -70,15 +70,12 @@ async def set_initial_password(request: SetInitialRequest):
 
 @router.post("/reset-password", response_model=SuccessResponse)
 async def reset_password(request: ResetRequest):
-    """
-    Reset password (requires valid current hash).
-    """
-    if not AuthService.verify(request.current_hashed_password):
+    if not AuthService.verify(request.current_encrypted_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Current password invalid."
         )
-    success = AuthService.set_hash(request.new_hashed_password)
+    success = AuthService.set_hash(request.new_encrypted_password)
 
     if not success:
         raise HTTPException(
@@ -88,15 +85,15 @@ async def reset_password(request: ResetRequest):
     return SuccessResponse(success=True)
 
 
-async def verify_admin_header(x_hashed_password: Optional[str] = Header(None, alias="X-Hashed-Password")):
+async def verify_admin_header(x_encrypted_password: Optional[str] = Header(None, alias="X-Encrypted-Password")):
     """
     Dependency for protected routes.
-    Expects hashed password in header `X-Hashed-Password`.
-    Other routers can use: func(..., admin_hash: str = Depends(verify_admin_header))
+    Expects RSA-encrypted password in header `X-Encrypted-Password`.
+    Other routers can use: func(..., admin_encrypted: str = Depends(verify_admin_header))
     """
-    if not AuthService.verify(x_hashed_password or ""):
+    if not AuthService.verify(x_encrypted_password or ""):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing X-Hashed-Password header"
+            detail="Invalid or missing X-Encrypted-Password header"
         )
-    return x_hashed_password
+    return x_encrypted_password

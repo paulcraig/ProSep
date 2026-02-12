@@ -28,7 +28,7 @@ interface ArtifactListProps {
   enableReorder?: boolean;
   visibleRows?: number;
   artifactsPerRow?: number;
-  passwordHash?: string;
+  encryptedPassword?: string;
 }
 
 export interface ArtifactListRef {
@@ -47,7 +47,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   enableReorder = true,
   visibleRows,
   artifactsPerRow,
-  passwordHash
+  encryptedPassword
 }, ref) => {
 
   const GAP = 16;
@@ -147,7 +147,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     const formData = new FormData();
     formData.append('file', file);
     const headers: HeadersInit = {};
-    if (passwordHash) headers['X-Hashed-Password'] = passwordHash;
+    if (encryptedPassword) headers['X-Encrypted-Password'] = encryptedPassword;
     
     try {
       const res = await fetch(`${API_URL}/artifacts/${group}`, {
@@ -174,7 +174,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
   async function handleDelete(name: string): Promise<void> {
     const headers: HeadersInit = {};
-    if (passwordHash) headers['X-Hashed-Password'] = passwordHash;
+    if (encryptedPassword) headers['X-Encrypted-Password'] = encryptedPassword;
     
     try {
       const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(name)}`, {
@@ -196,7 +196,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     const formData = new FormData();
     formData.append('file', file);
     const headers: HeadersInit = {};
-    if (passwordHash) headers['X-Hashed-Password'] = passwordHash;
+    if (encryptedPassword) headers['X-Encrypted-Password'] = encryptedPassword;
     
     try {
       const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(name)}/replace`, {
@@ -237,7 +237,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
 
   async function saveOrder(newOrder: Artifact[]): Promise<void> {
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    if (passwordHash) headers['X-Hashed-Password'] = passwordHash;
+    if (encryptedPassword) headers['X-Encrypted-Password'] = encryptedPassword;
     
     try {
       const fileOrder = newOrder.map(f => f.name);
