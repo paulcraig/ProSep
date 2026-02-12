@@ -1,4 +1,4 @@
-import subprocess, re, json
+import subprocess, re, json, time
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 
@@ -199,6 +199,73 @@ class StatusService:
     
 
     @classmethod
+    def _get_uvicorn_uptime_dev(cls) -> str:
+        try:
+            result = subprocess.run(
+                ["pgrep", "-f", "uvicorn.*backend.server:app"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0 or not result.stdout.strip():
+                return "Unknown"
+            
+            pid = result.stdout.strip().split()[0]
+            
+            result = subprocess.run(
+                ["ps", "-o", "etime=", "-p", pid],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode == 0 and result.stdout.strip():
+                etime = result.stdout.strip()
+                return cls._parse_elapsed_time(etime)
+            
+            return "Unknown"
+        
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return "Unknown"
+    
+
+    @classmethod
+    def _parse_elapsed_time(cls, etime: str) -> str:
+        """
+        Parse ps elapsed time to readable format like "2d 3h 45m"
+        """
+        parts = etime.strip().split('-')
+        
+        if len(parts) == 2:  # Days present
+            days = parts[0]
+            time_part = parts[1]
+        else:
+            days = None
+            time_part = parts[0]
+        
+        time_components = time_part.split(':')
+        
+        result = []
+        
+        if days:
+            result.append(f"{days}d")
+        
+        if len(time_components) == 3:  # hh:mm:ss
+            hours, minutes, seconds = time_components
+            if int(hours) > 0:
+                result.append(f"{int(hours)}h")
+            if int(minutes) > 0:
+                result.append(f"{int(minutes)}m")
+        elif len(time_components) == 2:  # mm:ss
+            minutes, seconds = time_components
+            if int(minutes) > 0:
+                result.append(f"{int(minutes)}m")
+        
+        return ' '.join(result) if result else "< 1m"
+    
+
+    @classmethod
     def _get_system_uptime(cls) -> str:
         uptime_output = cls._run_command(["uptime", "-p"])
 
@@ -206,6 +273,107 @@ class StatusService:
             return uptime_output.replace("up ", "")
         
         return "Unknown"
+    
+
+    @classmethod
+    def _parse_apache_metrics(cls) -> dict:
+        """
+        Parse Apache ProSep access logs for request metrics.
+        Returns: {requests_per_minute, error_rate, avg_response_time}
+        """
+        try:
+            result = subprocess.run(
+                ["tail", "-n", "1000", "/var/log/apache2/prosep_access.log"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0:
+                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            
+            lines = result.stdout.strip().split('\n')
+            if not lines or lines == ['']:
+                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            
+            total_requests = len(lines)
+            error_count = 0
+            
+            for line in lines:
+                # Count errors (4xx, 5xx status codes):
+                status_match = re.search(r'" (\d{3}) ', line)
+                if status_match:
+                    status = int(status_match.group(1))
+                    if status >= 400:
+                        error_count += 1
+            
+            error_rate = (error_count / total_requests * 100) if total_requests > 0 else 0.0
+            requests_per_minute = min(total_requests, 100)
+            
+            return {
+                "requests_per_minute": requests_per_minute,
+                "error_rate": round(error_rate, 2),
+                "avg_response_time": 0  # Need %D or %T in LogFormat to get this...
+            }
+        
+        except Exception:
+            return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+    
+
+    @classmethod
+    def _parse_uvicorn_metrics(cls) -> dict:
+        """
+        Parse uvicorn.log file for request metrics.
+        Returns: {requests_per_minute, error_rate, avg_response_time}
+        """
+        uvicorn_log = cls.SERVER_REPO_DIR / "uvicorn.log"
+        
+        try:
+            result = subprocess.run(
+                ["tail", "-n", "1000", str(uvicorn_log)],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0:
+                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            
+            lines = result.stdout.strip().split('\n')
+            if not lines or lines == ['']:
+                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            
+            total_requests = 0
+            error_count = 0
+            
+            for line in lines:
+                if '"GET ' in line or '"POST ' in line or '"PUT ' in line or '"DELETE ' in line or '"PATCH ' in line:
+                    total_requests += 1
+                    
+                    # Check for error status codes (4xx, 5xx):
+                    status_match = re.search(r'" (\d{3}) ', line)
+                    if status_match:
+                        status = int(status_match.group(1))
+                        if status >= 400:
+                            error_count += 1
+            
+            if total_requests == 0:
+                return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            
+            error_rate = (error_count / total_requests * 100) if total_requests > 0 else 0.0
+            
+            # Estimate requests per minute from last 1000 lines
+            requests_per_minute = min(total_requests, 100)
+            
+            return {
+                "requests_per_minute": requests_per_minute,
+                "error_rate": round(error_rate, 2),
+                "avg_response_time": 0 # Change later (no resp time)
+            }
+        
+        except Exception:
+            return {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+    
     
 
     @classmethod
@@ -328,23 +496,32 @@ class StatusService:
             apache_running = cls._is_service_active(cls.APACHE_SERVICE)
             uvicorn_running = cls._is_service_active(cls.BACKEND_SERVICE)
             uptime_str = cls._get_system_uptime()
+            
+            apache_metrics = cls._parse_apache_metrics() if apache_running else {
+                "requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0
+            }
+            uvicorn_metrics = cls._parse_uvicorn_metrics() if uvicorn_running else {
+                "requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0
+            }
 
         else:
             uvicorn_running = cls._is_uvicorn_running_dev()
-            uptime_str = "None"
+            uptime_str = cls._get_uvicorn_uptime_dev() if uvicorn_running else "None"
+            apache_metrics = {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
+            uvicorn_metrics = {"requests_per_minute": 0, "error_rate": 0.0, "avg_response_time": 0}
 
         return {
             "uptime": uptime_str,
             "apache": {
-                "requests_per_minute": 0,  # Need apache log parsing
-                "error_rate": 0.0,
-                "avg_response_time": 0,
+                "requests_per_minute": apache_metrics["requests_per_minute"],
+                "error_rate": apache_metrics["error_rate"],
+                "avg_response_time": apache_metrics["avg_response_time"],
                 "service_running": apache_running
             },
             "uvicorn": {
-                "requests_per_minute": 0,  # Need application metrics
-                "error_rate": 0.0,
-                "avg_response_time": 0,
+                "requests_per_minute": uvicorn_metrics["requests_per_minute"],
+                "error_rate": uvicorn_metrics["error_rate"],
+                "avg_response_time": uvicorn_metrics["avg_response_time"],
                 "process_running": uvicorn_running
             }
         }
@@ -389,66 +566,251 @@ class StatusService:
     
     @classmethod
     def checkout_version(cls, version: str, lock: bool = False) -> dict:
-        return {
-            "success": True,
-            "version": version,
-            "locked": lock,
-            "message": f"Checked out version {version}"
-        }
+        if not cls._is_server_environment():
+            return {
+                "success": False,
+                "version": version,
+                "locked": lock,
+                "message": "Version checkout only available on server"
+            }
+        
+        try:
+            cmd = ["/usr/local/bin/prosep-deploy.sh", "--force-rebuild", version]
+            
+            if lock:
+                cmd.extend(["--lock-version", version])
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minutes for build
+            )
+            
+            success = result.returncode == 0
+            
+            return {
+                "success": success,
+                "version": version,
+                "locked": lock,
+                "message": f"Deployed version {version}" if success else f"Deployment failed: {result.stderr[:200]}"
+            }
+        
+        except subprocess.TimeoutExpired:
+            return {
+                "success": False,
+                "version": version,
+                "locked": lock,
+                "message": "Deployment timed out"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "version": version,
+                "locked": lock,
+                "message": f"Deployment error: {str(e)}"
+            }
     
 
     @classmethod
     def set_version_lock(cls, locked: bool) -> dict:
-        cls._version_locked = locked
-        return {
-            "success": True,
-            "locked": locked
-        }
+        if not cls._is_server_environment():
+            return {
+                "success": False,
+                "locked": locked,
+                "message": "Version locking only available on server"
+            }
+        
+        try:
+            if locked:
+                cmd = ["/usr/local/bin/prosep-deploy.sh", "--lock-version"]
+            else:
+                cmd = ["/usr/local/bin/prosep-deploy.sh", "--unlock-version"]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            success = result.returncode == 0
+            
+            return {
+                "success": success,
+                "locked": locked,
+                "message": f"Version {'locked' if locked else 'unlocked'}" if success else f"Lock operation failed: {result.stderr[:200]}"
+            }
+        
+        except Exception as e:
+            return {
+                "success": False,
+                "locked": locked,
+                "message": f"Lock operation error: {str(e)}"
+            }
     
 
     @classmethod
     def set_auto_update_active(cls, active: bool) -> dict:
-        cls._auto_update_active = active
-        status_text = "activated" if active else "deactivated"
-        return {
-            "success": True,
-            "active": active,
-            "message": f"Auto-update service {status_text}"
-        }
+        if not cls._is_server_environment():
+            return {
+                "success": False,
+                "active": active,
+                "message": "Auto-update control only available on server"
+            }
+        
+        try:
+            if active:
+                cmd = ["systemctl", "enable", "--now", cls.DEPLOY_TIMER]
+            else:
+                cmd = ["systemctl", "disable", "--now", cls.DEPLOY_TIMER]
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            success = result.returncode == 0
+            status_text = "activated" if active else "deactivated"
+            
+            return {
+                "success": success,
+                "active": active,
+                "message": f"Auto-update service {status_text}" if success else f"Timer operation failed: {result.stderr[:200]}"
+            }
+        
+        except Exception as e:
+            return {
+                "success": False,
+                "active": active,
+                "message": f"Timer operation error: {str(e)}"
+            }
     
 
     @classmethod
     def set_auto_update_interval(cls, interval_minutes: int) -> dict:
-        cls._auto_update_interval = interval_minutes
+        """
+        Note: This is not implemented - timer interval must be changed manually.
+        """
         return {
-            "success": True,
+            "success": False,
             "interval_minutes": interval_minutes,
-            "message": f"Auto-update interval set to {interval_minutes} minutes"
+            "message": "Changing timer interval requires manual editing of /etc/systemd/system/prosep-deploy.timer"
         }
     
 
     @classmethod
     def restart_apache(cls) -> dict:
-        return {
-            "success": True,
-            "service": "apache",
-            "message": "Apache service restart initiated"
-        }
+        if not cls._is_server_environment():
+            return {
+                "success": False,
+                "service": "apache",
+                "message": "Service restart only available on server"
+            }
+        
+        try:
+            result = subprocess.run(
+                ["systemctl", "restart", cls.APACHE_SERVICE],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            success = result.returncode == 0
+            
+            # Verify it's running
+            if success:
+                success = cls._is_service_active(cls.APACHE_SERVICE)
+            
+            return {
+                "success": success,
+                "service": "apache",
+                "message": "Apache service restarted" if success else f"Restart failed: {result.stderr[:200]}"
+            }
+        
+        except Exception as e:
+            return {
+                "success": False,
+                "service": "apache",
+                "message": f"Restart error: {str(e)}"
+            }
     
 
     @classmethod
     def restart_uvicorn(cls) -> dict:
-        return {
-            "success": True,
-            "service": "uvicorn",
-            "message": "Uvicorn service restart initiated"
-        }
+        if not cls._is_server_environment():
+            return {
+                "success": False,
+                "service": "uvicorn",
+                "message": "Service restart only available on server"
+            }
+        
+        try:
+            result = subprocess.run(
+                ["systemctl", "restart", cls.BACKEND_SERVICE],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            success = result.returncode == 0
+            
+            # Verify it's running
+            if success:
+                time.sleep(2)  # Give it a moment to start
+                success = cls._is_service_active(cls.BACKEND_SERVICE)
+            
+            return {
+                "success": success,
+                "service": "uvicorn",
+                "message": "Uvicorn service restarted" if success else f"Restart failed: {result.stderr[:200]}"
+            }
+        
+        except Exception as e:
+            return {
+                "success": False,
+                "service": "uvicorn",
+                "message": f"Restart error: {str(e)}"
+            }
     
 
     @classmethod
     def restart_app(cls) -> dict:
-        return {
-            "success": True,
-            "services": ["apache", "uvicorn"],
-            "message": "Application restart initiated"
-        }
+        if not cls._is_server_environment():
+            return {
+                "success": False,
+                "services": ["apache", "uvicorn"],
+                "message": "Service restart only available on server"
+            }
+        
+        try:
+            result = subprocess.run(
+                ["/usr/local/bin/prosep-control.sh", "restart"],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            
+            success = result.returncode == 0
+            
+            # Verify both are running
+            if success:
+                time.sleep(2)  # Give services a moment to start
+                apache_running = cls._is_service_active(cls.APACHE_SERVICE)
+                uvicorn_running = cls._is_service_active(cls.BACKEND_SERVICE)
+                success = apache_running and uvicorn_running
+            
+            return {
+                "success": success,
+                "services": ["apache", "uvicorn"],
+                "message": "Application restarted" if success else f"Restart failed: {result.stderr[:200]}"
+            }
+        
+        except Exception as e:
+            return {
+                "success": False,
+                "services": ["apache", "uvicorn"],
+                "message": f"Restart error: {str(e)}"
+            }

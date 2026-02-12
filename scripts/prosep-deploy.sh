@@ -5,6 +5,7 @@ set -euo pipefail
 
 FORCE_REBUILD=false
 FORCE_TAG=""
+TAGLESS_DEPLOY=false
 
 LOCK_VERSION=false
 UNLOCK=false
@@ -21,6 +22,9 @@ while [[ $# -gt 0 ]]; do
         shift
       fi
       ;;
+    --tagless-deploy)
+      TAGLESS_DEPLOY=true
+      ;;
     --lock-version)
       LOCK_VERSION=true
       if [[ -n "${2:-}" && ! "${2:-}" =~ ^-- ]]; then
@@ -33,7 +37,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --help)
       cat <<EOF
-Usage: $(basename "$0") [--force-rebuild [TAG]] [--lock-version [TAG]] [--unlock-version] [--help]
+Usage: $(basename "$0") [--force-rebuild [TAG]] [--tagless-deploy] [--lock-version [TAG]] [--unlock-version] [--help]
+
+Deployment options:
+  --tagless-deploy      Build and deploy whatever is currently in the repo. Skips all git operations and state tracking.
+                        Use for testing branches on prod after pausing auto-update timer.
 
 Version locking:
   --lock-version [TAG]  Lock current deployment to TAG. If TAG provided and not pre-deployed, lock and deploy.
@@ -43,7 +51,7 @@ EOF
       exit 0
       ;;
     *)
-      echo "Usage: $0 [--force-rebuild [TAG]] [--lock-version [TAG]] [--unlock-version] [--help]"
+      echo "Usage: $0 [--force-rebuild [TAG]] [--tagless-deploy] [--lock-version [TAG]] [--unlock-version] [--help]"
       exit 1
       ;;
   esac
@@ -102,6 +110,40 @@ if [[ "$LOCK_VERSION" == true ]]; then
 
   FORCE_REBUILD=true
   FORCE_TAG=$LOCK_TAG
+fi
+
+# ---> Handle tagless-deploy <--- #
+
+if [[ "$TAGLESS_DEPLOY" == true ]]; then
+  echo "Tagless deploy: Building current repo state..."
+  
+  cd "$REPO_DIR"
+  CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+  CURRENT_COMMIT="$(git rev-parse --short HEAD)"
+  
+  echo "Deploying: $CURRENT_BRANCH @ $CURRENT_COMMIT"
+  
+  pushd frontend/jbio-app >/dev/null
+  rm -rf node_modules build || true
+  npm ci --force
+  npm run build
+  popd >/dev/null
+
+  TMP_DIR="$(mktemp -d)"
+  rsync -a --delete frontend/jbio-app/build/ "$TMP_DIR/"
+  sudo rsync -a --delete "$TMP_DIR/" "$WWW_DIR/"
+  rm -rf "$TMP_DIR"
+
+  echo "Installing Python requirements..."
+  python3 -m pip install -r requirements.txt
+
+  echo "Restarting backend..."
+  sudo systemctl restart "$BACKEND_SERVICE"
+  
+  sudo systemctl reload "$APACHE_SERVICE"
+
+  echo "Tagless deploy complete: $CURRENT_BRANCH @ $CURRENT_COMMIT"
+  exit 0
 fi
 
 # ---> Deployment path (normal or forced) <--- #
