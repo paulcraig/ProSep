@@ -6,9 +6,10 @@
 
 /* Button base style (from buttonStyle) */
 .twoDE-button {
-  background-color: #1a1a1a;
-  border: 1px solid #3a3a3a;
-  color: white;
+  background-color: #2a2a2a;
+  border: 1px solid var(--accent);
+  border-color: #4a4a4a;
+  color: var(--text);
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
@@ -66,6 +67,12 @@
   width: 800px; /* keep explicit rendering size consistent with canvas attributes */
   height: 600px;
 }
+
+.twoDE-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 
 /* Protein list panel (converted from inline styles) */
 #protein-list.twoDE-panel {
@@ -297,22 +304,6 @@
   gap: 4px;
   padding-top: 160px;
 }
-
-/* Dimension button transitions and states */
-.dimension-button {
-
-}
-
-.dimension-button.disabled {
-  opacity: 0.5;
-  cursor: not-allowed !important;
-}
-
-.dimension-button.disabled:hover {
-  background-color: #1a1a1a;
-  border-color: #3a3a3a;
-}
-
 
 @keyframes pulse-button {
   0%, 100% {

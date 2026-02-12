@@ -11,7 +11,6 @@ const TwoDE = () => {
 
   
   //just to commit
-  const animationFrameRef = useRef(null);
   const [dots, setDots] = useState([]);
   const [hoveredDot, setHoveredDot] = useState(null);
   const [selectedDot, setSelectedDot] = useState(null);
@@ -20,7 +19,7 @@ const TwoDE = () => {
   const [dragCounter, setDragCounter] = useState(0);
   const [simulationState, setSimulationState] = useState('ready'); // 'ready', 'ief-running', 'ief-complete', 'sds-transitioning', 'sds-running', 'complete'
   const [simulationProgress, setSimulationProgress] = useState(0);
-const [showProteinSepertion,setshowProteinSepertion] = useState(false);
+  const [showProteinSepertion,setshowProteinSepertion] = useState(false);
   const [phRange, setPhRange] = useState({ min: 0, max: 14 });
   const [yAxisMode, setYAxisMode] = useState('mw'); // 'mw' or 'distance'
   const [isUploading, setIsUploading] = useState(false);
@@ -734,7 +733,7 @@ const [showProteinSepertion,setshowProteinSepertion] = useState(false);
 
             //if short_value is greater than 1000 then display in KDa
             if(mw >= 1000){
-              short_value = (mw / 1000).toFixed(2) + ' KDa';
+              short_value = (mw / 1000) + 'K Da';
             }else{
               short_value = short_value + ' Da';
             }
@@ -1084,27 +1083,38 @@ const [showProteinSepertion,setshowProteinSepertion] = useState(false);
               />
             </label>
 
-            <div className="dimension-button-group">
-              <button
-                className={`twoDE-button dimension-button ${simulationState === 'ready' ? 'ready' : simulationState === 'ief-running' ? 'running' : 'disabled'}`} style={{cursor: simulationState === 'ready' ? 'pointer' : 'not-allowed'}} onClick={startIEF} disabled={simulationState !== 'ready'}>
-                  <span>
-                    {/* nbsp is a non breaking space. it's invisibile and i did it so the button fits. kind of jank but it works */}
-                  First Dimension&nbsp; 
-                  </span>
-              </button>
-            </div>
 
-            <div className="dimension-button-group">
-              <button 
-                className={`twoDE-button dimension-button ${simulationState === 'ief-complete' ? 'ready' : simulationState === 'sds-running' ? 'running' : simulationState === 'complete' ? 'active' :'disabled'}`} style={{cursor: simulationState === 'ief-complete' ? 'pointer' : 'not-allowed'}} onClick={startSDS} disabled={simulationState !== 'ief-complete'}>
-                <span> Second Dimension </span>
-              </button>
-            </div>
+            <button
+              className={`twoDE-button icon`} 
+              onClick={startIEF} 
+              disabled={simulationState !== 'ready'}
+              onMouseOver={buttonHoverEffect}
+              onMouseOut={buttonLeaveEffect}
+              >
+                {/* nbsp is a non breaking space. it's invisibile and i did it so the button fits. kind of jank but it works */}
+                First Dimension&nbsp; 
+            </button>
+
+
+            <button 
+              className={`twoDE-button`} onClick={startSDS} disabled={simulationState !== 'ief-complete'} 
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }} 
+              onMouseOver={buttonHoverEffect}
+              onMouseOut={buttonLeaveEffect}>
+              <span> Second Dimension </span>
+            </button>
+
 
 
             {/* Reset button */}
             <button
-              className="twoDE-button icon"
+              className="twoDE-button"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1130,9 +1140,7 @@ const [showProteinSepertion,setshowProteinSepertion] = useState(false);
               {yAxisMode === 'mw' ? 'Show Distance' : 'Show MW'}
               {/* YAXIS BUTTON ABOVE ME */}
             </button> 
-            <Button onClick={() => {
-              setshowProteinSepertion(!showProteinSepertion)
-            }}>show Protein Sepertion</Button>
+            <Button onClick={() => {setshowProteinSepertion(!showProteinSepertion)}}> show Protein Sepertion </Button>
           </div>
 
           {/* pH Range Slider, disabled during simulation */}
