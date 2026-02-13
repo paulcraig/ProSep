@@ -318,7 +318,7 @@ const Hidden: React.FC = () => {
   };
 
 
-  const showConfirmation = (title: string, message: string, action: () => void, isCheckout = false, isDanger = false) => {
+  const showConfirmation = (title: string, message: string, action: () => void, isCheckout = false, isDanger = false, initialLockState = false) => {
     setConfirmModal({
       show: true,
       title,
@@ -326,7 +326,7 @@ const Hidden: React.FC = () => {
       action,
       isCheckout,
       isDanger,
-      lockVersion: false
+      lockVersion: initialLockState
     });
   };
 
@@ -817,7 +817,8 @@ const Hidden: React.FC = () => {
                       `Are you sure you want to checkout version ${checkoutVersion}? This will restart the application.`,
                       handleCheckoutVersion,
                       true,
-                      true
+                      true,
+                      isLocked
                     )}
                   >
                     Checkout
