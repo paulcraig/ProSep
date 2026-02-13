@@ -164,6 +164,23 @@ const Hidden: React.FC = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (password && !authed) {
+      checkPw();
+    }
+  }, []);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setIsRefreshing(true);
+      fetchData().then(() => {
+        setTimeout(() => setIsRefreshing(false), 500);
+      });
+    }, 60000); // Refresh status every minute.
+
+    return () => clearInterval(intervalId);
+  }, []);
+
 
   const encryptPw = async (pw: string): Promise<string | false> => {
     try {
