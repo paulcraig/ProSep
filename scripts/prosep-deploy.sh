@@ -156,18 +156,17 @@ git pull origin main
 
 
 # ---> Determine target tag <--- #
-
-if [[ "$is_locked" == true ]]; then
-  TARGET_TAG="$CURRENT_TAG"
+if [[ -n "$FORCE_TAG" ]]; then
+  if git rev-parse "$FORCE_TAG" >/dev/null 2>&1; then
+    TARGET_TAG="$FORCE_TAG"
+    echo "Using specified tag: $TARGET_TAG"
+  else
+    echo "Tag '$FORCE_TAG' not found. Aborting."
+    exit 0
+  fi
 else
-  if [[ -n "$FORCE_TAG" ]]; then
-    if git rev-parse "$FORCE_TAG" >/dev/null 2>&1; then
-      TARGET_TAG="$FORCE_TAG"
-      echo "Using specified tag: $TARGET_TAG"
-    else
-      echo "Tag '$FORCE_TAG' not found. Aborting."
-      exit 0
-    fi
+  if [[ "$is_locked" == true ]]; then
+    TARGET_TAG="$CURRENT_TAG"
   else
     TARGET_TAG="$(git tag --merged origin/main --sort=version:refname | tail -n1 || true)"
     if [[ -z "$TARGET_TAG" ]]; then
