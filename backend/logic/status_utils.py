@@ -354,13 +354,14 @@ class StatusService:
                 
                 # Extract timestamp:
                 timestamp_match = re.search(r'\[(\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2})\s+[+-]\d{4}\]', line)
-                
+
                 if timestamp_match:
                     try:
                         ts = datetime.strptime(timestamp_match.group(1), '%d/%b/%Y:%H:%M:%S')
                         if first_timestamp is None:
                             first_timestamp = ts
                         last_timestamp = ts
+                        
                     except ValueError:
                         pass
                 
@@ -512,7 +513,6 @@ class StatusService:
 
     @classmethod
     def _get_service_memory(cls, service_name: str) -> int:
-        """Get memory usage in MB for a systemd service."""
         try:
             result = subprocess.run(
                 ["systemctl", "show", service_name, "--property=MainPID", "--value"],
@@ -649,29 +649,20 @@ class StatusService:
             if lock:
                 cmd.extend(["--lock-version", version])
             
-            result = subprocess.run(
+            subprocess.Popen(
                 cmd,
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minutes for build
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
             )
             
-            success = result.returncode == 0
-            
             return {
-                "success": success,
+                "success": True,
                 "version": version,
                 "locked": lock,
-                "message": f"Deployed version {version}" if success else f"Deployment failed: {result.stderr[:200]}"
+                "message": f"Deployment of version {version} initiated"
             }
         
-        except subprocess.TimeoutExpired:
-            return {
-                "success": False,
-                "version": version,
-                "locked": lock,
-                "message": "Deployment timed out"
-            }
         except Exception as e:
             return {
                 "success": False,

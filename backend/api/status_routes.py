@@ -89,7 +89,7 @@ async def get_version():
     return StatusService.get_version_info()
 
 
-@router.post("/version/checkout", response_model=CheckoutResponse)
+@router.post("/version/checkout", response_model=CheckoutResponse, status_code=202)
 async def checkout_version(request: CheckoutRequest, admin_hash: str = Depends(verify_admin_header)):
     result = StatusService.checkout_version(request.version, request.lock)
     return result

@@ -118,6 +118,10 @@ fi
 
 if [[ "$TAGLESS_DEPLOY" == true ]]; then
   echo "Tagless deploy: Building current repo state..."
+
+  echo "Stopping app..."
+  sudo systemctl stop "$BACKEND_SERVICE" || true
+  sudo systemctl stop "$APACHE_SERVICE" || true
   
   cd "$REPO_DIR"
   CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
@@ -139,11 +143,9 @@ if [[ "$TAGLESS_DEPLOY" == true ]]; then
   echo "Installing Python requirements..."
   python3 -m pip install -r requirements.txt
 
-  echo "Restarting backend..."
+  echo "Restarting app..."
   sudo systemctl restart "$BACKEND_SERVICE"
-  
   sudo systemctl start "$APACHE_SERVICE"
-  sudo systemctl reload "$APACHE_SERVICE"
 
   echo "Tagless deploy complete: $CURRENT_BRANCH @ $CURRENT_COMMIT"
   exit 0
@@ -187,6 +189,10 @@ fi
 
 # ---> Deploy <--- #
 
+echo "Stopping app..."
+sudo systemctl stop "$BACKEND_SERVICE" || true
+sudo systemctl stop "$APACHE_SERVICE" || true
+
 echo "Deploying $TARGET_TAG"
 git -c advice.detachedHead=false checkout -f "$TARGET_TAG"
 
@@ -204,9 +210,6 @@ rm -rf "$TMP_DIR"
 echo "Installing Python requirements..."
 python3 -m pip install -r requirements.txt
 
-echo "Starting backend..."
-sudo systemctl restart "$BACKEND_SERVICE"
-
 # ---> Finalize <--- #
 
 if [[ "$is_locked" == false ]]; then
@@ -216,6 +219,8 @@ if [[ "$is_locked" == false ]]; then
     echo "$TARGET_TAG" | sudo tee "$STATE_FILE" >/dev/null
   fi
 fi
-sudo systemctl reload "$APACHE_SERVICE"
+echo "Starting app..."
+sudo systemctl restart "$BACKEND_SERVICE"
+sudo systemctl start "$APACHE_SERVICE"
 
 echo "Deployed: ($TARGET_TAG)."
