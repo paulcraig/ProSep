@@ -154,7 +154,6 @@ git fetch origin --tags
 git checkout main
 git pull origin main
 
-
 # ---> Determine target tag <--- #
 if [[ -n "$FORCE_TAG" ]]; then
   if git rev-parse "$FORCE_TAG" >/dev/null 2>&1; then

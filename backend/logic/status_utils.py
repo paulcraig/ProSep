@@ -645,13 +645,21 @@ class StatusService:
         
         try:
             cmd = ["/usr/local/bin/prosep-deploy.sh", "--force-rebuild", version]
-            
+
             if lock: cmd.extend(["--lock-version", version])
+            
+            log_file = Path("/tmp/prosep-deploy.log")
+
+            with open(log_file, "a") as f:
+                f.write(f"\n{'='*60}\n")
+                f.write(f"Deployment started: {datetime.now()}\n")
+                f.write(f"Command: {' '.join(cmd)}\n")
+                f.write(f"{'='*60}\n")
             
             subprocess.Popen(
                 cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=open(log_file, "a"),
+                stderr=subprocess.STDOUT,
                 start_new_session=True
             )
             
