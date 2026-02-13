@@ -52,10 +52,7 @@ interface ServerHealth {
 
 
 const Hidden: React.FC = () => {
-  const [password, setPw] = useState(() => {
-    // Load cached password on mount
-    return localStorage.getItem("admin-cached-password") || "";
-  });
+  const [password, setPw] = useState(() => { return localStorage.getItem("admin-cached-password") || "" });
   const [newPw, setNewPw] = useState("");
   const [authed, setAuthed] = useState(false);
   const [authedPw, setAuthedPw] = useState("");
@@ -69,7 +66,6 @@ const Hidden: React.FC = () => {
   const [updateServiceActive, setUpdateServiceActive] = useState(true);
   
   const [isLocked, setIsLocked] = useState(true);
-  const [lockOnCheckout, setLockOnCheckout] = useState(false);
   const [checkoutVersion, setCheckoutVersion] = useState("v5.1.2");
 
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
@@ -78,12 +74,24 @@ const Hidden: React.FC = () => {
   
   const artifactRef = useRef<ArtifactListRef>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [confirmModal, setConfirmModal] = useState<{show: boolean; title: string; message: string; action: () => void; isCheckout?: boolean; isDanger?: boolean; }>
-  ({
-    show: false, title: "", message: "", action: () => {}, isCheckout: false, isDanger: false
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean; 
+    title: string; 
+    message: string; 
+    action: () => void; 
+    isCheckout?: boolean; 
+    isDanger?: boolean;
+    lockVersion?: boolean;
+  }>({
+    show: false, 
+    title: "", 
+    message: "", 
+    action: () => {}, 
+    isCheckout: false, 
+    isDanger: false,
+    lockVersion: false
   });
 
-  // Cache password to localStorage whenever it changes
   useEffect(() => {
     if (password) {
       localStorage.setItem("admin-cached-password", password);
@@ -317,11 +325,9 @@ const Hidden: React.FC = () => {
       message,
       action,
       isCheckout,
-      isDanger
+      isDanger,
+      lockVersion: false
     });
-    if (isCheckout) {
-      setLockOnCheckout(false);
-    }
   };
 
 
@@ -332,9 +338,9 @@ const Hidden: React.FC = () => {
       message: "",
       action: () => {},
       isCheckout: false,
-      isDanger: false
+      isDanger: false,
+      lockVersion: false
     });
-    setLockOnCheckout(false);
   };
 
 
@@ -418,7 +424,7 @@ const Hidden: React.FC = () => {
       const res = await fetch(`${API_URL}/status/version/checkout`, {
         method: "POST",
         headers: getAuthJsonHeaders(),
-        body: JSON.stringify({ version: checkoutVersion, lock: lockOnCheckout })
+        body: JSON.stringify({ version: checkoutVersion, lock: confirmModal.lockVersion || false })
       });
       if (res.ok) {
         console.log(`Checked out version ${checkoutVersion}`);
@@ -532,12 +538,12 @@ const Hidden: React.FC = () => {
                   <IconButton
                     size="small"
                     className="lock-toggle"
-                    onClick={() => setLockOnCheckout(!lockOnCheckout)}
+                    onClick={() => setConfirmModal({...confirmModal, lockVersion: !confirmModal.lockVersion})}
                   >
-                    {lockOnCheckout ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
+                    {confirmModal.lockVersion ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
                   </IconButton>
                   <span className="modal-lock-label">
-                    {lockOnCheckout ? "Lock to this version" : "Don\"t lock version"}
+                    {confirmModal.lockVersion ? "Lock to this version" : "Don\"t lock version"}
                   </span>
                 </div>
               </div>

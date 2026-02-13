@@ -361,7 +361,7 @@ class StatusService:
                         if first_timestamp is None:
                             first_timestamp = ts
                         last_timestamp = ts
-                        
+
                     except ValueError:
                         pass
                 
@@ -646,8 +646,7 @@ class StatusService:
         try:
             cmd = ["/usr/local/bin/prosep-deploy.sh", "--force-rebuild", version]
             
-            if lock:
-                cmd.extend(["--lock-version", version])
+            if lock: cmd.extend(["--lock-version", version])
             
             subprocess.Popen(
                 cmd,
