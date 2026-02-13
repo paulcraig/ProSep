@@ -7,6 +7,7 @@ FORCE_REBUILD=false
 FORCE_TAG=""
 TAGLESS_DEPLOY=false
 
+LOCKING_THIS_RUN=false
 LOCK_VERSION=false
 UNLOCK=false
 LOCK_TAG=""
@@ -103,6 +104,7 @@ if [[ "$LOCK_VERSION" == true ]]; then
 
   echo "${LOCK_TAG}-locked" | sudo tee "$STATE_FILE" >/dev/null
   echo "Locked version: Tag '$LOCK_TAG'"
+  LOCKING_THIS_RUN=true
 
   if [[ "$CURRENT_TAG" == "$LOCK_TAG" ]]; then
     exit 0
@@ -208,7 +210,11 @@ sudo systemctl restart "$BACKEND_SERVICE"
 # ---> Finalize <--- #
 
 if [[ "$is_locked" == false ]]; then
-  echo "$TARGET_TAG" | sudo tee "$STATE_FILE" >/dev/null
+  if [[ "$LOCKING_THIS_RUN" == true ]]; then
+    echo "${TARGET_TAG}-locked" | sudo tee "$STATE_FILE" >/dev/null
+  else
+    echo "$TARGET_TAG" | sudo tee "$STATE_FILE" >/dev/null
+  fi
 fi
 sudo systemctl reload "$APACHE_SERVICE"
 

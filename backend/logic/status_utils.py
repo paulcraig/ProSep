@@ -343,12 +343,26 @@ class StatusService:
             lines = result.stdout.strip().split('\n')
             total_requests = 0
             error_count = 0
+            first_timestamp = None
+            last_timestamp = None
             
             for line in lines:
                 if filter_requests and not any(m in line for m in ['"GET ', '"POST ', '"PUT ', '"DELETE ', '"PATCH ']):
                     continue
                 
                 total_requests += 1
+                
+                # Extract timestamp:
+                timestamp_match = re.search(r'\[(\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2})\s+[+-]\d{4}\]', line)
+                
+                if timestamp_match:
+                    try:
+                        ts = datetime.strptime(timestamp_match.group(1), '%d/%b/%Y:%H:%M:%S')
+                        if first_timestamp is None:
+                            first_timestamp = ts
+                        last_timestamp = ts
+                    except ValueError:
+                        pass
                 
                 # Count only 5xx errors:
                 status_match = re.search(r'" (\d{3}) ', line)
@@ -359,8 +373,16 @@ class StatusService:
             if total_requests == 0:
                 return {"requests_per_minute": 0, "error_rate": 0.0}
             
+            requests_per_minute = total_requests
+
+            if first_timestamp and last_timestamp:
+                time_diff = (last_timestamp - first_timestamp).total_seconds()
+
+                if time_diff > 0:
+                    requests_per_minute = int((total_requests / time_diff) * 60)
+            
             return {
-                "requests_per_minute": min(total_requests, 100),
+                "requests_per_minute": requests_per_minute,
                 "error_rate": round((error_count / total_requests * 100), 2)
             }
         
