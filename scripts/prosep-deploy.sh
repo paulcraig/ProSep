@@ -61,6 +61,12 @@ done
 
 # ---> Get current state <--- #
 
+echo "DEBUG: After flag parsing:"
+echo "  FORCE_REBUILD=$FORCE_REBUILD"
+echo "  FORCE_TAG='$FORCE_TAG'"
+echo "  LOCK_VERSION=$LOCK_VERSION"
+echo "  LOCK_TAG='$LOCK_TAG'"
+
 CURRENT_STATE="$(cat "$STATE_FILE" 2>/dev/null || echo "")"
 CURRENT_TAG="$CURRENT_STATE"
 
@@ -154,7 +160,13 @@ git fetch origin --tags
 git checkout main
 git pull origin main
 
+
 # ---> Determine target tag <--- #
+echo "DEBUG: Before determining target:"
+echo "  FORCE_TAG='$FORCE_TAG'"
+echo "  CURRENT_TAG='$CURRENT_TAG'"
+echo "  is_locked=$is_locked"
+
 if [[ -n "$FORCE_TAG" ]]; then
   if git rev-parse "$FORCE_TAG" >/dev/null 2>&1; then
     TARGET_TAG="$FORCE_TAG"
