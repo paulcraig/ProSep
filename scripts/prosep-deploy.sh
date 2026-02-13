@@ -88,7 +88,7 @@ fi
 
 # ---> Handle lock-version <--- #
 
-if [[ "$LOCK_VERSION" == true ]]; then
+if [[ "$LOCK_VERSION" == true ]] && [[ "$FORCE_REBUILD" == false ]]; then
   if [[ -z "$LOCK_TAG" ]]; then
     if [[ -z "$CURRENT_TAG" ]]; then
       echo "Cannot lock: Current tag does not exist."
@@ -159,13 +159,8 @@ git pull origin main
 
 # ---> Determine target tag <--- #
 
-if [[ "$LOCKING_THIS_RUN" == true ]]; then
-  TARGET_TAG="$FORCE_TAG"
-  echo "Locking and deploying to: $TARGET_TAG"
-
-elif [[ "$is_locked" == true ]]; then
+if [[ "$is_locked" == true ]]; then
   TARGET_TAG="$CURRENT_TAG"
-
 else
   if [[ -n "$FORCE_TAG" ]]; then
     if git rev-parse "$FORCE_TAG" >/dev/null 2>&1; then
@@ -211,7 +206,7 @@ python3 -m pip install -r requirements.txt
 
 # ---> Finalize <--- #
 
-if [[ "$is_locked" == false ]] || [[ "$LOCKING_THIS_RUN" == true ]]; then
+if [[ "$is_locked" == false ]]; then
   if [[ "$LOCKING_THIS_RUN" == true ]]; then
     echo "${TARGET_TAG}-locked" | sudo tee "$STATE_FILE" >/dev/null
   else
@@ -219,8 +214,8 @@ if [[ "$is_locked" == false ]] || [[ "$LOCKING_THIS_RUN" == true ]]; then
   fi
 fi
 
-echo "Starting app..."
-sudo systemctl restart "$BACKEND_SERVICE"
+echo "Restarting app..."
 sudo systemctl reload "$APACHE_SERVICE"
+sudo systemctl restart "$BACKEND_SERVICE"
 
 echo "Deployed: ($TARGET_TAG)."
