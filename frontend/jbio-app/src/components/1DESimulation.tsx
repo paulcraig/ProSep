@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { API_URL } from '../config';
+import { standards } from '../components/1DE/Standards';
+import type { ElectrophoresisProps, UploadedProteinsMap, PositionsMap } from '../components/1DE/types';
 import './1DESimulation.css'
 
 import blackWire from '../assets/electrophoresis/blackwire.png'
@@ -78,11 +80,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
   const [selectedStandards, setSelectedStandards] =
     useState<(typeof standards)[number][]>(standards);
-  const [uploadedProteins, setUploadedProteins] = useState<
-    Record<number, { name: string; proteins: typeof standards }>
-  >({});
+  const [uploadedProteins, setUploadedProteins] = useState<UploadedProteinsMap>({});
   const [positions, setPositions] = useState<
-    Record<number, Record<string, number>>
+    PositionsMap
   >(() =>
     Object.fromEntries(
       Array.from({ length: wellsCount }).map((_, wi) => [
