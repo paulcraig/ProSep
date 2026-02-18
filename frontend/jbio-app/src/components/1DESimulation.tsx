@@ -3,6 +3,7 @@ import { API_URL } from '../config';
 import { standards } from '../components/1DE/Standards';
 import GoogleScatterModal from '../components/1DE/GoogleScatterModal';
 import Toolbar from './1DE/Toolbar';
+import WellsUI from './1DE/WellsUI';
 import type { ElectrophoresisProps, UploadedProteinsMap, PositionsMap } from '../components/1DE/types';
 import './1DESimulation.css'
 
@@ -331,6 +332,20 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
       setWellsCount(w => w - 1);
     }
+  };
+
+  const onRemoveWellContents = (wi: number) => {
+    setUploadedProteins((prev) => {
+      const next = { ...prev };
+      delete next[wi];
+      return next;
+    });
+
+    setPositions((prev) => {
+      const next = { ...prev };
+      delete next[wi];
+      return next;
+    });
   };
 
 
@@ -823,138 +838,26 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             );
           })}
 
-          <g className='filename-bands' style={{
-            opacity: hasStarted ? 0 : 1,
-            transition: 'opacity 0.25s ease-out',
-            pointerEvents: hasStarted ? 'none' : 'auto'
-          }}>
-            {Array.from({ length: wellsCount }).map((_, wi) => {
-              const hasProteins = Object.keys(positions[wi] || {}).length > 0;
-              const label = wi === 0 ? 'Standard Proteins' : uploadedProteins[wi]?.name || `File ${wi}`;
-
-              if (!hasProteins) return null;
-              
-              const isDragging = draggedWell === wi;
-              const isDropTarget = dragOverWell === wi && draggedWell !== null && draggedWell !== wi;
-              const canDrag = wi !== 0 && !!uploadedProteins[wi];
-              
-              return (
-                <g key={`filename-band-${wi}`}>
-                  <foreignObject
-                    x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)} y={wellH * 1.65}
-                    width={bandW} height={bandH}
-                    style={{ overflow: 'visible' }}
-                  >
-                  <Tooltip
-                    title={label}
-                    slotProps={{
-                      tooltip: {
-                        sx: { // This needs to be fixed later (I'm crunchin to finish on time)
-                          backgroundColor: '#282b30',
-                          color: '#f6f6f6',
-                          fontWeight: 'normal',
-                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)'
-                        },
-                      },
-                    }}
-                  >
-                      <div
-                        draggable={canDrag}
-                        onDragStart={() => onDragStart(wi)}
-                        onDragOver={(e) => onDragOver(e, wi)}
-                        onDragLeave={onDragLeave}
-                        onDrop={(e) => onDrop(e, wi)}
-                        onDragEnd={onDragEnd}
-                        style={{
-                          width: '100%', height: '100%',
-                          cursor: canDrag ? 'grab' : 'default',
-                          opacity: isDragging ? 0.5 : 1,
-                          transition: 'opacity 0.2s'
-                        }}
-                        onClick={(e) => {
-                          if (e.detail === 2 && wi !== 0) {
-                            e.stopPropagation();
-                            setUploadedProteins(prev => {
-                              const next = { ...prev };
-                              delete next[wi];
-                              return next;
-                            });
-                            setPositions(prev => {
-                              const next = { ...prev };
-                              delete next[wi];
-                              return next;
-                            });
-                          }
-                        }}
-                      />
-                    </Tooltip>
-                  </foreignObject>
-                  <rect
-                    x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)} y={wellH * 1.65}
-                    width={bandW} height={bandH} rx={3} ry={3}
-                    fill={isDropTarget ? 'var(--accent)' : 'var(--highlight)'}
-                    stroke={isDropTarget ? 'var(--text)' : 'var(--accent)'}
-                    strokeWidth={isDropTarget ? 2 : 0.5}
-                    style={{ pointerEvents: 'none' }}
-                  />
-                </g>
-              );
-            })}
-          </g>
-
-          {/* Well Uploads */}
-          <g className='upload-buttons' style={{
-            opacity: hasStarted ? 0 : 1,
-            transition: 'opacity 0.25s ease-out'
-          }}>
-            {Array.from({ length: wellsCount }).map((_, wi) => {
-              if (wi === 0 || uploadedProteins[wi]) return null;
-
-              const centerX = (2 * wi + 1) * wellW + wellW / 2;
-              const centerY = wellH * 1.5;
-
-              return (
-                <g key={`upload-btn-${wi}`}>
-                  <foreignObject
-                    x={centerX - 12} y={centerY - 12}
-                    width={24} height={24}
-                    style={{ overflow: 'visible' }}
-                  >
-                    <label
-                      htmlFor={`file-upload-${wi}`}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <input
-                        type='file'
-                        id={`file-upload-${wi}`}
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) onFileUpload(wi, file);
-                        }}
-                        accept='.fasta,.txt'
-                      />
-                      <IconButton
-                        component='span'
-                        sx={{
-                          backgroundColor: 'var(--highlight)',
-                          color: 'var(--text)',
-                          width: 24, height: 24, padding: 0,
-                          '&:hover': { backgroundColor: 'var(--accent)' },
-                        }}
-                      >
-                        <UploadIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    </label>
-                  </foreignObject>
-                </g>
-              );
-            })}
-          </g>
+          <WellsUI
+            wellsCount={wellsCount}
+            wellW={wellW}
+            bandW={bandW}
+            bandH={bandH}
+            wellH={wellH}
+            hasStarted={hasStarted}
+            simDelay={simDelay}
+            positions={positions}
+            uploadedProteins={uploadedProteins}
+            draggedWell={draggedWell}
+            dragOverWell={dragOverWell}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            onDragEnd={onDragEnd}
+            onRemoveWellContents={onRemoveWellContents}
+            onFileUpload={onFileUpload}
+          />
         </svg>
       </div>
 
