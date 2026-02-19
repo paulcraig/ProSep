@@ -15,13 +15,8 @@ const ProteolyticDigestion: React.FC = () => {
   const [protease,setProtease] = useState("")
   
 
-  const PROTEASES = new Map<string, string>();
-  PROTEASES.set("PreScission", "Q");
-  PROTEASES.set("Thrombin", "R");
-  PROTEASES.set("Enterokinase", "K");
- PROTEASES.set("Chymotrypsin", "F");
- PROTEASES.set("trypsin", "K");
- PROTEASES.set("pepsin", "R");
+  const PROTEASES = ["trypsin","chymotrypsin","pepsin"];
+ 
  const updateCutProtein = async (sequence: string = currentSeq, protease_val: string = protease) =>{
    setUploading(true);
     setMessage("Processing...");
@@ -61,13 +56,13 @@ const ProteolyticDigestion: React.FC = () => {
     }
  }
   const changeSelectedProtease = async (val: unknown) => {
-    let temp = PROTEASES.get(val as string);
-    if (typeof(temp) == "string"){
-      setProtease(temp);
-      await updateCutProtein(currentSeq, temp);
+   
+    if (typeof(val) == "string"){
+      setProtease(val);
+      await updateCutProtein(currentSeq, val);
     }
     else {
-      console.log(temp)
+      console.log(val)
     }
    
   };
@@ -194,8 +189,8 @@ const ProteolyticDigestion: React.FC = () => {
                 >
                   
                   {Array.from(PROTEASES.entries()).map(([key, val]) => (
-                    <MenuItem key={key} value={key}>
-                      {key}: {val}
+                    <MenuItem key={key} value={val}>
+                      {val}
                     </MenuItem>
                   ))}
                 </Select>

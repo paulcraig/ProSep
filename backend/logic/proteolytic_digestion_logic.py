@@ -7,18 +7,21 @@ import matplotlib.pyplot as plt
 from backend.logic.one_de_simulation import Simulation_1de
 from backend.utility.protein import Protein
 import random
-
+import re
 
 class ProteolyticDigestion:
     @staticmethod
-    def breakUpProtein(sequence: str, two_animno_acids: str) -> List:
-        seperated: list = sequence.split(two_animno_acids)
-        i = 0
-        while i < len(seperated) - 1:
-            seperated[i] = seperated[i] + two_animno_acids
-            i += 1
+    def breakUpProtein(sequence: str,proteaseName: str) -> List:
+       
+        if (proteaseName == 'chymotrypsin'): # Chymotrypsin Breaks up after F W Y, but not if followed by P
 
-        return seperated
+            return re.split(r"(?<=[FWY])(?!P)",sequence)
+        if (proteaseName == 'trypsin'):
+            return re.split(r'(?<=[KR])(?!P)',sequence)
+        if (proteaseName == 'pepsin'):
+            return re.split(r'(?<=[FLWY])(?!P)', sequence)
+        
+      
 
     @staticmethod
     def fileGetProteinInfo(file: UploadFile) -> Any:
