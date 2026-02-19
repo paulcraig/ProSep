@@ -5,6 +5,7 @@ import GoogleScatterModal from '../components/1DE/GoogleScatterModal';
 import Toolbar from './1DE/Toolbar';
 import WellsUI from './1DE/WellsUI';
 import GelBackground from './1DE/GelBackground';
+import BandsLayer from './1DE/BandsLayer';
 import type { ElectrophoresisProps, UploadedProteinsMap, PositionsMap } from '../components/1DE/types';
 import './1DESimulation.css'
 
@@ -13,16 +14,16 @@ import redWire from '../assets/electrophoresis/redwire.png'
 
 import { Select, MenuItem, Button, Chip, Tooltip } from '@mui/material'
 
-const standards = [
-  { name: 'B-Galactosidase',    molecularWeight: 116250,  migrationDistance: 0, color: '#4dd0e1',   id_num: '6X1Q', id_str: 'pdb' },
-  { name: 'Phosphorylase B',    molecularWeight: 97400,   migrationDistance: 0, color: '#d3e24aff', id_num: '3LQ8', id_str: 'pdb' },
-  { name: 'Serum Albumin',      molecularWeight: 66200,   migrationDistance: 0, color: '#3d98c1ff', id_num: '1AO6', id_str: 'pdb' },
-  { name: 'Ovalbumin',          molecularWeight: 45000,   migrationDistance: 0, color: '#f06292',   id_num: '1OVA', id_str: 'pdb' },
-  { name: 'Carbonic Anhydrase', molecularWeight: 29000,   migrationDistance: 0, color: '#b8de7cff', id_num: '1CA2', id_str: 'pdb' },
-  { name: 'Trypsin Inhibitor',  molecularWeight: 20100,   migrationDistance: 0, color: '#5c6bc0',   id_num: '2PTC', id_str: 'pdb' },
-  { name: 'Lysozyme',           molecularWeight: 14400,   migrationDistance: 0, color: '#81c784',   id_num: '6LYZ', id_str: 'pdb' },
-  { name: 'Aprotinin',          molecularWeight: 6500,    migrationDistance: 0, color: '#e57373',   id_num: '1AAP', id_str: 'pdb' }
-];
+// const standards = [
+//   { name: 'B-Galactosidase',    molecularWeight: 116250,  migrationDistance: 0, color: '#4dd0e1',   id_num: '6X1Q', id_str: 'pdb' },
+//   { name: 'Phosphorylase B',    molecularWeight: 97400,   migrationDistance: 0, color: '#d3e24aff', id_num: '3LQ8', id_str: 'pdb' },
+//   { name: 'Serum Albumin',      molecularWeight: 66200,   migrationDistance: 0, color: '#3d98c1ff', id_num: '1AO6', id_str: 'pdb' },
+//   { name: 'Ovalbumin',          molecularWeight: 45000,   migrationDistance: 0, color: '#f06292',   id_num: '1OVA', id_str: 'pdb' },
+//   { name: 'Carbonic Anhydrase', molecularWeight: 29000,   migrationDistance: 0, color: '#b8de7cff', id_num: '1CA2', id_str: 'pdb' },
+//   { name: 'Trypsin Inhibitor',  molecularWeight: 20100,   migrationDistance: 0, color: '#5c6bc0',   id_num: '2PTC', id_str: 'pdb' },
+//   { name: 'Lysozyme',           molecularWeight: 14400,   migrationDistance: 0, color: '#81c784',   id_num: '6LYZ', id_str: 'pdb' },
+//   { name: 'Aprotinin',          molecularWeight: 6500,    migrationDistance: 0, color: '#e57373',   id_num: '1AAP', id_str: 'pdb' }
+// ];
 
 
 interface ElectrophoresisProps {
@@ -609,86 +610,23 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             <title>Add well</title>
           </g>
 
-          <g
-            className='standards-well'
-            style={{
-              opacity: hasStarted ? 1 : 0,
-              transition: hasStarted ? `opacity ${simDelay / 1000}s ease-in ${simDelay / 1000}s` : 'none'
-            }}
-          >
-            {selectedStandards.map((protein, i) => {
-              return (
-                <rect
-                  x={wellW + ((wellW - bandW) / 2)} y={Math.max(valueToY(positions[0]?.[protein.id_num] ?? 0) - (bandH * 1.25), bandMin)}
-                  width={bandW} height={bandH} rx={3} ry={3}
-                  key={protein.id_num}
-                  fill={protein.color}
-                  stroke='var(--background)'
-                  strokeWidth={0.5}
-                  style={{ cursor: 'pointer' }}
-                  onClick={(e) => {
-                    if (tooltipData?.protein != protein) {
-                      e.stopPropagation();
-                      const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
-                      
-                      setTooltipData({
-                        protein,
-                        x: rect.left + rect.width / 2,
-                        y: rect.top
-                      });
-                      return;
-                    }
-                    setTooltipData(null);
-                  }}
-                />
-              )
-            })}
-          </g>
-
-          {/* Non-standard Bands */}
-          {Array.from({ length: wellsCount }).map((_, wi) => {
-            if (wi === 0 || !uploadedProteins[wi]) return null;
-
-            return (
-              <g
-                key={`uploaded-well-${wi}`}
-                className='uploaded-well'
-                style={{
-                  opacity: hasStarted ? 1 : 0,
-                  transition: hasStarted ? `opacity ${simDelay / 1000}s ease-in ${simDelay / 1000}s` : 'none'
-                }}
-              >
-                {uploadedProteins[wi].proteins.map((protein) => {
-                  return (
-                    <rect
-                      x={(2 * wi + 1) * wellW + ((wellW - bandW) / 2)}
-                      y={Math.max(valueToY(positions[wi]?.[protein.id_num] ?? 0) - (bandH * 1.25), bandMin)}
-                      width={bandW} height={bandH} rx={3} ry={3}
-                      key={`${wi}-${protein.id_num}`}
-                      fill={protein.color || 'var(--accent)'}
-                      stroke='var(--background)'
-                      strokeWidth={0.5}
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => {
-                        if (tooltipData?.protein != protein) {
-                          e.stopPropagation();
-                          const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
-                          
-                          setTooltipData({
-                            protein,
-                            x: rect.left + rect.width / 2,
-                            y: rect.top
-                          });
-                          return;
-                        }
-                        setTooltipData(null);
-                      }}
-                    />
-                  )
-                })}
-              </g>
-            );
-          })}
+          <BandsLayer
+            wellsCount={wellsCount}
+            wellW={wellW}
+            bandW={bandW}
+            bandH={bandH}
+            wellH={wellH}
+            bandMin={bandMin}
+            hasStarted={hasStarted}
+            simDelay={simDelay}
+            ticks={ticks}
+            selectedStandards={selectedStandards}
+            uploadedProteins={uploadedProteins}
+            positions={positions}
+            valueToY={valueToY}
+            tooltipData={tooltipData}
+            setTooltipData={setTooltipData}
+          />
 
           <WellsUI
             wellsCount={wellsCount}
