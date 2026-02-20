@@ -20,10 +20,7 @@
 }
 
 /* Hover/active effects (JS used direct DOM style changes; these are the CSS equivalents) */
-.twoDE-button:hover {
-  background-color: #2a2a2a;
-  border-color: #4a4a4a;
-}
+
 
 /* Variant for compact buttons used with icons */
 .twoDE-button.icon {

@@ -5,6 +5,7 @@ import axios from 'axios';
 import ProteolyticDigestion from '../ProteolyticDigestion';
 import { Button, Grid } from '@mui/material';
 
+
 const TwoDE = () => {
   // A bunch of frontend states to control the UI
   const canvasRef = useRef(null);
@@ -19,7 +20,7 @@ const TwoDE = () => {
   const [dragCounter, setDragCounter] = useState(0);
   const [simulationState, setSimulationState] = useState('ready'); // 'ready', 'ief-running', 'ief-complete', 'sds-transitioning', 'sds-running', 'complete'
   const [simulationProgress, setSimulationProgress] = useState(0);
-  const [showProteinSepertion,setshowProteinSepertion] = useState(false);
+  const [showDigestion, setShowDigestion] = useState(false);
   const [phRange, setPhRange] = useState({ min: 0, max: 14 });
   const [yAxisMode, setYAxisMode] = useState('mw'); // 'mw' or 'distance'
   const [isUploading, setIsUploading] = useState(false);
@@ -517,6 +518,10 @@ const TwoDE = () => {
   const toggleProteinList = () => {
     setIsProteinListCollapsed(!isProteinListCollapsed);
   };
+
+  useEffect(() => {
+    setShowDigestion(false);
+  }, [selectedDot?.name]);
 
   // React hook that is called when the selectedDot changes.
   // It makes a call to the document click handler
@@ -1048,8 +1053,7 @@ const TwoDE = () => {
 
   return (
     <div>
-      <Grid container size={12}>
-      <Grid size={showProteinSepertion ? 8 : 12}>
+
       <div className='simulatorBoxTwoDE'>
 
         <div className="twoDE-controls-col" >
@@ -1140,7 +1144,7 @@ const TwoDE = () => {
               {yAxisMode === 'mw' ? 'Show Distance' : 'Show MW'}
               {/* YAXIS BUTTON ABOVE ME */}
             </button> 
-            <Button onClick={() => {setshowProteinSepertion(!showProteinSepertion)}}> show Protein Sepertion </Button>
+
           </div>
 
           {/* pH Range Slider, disabled during simulation */}
@@ -1402,12 +1406,8 @@ const TwoDE = () => {
                       )}
 
                       {selectedDot && (
-                        <Button 
-                          onClick={() => setshowProteinSepertion(!showProteinSepertion)}
-                          size="small"
-                          style={{marginTop: '8px', width: '100%'}}
-                        >
-                          {showProteinSepertion ? 'Hide' : 'Show'} Digestion
+                        <Button onClick={() => setShowDigestion(true)} size="small" style={{ marginTop: '8px', width: '100%' }}>
+                          Digest Protein
                         </Button>
                       )}
 
@@ -1419,8 +1419,14 @@ const TwoDE = () => {
           </div>
         </div>
         </div>
-        </Grid>   
-        </Grid>
+
+        {showDigestion && selectedDot && (
+          <ProteolyticDigestion
+            protein={selectedDot}
+            onClose={() => setShowDigestion(false)}
+          />
+        )}
+
       </div>
   );
 };

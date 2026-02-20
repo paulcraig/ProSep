@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import "./ProteolyticDigestion.css";
 import { API_URL } from "../config";
-import graph from "../assets/proteinGraph.png";
-import emptyGraph from "../assets/EmptyProteinGraph.png";
-import { Autocomplete, Button, FormControl, Grid, MenuItem, Select, TextField, Checkbox, Chip } from "@mui/material";
 import { Link } from "react-router-dom";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Protein {
   name: string;
@@ -12,255 +11,190 @@ interface Protein {
 }
 
 interface ProteolyticDigestionProps {
-  protein?: Protein;
+  protein?: Protein | null;
+  onClose?: () => void;
 }
 
+// ─── Constants (outside component to avoid re-allocation on every render) ─────
 
-const ProteolyticDigestion: React.FC<ProteolyticDigestionProps> = ({ protein }) => {
+/**
+ * Maps display name → single-letter amino acid at which the protease cuts.
+ * Rules fixed vs. original:
+ *   - trypsin:      cuts after K or R → we send "KR" and let backend handle both
+ *   - pepsin:       cuts after F, L, W, Y (aromatic / large hydrophobic)
+ *   - Chymotrypsin: cuts after F, Y, W → send "FYW"
+ *   - Others kept intentionally simplified for this UI.
+ */
+const PROTEASES: { name: string; aminoAcid: string; description: string }[] = [
+  { name: "PreScission",    aminoAcid: "Q", description: "Cuts after Q (LEVLFQ↓GP motif)" },
+  { name: "Thrombin",       aminoAcid: "R", description: "Cuts after R (PR↓GS motif)" },
+  { name: "Enterokinase",   aminoAcid: "K", description: "Cuts after K (DDDDK↓)" },
+  { name: "Chymotrypsin",   aminoAcid: "FYW", description: "Cuts after F, Y, W" },
+  { name: "Trypsin",        aminoAcid: "KR", description: "Cuts after K or R" },
+  { name: "Pepsin",         aminoAcid: "FLWY", description: "Cuts after F, L, W, Y" },
+];
 
-  const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [proteins, setProteins] = useState<Protein[]>([]);
-  const [currentSeq, setSequence] = useState("");
-  const [aminoAcids, setAminoAcids] = useState<string[]>([]);
-  const [protease, setProtease] = useState("");
-  // Safe Autocomplete initial values
-  const fixedOptions: any[] = [];
-  const [value, setValue] = React.useState<any[]>([]);
+// ─── Component ────────────────────────────────────────────────────────────────
 
-  // Ensure the Autocomplete value only contains options that are available
- useEffect(() => {
-  if (protein?.sequence) {
-    setSequence(protein.sequence);
+const ProteolyticDigestion: React.FC<ProteolyticDigestionProps> = ({ protein, onClose }) => {
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState<string | null>(null);
+  const [selectedProtease, setSelectedProtease] = useState<typeof PROTEASES[0] | null>(null);
+  const [fragments, setFragments]       = useState<string[]>([]);
+
+  // Reset fragments when protein changes
+  useEffect(() => {
+    setFragments([]);
+    setSelectedProtease(null);
+    setError(null);
+  }, [protein?.name]);
+
+  const runDigestion = useCallback(async (sequence: string, aminoAcid: string) => {
+    if (!sequence || !aminoAcid) return;
+
+    setLoading(true);
+    setError(null);
+    setFragments([]);
+
+    try {
+      const response = await fetch(`${API_URL}/proteolytic_digestion/seperateProtein`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sequence, aminoAcid }),
+      });
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+      const result: string[] = await response.json();
+      setFragments(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleProteaseSelect = (p: typeof PROTEASES[0]) => {
+    setSelectedProtease(p);
+    if (protein?.sequence) {
+      runDigestion(protein.sequence, p.aminoAcid);
+    }
+  };
+
+  // Close on backdrop click
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && onClose) onClose();
+  };
+
+  // Standalone page mode — rendered as a nav item with no protein context
+  if (!onClose) {
+    return (
+      <div className="pd-page">
+        <div className="pd-page-empty">
+          <span className="pd-label">Proteolytic Digestion</span>
+          <p>Select a protein from the 2D Electrophoresis view to begin digestion.</p>
+        </div>
+      </div>
+    );
   }
-}, [protein]);
 
-  const PROTEASES = new Map<string, string>();
-  PROTEASES.set("PreScission", "Q");
-  PROTEASES.set("Thrombin", "R");
-  PROTEASES.set("Enterokinase", "K");
-  PROTEASES.set("Chymotrypsin", "F");
-  PROTEASES.set("trypsin", "K");
-  PROTEASES.set("pepsin", "R");
-  const updateCutProtein = async (
-    sequence: string = currentSeq,
-    protease_val: string = protease,
-  ) => {
-    setUploading(true);
-    setMessage("Processing...");
-    try {
-      const payload = {
-        sequence: sequence,
-        aminoAcid: protease_val,
-      };
-      console.log(JSON.stringify(payload));
-      const response = await fetch(
-        `${API_URL}/proteolytic_digestion/seperateProtein`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to process sequence`);
-      }
-
-      const proteins = await response.json();
-      console.log("Proteins from server:", proteins);
-      setAminoAcids(proteins);
-
-      setMessage("Processing successful!");
-    } catch (error) {
-      console.error("Error processing sequence:", error);
-      setMessage("Error processing sequence.");
-    } finally {
-      setUploading(false);
-   
-    }
-  };
-  const changeSelectedProtease = async (val: unknown) => {
-    let temp = PROTEASES.get(val as string);
-    if (typeof temp == "string") {
-      setProtease(temp);
-      await updateCutProtein(currentSeq, temp);
-    } else {
-      console.log(temp);
-    }
-  };
-  const displaySequence = async (proteins: any[]) => {
-    let protein = ""
-    proteins.forEach((prot) =>{
-      protein = protein + "\n "+prot["sequence"];
-    });
-    setSequence( protein);
-    await updateCutProtein(protein, protease);
-  };
-  const isSelected = () => {
-    return !(currentSeq == "");
-  };
-
-  const hasProteins = () => {
-    return !(proteins.length == 0);
-  };
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploading(true);
-    setMessage("Uploading...");
-
-    try {
-      for (const file of Array.from(files)) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch(
-          `${API_URL}/proteolytic_digestion/parse_fasta`,
-          {
-            method: "POST",
-            body: formData,
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to upload ${file.name}`);
-        }
-
-        const proteins = await response.json();
-        console.log("Uploaded proteins:", proteins);
-        setProteins(proteins);
-      }
-
-      setMessage("Upload successful!");
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      setMessage("Error uploading file.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
+  if (!protein) return null;
 
   return (
-    <div className="proteolytic-page">
-      <label
-        className="twoDE-button icon"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "4px",
-          cursor: uploading ? "not-allowed" : "pointer",
-          opacity: uploading ? 0.6 : 1,
-        }}
-      >
-        Upload FASTA
-        <input
-          type="file"
-          accept=".fasta,.fa,.faa,.FAA"
-          multiple
-          onChange={handleFileChange}
-          style={{ display: "none" }}
-        />
-      </label>
+    <div className="pd-backdrop" onClick={handleBackdropClick} role="dialog" aria-modal="true" aria-label="Proteolytic Digestion">
+      <div className="pd-modal" onClick={(e) => e.stopPropagation()}>
 
-      {message && <p style={{ marginTop: "10px" }}>{message}</p>}
-      <Grid container columns={3}>
-        <Grid className="proteinlist" size={1}>
-          <Grid container columns={1}>
-            
-            <Grid size={1}>
-              <Autocomplete
-              className="word"
-                multiple
-                id="proteins-multi"
-                disableCloseOnSelect
-                value={value}
-                onChange={(_event, newValue) => {
-                  setValue(newValue as any[]);
-              
-                    displaySequence(newValue);
-                  
-                }}
-                options={proteins}
-                getOptionLabel={(option: any) => option?.name ?? ""}
-                isOptionEqualToValue={(o: any, v: any) => o?.name === v?.name}
-                renderOption={(props, option: any, { selected }) => (
-                  <li {...props}>
-                    <Checkbox checked={selected} style={{ marginRight: 8 }} />
-                    {option?.name}
-                  </li>
-                )}
-                renderTags={(values, getTagProps) =>
-                  values.map((option, index) => {
-                    const { key, ...tagProps } = getTagProps({ index });
-                    return (
-                      <Chip key={option?.name ?? index} label={option?.name} {...tagProps} />
-                    );
-                  })
-                }
-                style={{ width: 500 }}
-                renderInput={(params) => (
-                  <TextField {...params} label="Select Proteins" placeholder="Favorites" />
-                )}
-              />
+        {/* ── Header ── */}
+        <div className="pd-header">
+          <div className="pd-header-left">
+            <span className="pd-label">Proteolytic Digestion</span>
+            <h2 className="pd-protein-name">{protein.name}</h2>
+          </div>
+          <button className="pd-close" onClick={onClose} aria-label="Close">✕</button>
+        </div>
 
-            </Grid>
+        {/* ── Sequence preview ── */}
+        <div className="pd-section">
+          <div className="pd-section-label">Sequence</div>
+          <div className="pd-sequence-box">
+            {protein.sequence}
+          </div>
+        </div>
 
+        {/* ── Protease selection ── */}
+        <div className="pd-section">
+          <div className="pd-section-label">Select Protease</div>
+          <div className="pd-protease-grid">
+            {PROTEASES.map((p) => (
+              <button
+                key={p.name}
+                className={`pd-protease-btn ${selectedProtease?.name === p.name ? "active" : ""}`}
+                onClick={() => handleProteaseSelect(p)}
+                title={p.description}
+              >
+                <span className="pd-protease-name">{p.name}</span>
+                <span className="pd-protease-aa">{p.aminoAcid}</span>
+              </button>
+            ))}
+          </div>
+          {selectedProtease && (
+            <div className="pd-protease-desc">{selectedProtease.description}</div>
+          )}
+        </div>
 
+        {/* ── Results ── */}
+        <div className="pd-section pd-results-section">
+          <div className="pd-results-header">
+            <div className="pd-section-label">
+              Fragments
+              {fragments.length > 0 && (
+                <span className="pd-fragment-count">{fragments.length}</span>
+              )}
+            </div>
+            {fragments.length > 0 && (
+              <Link
+                className="pd-export-btn"
+                to="/peptide-retention"
+                state={{ aminoAcids: fragments }}
+              >
+                Export to Peptide Retention →
+              </Link>
+            )}
+          </div>
 
-          </Grid>
-        </Grid>
-        <Grid size={1}>
-          
-        </Grid>
-        <Grid size={1}>
-          <Grid container>
-            <Grid size={12}>
-              <div className="word">SELECTED PROTEIN</div>
-              <div className="selectedProtein">
-                {isSelected() ? currentSeq : "No protein selected"}
+          <div className="pd-results-body">
+            {loading && (
+              <div className="pd-status">
+                <div className="pd-spinner" />
+                <span>Digesting…</span>
               </div>
-            </Grid>
-            <Grid container>
-              <Grid size={4}>
-                <div className="word">Select a protease</div>
-                <FormControl className="word">
-                  <Select
-                    onChange={(e) => {
-                      changeSelectedProtease(e.target.value);
-                    }}
-                  >
-                    {Array.from(PROTEASES.entries()).map(([key, val]) => (
-                      <MenuItem key={key} value={key}>
-                        {key}: {val}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={4}>
-                <div className="word">Amount of Amino Acids: {aminoAcids.length}</div>
-              </Grid>
-              <Grid size={4}>
-                    <Link to="/peptide-retention" state={{aminoAcids: aminoAcids }}>Export to Oeptide Retention</Link>
-              </Grid>
-            </Grid>
+            )}
 
-            <Grid size={12}>
-              <ol>
-              {aminoAcids.map((value) => (
-                <li><div className="selectedProtein">{value}</div></li>
-              ))}
+            {error && !loading && (
+              <div className="pd-status pd-error">⚠ {error}</div>
+            )}
+
+            {!loading && !error && fragments.length === 0 && (
+              <div className="pd-status pd-muted">
+                {selectedProtease ? "No fragments returned." : "Choose a protease to begin."}
+              </div>
+            )}
+
+            {!loading && fragments.length > 0 && (
+              <ol className="pd-fragment-list">
+                {fragments.map((frag, i) => (
+                  <li key={i} className="pd-fragment-item">
+                    <span className="pd-fragment-index">{i + 1}</span>
+                    <span className="pd-fragment-seq">{frag}</span>
+                    <span className="pd-fragment-len">{frag.length} aa</span>
+                  </li>
+                ))}
               </ol>
-            </Grid>
-          </Grid>
-        </Grid>
-      </Grid>
+            )}
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };
