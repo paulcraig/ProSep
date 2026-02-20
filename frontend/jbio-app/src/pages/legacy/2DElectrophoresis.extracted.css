@@ -6,9 +6,9 @@
 
 /* Button base style (from buttonStyle) */
 .twoDE-button {
-  background-color: #2a2a2a;
+  background-color: var(--background);
   border: 1px solid var(--accent);
-  border-color: #4a4a4a;
+  border-color: var(--accent);
   color: var(--text);
   padding: 8px 16px;
   border-radius: 4px;
@@ -59,8 +59,9 @@
 }
 
 .twoDE-canvas {
-  border: 1px solid #444;
-  border-radius: 4px;
+  border: 1px solid var(--accent);
+  border-color: var(--accent);
+  border-radius: 8px;
   width: 800px; /* keep explicit rendering size consistent with canvas attributes */
   height: 600px;
 }
@@ -73,8 +74,11 @@
 
 /* Protein list panel (converted from inline styles) */
 #protein-list.twoDE-panel {
+  border: 1px solid var(--accent);
+  border-color: var(--accent);
+  border-radius: 8px;
   padding: 16px;
-  background-color: #282828;
+  background-color: var(--background);
   border-radius: 4px;
   width: 250px; /* collapsing logic in JS adjusted width dynamically */
   height: 600px;
@@ -107,6 +111,7 @@
 }
 
 .twoDE-protein-item {
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 8px;
