@@ -100,9 +100,9 @@ export function drawGrid(ctx, { zoom, offsetX, offsetY, yAxisMode, minMW, maxMW,
       ctx.beginPath(); ctx.moveTo(LEFT_MARGIN, y); ctx.lineTo(CANVAS_WIDTH - RIGHT_MARGIN, y); ctx.stroke();
 
       if (mw >= 1000) {
-        ctx.fillText(`${(mw).toFixed(1)} KDa`, 4, y + 4);
+        ctx.fillText(`${(mw)}`, 4, y + 4);
       } else {
-        ctx.fillText(`${Math.round(mw)} Da`, 4, y + 4);
+        ctx.fillText(`${Math.round(mw)}`, 4, y + 4);
       }
     }
   } else {

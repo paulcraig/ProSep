@@ -1,28 +1,22 @@
-/* Extracted styles from 2DElectrophoresis.js
-   This file contains only styling rules converted from inline style objects
-   in the original JS component. It does not change the component behavior.
-   Add className="..." to elements in the JS file to use these rules.
-*/
+/* ─── Buttons ─────────────────────────────────────────────────────────────────── */
 
-/* Button base style (from buttonStyle) */
 .twoDE-button {
   background-color: var(--background);
   border: 1px solid var(--accent);
-  border-color: var(--accent);
   color: var(--text);
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.2s;
+  transition: background-color 0.2s, color 0.2s;
   width: 140px;
   margin-bottom: 8px;
 }
 
-/* Hover/active effects (JS used direct DOM style changes; these are the CSS equivalents) */
+.twoDE-button:hover:not(:disabled) {
+  background-color: var(--highlight);
+}
 
-
-/* Variant for compact buttons used with icons */
 .twoDE-button.icon {
   display: flex;
   align-items: center;
@@ -30,57 +24,135 @@
   gap: 4px;
 }
 
-/* Input style (from inputStyle) */
+.twoDE-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Number inputs ───────────────────────────────────────────────────────────── */
+
 .twoDE-input {
-  background: #2a2a2a;
-  border: 1px solid #444;
-  color: white;
+  background: var(--sub-background);
+  border: 1px solid var(--sub-accent);
+  color: var(--text);
   width: 50px;
   padding: 4px;
   border-radius: 4px;
   font-size: 14px;
   text-align: center;
+  transition: border-color 0.2s;
 }
 
-/* Slider/base range style (from sliderStyle). Note: vendor styles for inputs may need vendor selectors in JS/CSS to fully style the thumb. */
+.twoDE-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.twoDE-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Range sliders ───────────────────────────────────────────────────────────── */
+
 .twoDE-range {
   width: 100%;
-  height: 8px;
+  height: 6px;
   border-radius: 4px;
   outline: none;
-  transition: opacity 0.2s;
   -webkit-appearance: none;
-  background-color: #555;
+  appearance: none;
+  background: var(--sub-accent);
+  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
-/* Canvas and container styles (from inline canvas style + relative wrapper) */
+.twoDE-range:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.twoDE-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--background);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.twoDE-range:not(:disabled)::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.twoDE-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--background);
+  cursor: pointer;
+}
+
+.twoDE-range::-moz-range-track {
+  background: var(--sub-accent);
+  height: 6px;
+  border-radius: 4px;
+}
+
+/* ─── Acrylamide dropdown ─────────────────────────────────────────────────────── */
+
+#acrylamide-percentage-dropdown {
+  background: var(--sub-background);
+  border: 1px solid var(--sub-accent);
+  color: var(--text);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#acrylamide-percentage-dropdown:focus {
+  border-color: var(--accent);
+}
+
+#acrylamide-percentage-dropdown:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#acrylamide-percentage-dropdown option {
+  background: var(--sub-background);
+  color: var(--text);
+}
+
+/* ─── Canvas ─────────────────────────────────────────────────────────────────── */
+
 .twoDE-canvas-wrapper {
   position: relative;
 }
 
 .twoDE-canvas {
   border: 1px solid var(--accent);
-  border-color: var(--accent);
   border-radius: 8px;
-  width: 800px; /* keep explicit rendering size consistent with canvas attributes */
+  width: 800px;
   height: 600px;
+  display: block;
 }
 
-.twoDE-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* ─── Protein list panel ─────────────────────────────────────────────────────── */
 
-
-/* Protein list panel (converted from inline styles) */
 #protein-list.twoDE-panel {
   border: 1px solid var(--accent);
-  border-color: var(--accent);
   border-radius: 8px;
   padding: 16px;
   background-color: var(--background);
-  border-radius: 4px;
-  width: 250px; /* collapsing logic in JS adjusted width dynamically */
   height: 600px;
   display: flex;
   flex-direction: column;
@@ -89,7 +161,6 @@
   position: relative;
 }
 
-/* Resizable handle */
 .twoDE-resize-handle {
   position: absolute;
   top: 0;
@@ -97,14 +168,19 @@
   width: 5px;
   height: 100%;
   cursor: ew-resize;
-  background: rgba(255,255,255,0.1);
+  background: transparent;
+  transition: background 0.15s;
 }
 
-/* Protein list items */
+.twoDE-resize-handle:hover {
+  background: var(--accent);
+  opacity: 0.4;
+}
+
 .twoDE-protein-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   overflow-y: auto;
   flex: 1;
   margin-top: 8px;
@@ -116,14 +192,21 @@
   align-items: center;
   gap: 8px;
   min-height: 24px;
-  padding: 4px;
+  padding: 4px 6px;
   cursor: pointer;
   border-radius: 4px;
-  transition: background-color 0.2s;
+  border: 1px solid transparent;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.twoDE-protein-item:hover {
+  background-color: var(--highlight);
+  border-color: var(--sub-accent);
 }
 
 .twoDE-protein-item.selected {
-  background-color: #3a3a3a;
+  background-color: var(--sub-accent);
+  border-color: var(--accent);
 }
 
 .twoDE-protein-color {
@@ -131,6 +214,7 @@
   height: 12px;
   min-width: 12px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .twoDE-protein-name {
@@ -141,64 +225,67 @@
   flex: 1;
 }
 
-/* Upload dragging overlay */
+/* ─── Drag overlay ───────────────────────────────────────────────────────────── */
+
 .twoDE-drag-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .twoDE-drag-box {
-  padding: 20px;
-  border: 2px dashed #666;
+  padding: 20px 40px;
+  border: 2px dashed var(--accent);
   border-radius: 8px;
+  color: var(--text);
+  font-size: 18px;
   text-align: center;
 }
 
-/* Protein info card (popup) */
+/* ─── Protein info card ──────────────────────────────────────────────────────── */
+
 #protein-info-card.twoDE-card {
   position: fixed;
-  background-color: #282828;
-  border: 1px solid #444;
-  color: white;
+  background-color: var(--sub-background);
+  border: 1px solid var(--sub-accent);
+  color: var(--text);
   padding: 12px;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   z-index: 1000;
   min-width: 200px;
   pointer-events: auto;
 }
 
 .twoDE-card h4 {
-  margin-bottom: 8px;
+  margin: 0 0 8px;
   font-size: 16px;
+  color: var(--text);
 }
 
 .twoDE-card .meta {
   font-size: 14px;
   display: grid;
   gap: 4px;
+  color: var(--sub-text);
 }
 
 .twoDE-card a {
-  color: #63B3ED;
+  color: var(--accent);
   text-decoration: none;
 }
 
-.twoDE-card .muted {
-  color: #A0AEC0;
+.twoDE-card a:hover {
+  text-decoration: underline;
 }
 
 .twoDE-card .sequence-preview {
-  color: #A0AEC0;
+  color: var(--sub-text);
   font-family: monospace;
   font-size: 12px;
   white-space: nowrap;
@@ -207,7 +294,8 @@
   max-width: 300px;
 }
 
-/* Circular progress container (from CircularProgress wrapper) */
+/* ─── Upload progress spinner ────────────────────────────────────────────────── */
+
 .twoDE-progress {
   position: relative;
   width: 50px;
@@ -222,82 +310,84 @@
   font-size: 12px;
 }
 
-/* Utility dims used in JS inline blocks */
-.twoDE-controls-row {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  color: var(--background);
+/* ─── Layout ─────────────────────────────────────────────────────────────────── */
+
+.simulatorBoxTwoDE {
+  background-color: var(--background);
+  min-height: 100%;
 }
 
 .twoDE-controls-col {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  color: white;
-  background-color: var(--background) !important;
+  background-color: var(--background);
+  color: var(--text);
+}
+
+.twoDE-controls-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
 .twoDE-controls-col .control-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   padding: 0 20px;
   max-width: 800px;
   align-self: center;
 }
 
-.twoDE-control-label {
-  font-size: 14px;
-  width: 120px;
+.control-group {
+  color: var(--text);
 }
 
-/* small helper for the info text under acrylamide slider */
+.twoDE-control-label {
+  font-size: 14px;
+  color: var(--sub-text);
+  width: 120px;
+  flex-shrink: 0;
+}
+
 .twoDE-acrylic-desc {
   min-width: 140px;
   font-size: 12px;
+  color: var(--sub-text);
 }
 
-/*this should switch based on theme */
-.control-group{
- color: var(--text);
-}
+/* ─── Buttons ───────────────────────────────────────────────────────────── */
 
 
-.minus-button{
+.minus-button,
+.plus-button,
+.pic-button {
   padding: 6px 10px;
-  margin: 40;
   font-size: 16px;
-  border: none;
-  background: #333;
-  color: #fff;
+  border: 1px solid var(--sub-accent);
+  background: var(--sub-background);
+  color: var(--text);
   border-radius: 4px;
-  cursor: pointer
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.plus-button{
-  padding: 6px 10px;
-  margin: 40;
-  margin-top: 50;
-  font-size: 16px;
-  border: none;
-  background: #333;
-  color: #fff;
-  border-radius: 4px;
-  cursor: pointer
+.minus-button:hover,
+.plus-button:hover,
+.pic-button:hover {
+  background: var(--highlight);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
-.zoom-handler-buttons {
-  position: absolute;
-  top: 10;
-  right: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(20, 20, 20, 0.5);
-  border-radius: 8px;
-  padding: 4px
+.pic-button img {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
-.zoom-button-container{
+.zoom-button-container {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -307,16 +397,8 @@
   padding-top: 160px;
 }
 
-@keyframes pulse-button {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
+/* ─── Misc ───────────────────────────────────────────────────────────────────── */
 
-/* Dimension indicator badge */
 .dimension-indicator {
   display: inline-flex;
   align-items: center;
@@ -326,17 +408,8 @@
   border-radius: 50%;
   font-size: 12px;
   font-weight: bold;
-  background-color: #3a3a3a;
-  color: #ffffff;
+  background-color: var(--sub-accent);
+  color: var(--text);
   transition: all 0.3s ease;
   margin-left: 6px;
-}
-
-@keyframes pulse-badge {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
 }

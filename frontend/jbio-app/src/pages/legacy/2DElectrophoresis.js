@@ -11,6 +11,8 @@ import { ProteinList }     from './components/ProteinList';
 import { ProteinInfoCard } from './components/ProteinInfoCard';
 import ProteolyticDigestion from '../ProteolyticDigestion';
 
+import photoIcon from '../../assets/electrophoresis/2DE-photo.svg';
+
 const TwoDE = () => {
   const canvasRef = useRef(null);
 
@@ -57,6 +59,16 @@ const TwoDE = () => {
     setMinMW(mws.length > 1 ? Math.min(...mws) : 0);
     setMaxMW(Math.max(...mws));
   }, [simulation.dots]);
+
+  const handleExportPNG = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gel-2DE-${new Date().toISOString()}.png`;
+    a.click();
+  };
 
   // Close digestion modal when selected protein changes
   useEffect(() => { setShowDigestion(false); }, [interaction.selectedDot?.name]);
@@ -172,6 +184,7 @@ const TwoDE = () => {
               <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', flexDirection: 'column', gap: '4px', paddingTop: '160px' }}>
                 <button className="plus-button"  onClick={() => setZoomSafe(zoom * 1.1)}>+</button>
                 <button className="minus-button" onClick={() => setZoomSafe(zoom / 1.1)}>−</button>
+                <button className="pic-button" onClick={handleExportPNG} title="Export as PNG"><img src={photoIcon} alt="Export PNG" /></button>
               </div>
             )}
 
