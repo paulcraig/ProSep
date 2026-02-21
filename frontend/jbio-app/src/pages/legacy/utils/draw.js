@@ -11,7 +11,7 @@ import {
   ACID_COLOR, NEUTRAL_COLOR, BASIC_COLOR,
   PROGRESS_BG, PROGRESS_FILL,
   PROGRESS_Y_OFFSET, PROGRESS_HEIGHT,
-  MAIN_FONT, SMALL_FONT,
+  MAIN_FONT, SMALL_FONT, FONT_COLOR,
   MAX_DISTANCE_TRAVELED,
 } from '../constants/canvas';
 import { computeSDSPosition } from '../utils/coordinates';
@@ -77,7 +77,7 @@ export function drawSDSBackground(ctx) {
 
 export function drawGrid(ctx, { zoom, offsetX, offsetY, yAxisMode, minMW, maxMW, MIN_PH, MAX_PH }) {
   ctx.strokeStyle = GRID_STROKE;
-  ctx.fillStyle = '#565870';
+  ctx.fillStyle = FONT_COLOR; 
   ctx.font = MAIN_FONT;
 
   const usableHeight = CANVAS_HEIGHT - SDS_TOP_MARGIN - SDS_BOTTOM_MARGIN;
@@ -98,7 +98,12 @@ export function drawGrid(ctx, { zoom, offsetX, offsetY, yAxisMode, minMW, maxMW,
 
       ctx.lineWidth = 0.5;
       ctx.beginPath(); ctx.moveTo(LEFT_MARGIN, y); ctx.lineTo(CANVAS_WIDTH - RIGHT_MARGIN, y); ctx.stroke();
-      ctx.fillText(mw >= 1000 ? `${(mw / 1000).toFixed(0)}K` : `${Math.round(mw)}`, 4, y + 4);
+
+      if (mw >= 1000) {
+        ctx.fillText(`${(mw).toFixed(1)} KDa`, 4, y + 4);
+      } else {
+        ctx.fillText(`${Math.round(mw)} Da`, 4, y + 4);
+      }
     }
   } else {
     const pixelPerUnit = (usableHeight / MAX_DISTANCE_TRAVELED) * zoom;
@@ -135,7 +140,7 @@ export function drawGrid(ctx, { zoom, offsetX, offsetY, yAxisMode, minMW, maxMW,
 }
 
 export function drawAxisLabels(ctx, yAxisMode) {
-  ctx.fillStyle = '#565870';
+  ctx.fillStyle = FONT_COLOR;
   ctx.font = '10px "DM Mono", monospace';
   ctx.textAlign = 'center';
   ctx.fillText('pI', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 12);

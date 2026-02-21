@@ -40,6 +40,7 @@ export const PROGRESS_FILL = '#00d4aa';
 // ─── Typography ───────────────────────────────────────────────────────────────
 export const MAIN_FONT  = '11px "DM Mono", monospace';
 export const SMALL_FONT = '10px "DM Mono", monospace';
+export const FONT_COLOR = '#ffffff';
 
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 export const PROGRESS_Y_OFFSET = 20;
