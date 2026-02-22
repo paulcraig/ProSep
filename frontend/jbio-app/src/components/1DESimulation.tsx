@@ -6,6 +6,7 @@ import Toolbar from './1DE/Toolbar';
 import WellsUI from './1DE/WellsUI';
 import GelBackground from './1DE/GelBackground';
 import BandsLayer from './1DE/BandsLayer';
+import ProteinTooltip from './1DE/ProteinTooltip';
 import type { ElectrophoresisProps, UploadedProteinsMap, PositionsMap } from '../components/1DE/types';
 import './1DESimulation.css'
 
@@ -682,62 +683,16 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
       {/* Protein Tooltip */}
       {tooltipData && (
-        <div
-          className='protein-tooltip'
-          style={{
-            left: tooltipData.x,
-            top: tooltipData.y,
-            transform: 'translate(40px, -100%)',
-            cursor: isDraggingTooltip ? 'grabbing' : 'grab'
-          }}
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => {
-            setIsDraggingTooltip(true);
-            setTooltipDragStart({ x: e.clientX - tooltipData.x, y: e.clientY - tooltipData.y });
-          }}
-          onMouseMove={(e) => {
-            if (isDraggingTooltip && tooltipDragStart) {
-              setTooltipData({
-                ...tooltipData,
-                x: e.clientX - tooltipDragStart.x,
-                y: e.clientY - tooltipDragStart.y
-              });
-            }
-          }}
-          onMouseUp={() => {
-            setIsDraggingTooltip(false);
-            setTooltipDragStart(null);
-          }}
-          onMouseLeave={() => {
-            if (isDraggingTooltip) {
-              setIsDraggingTooltip(false);
-              setTooltipDragStart(null);
-            }
-          }}
-        >
-          <div className='protein-tooltip-title'>
-            Protein Information
-          </div>
-          <div>Name: {tooltipData.protein.name}</div>
-          <div>Molecular Weight: {tooltipData.protein.molecularWeight.toLocaleString()}</div>
-          <div>
-            Rm Value: {(() => {
-              const wellIndex = Object.entries(positions).find(([_, proteins]) => proteins.hasOwnProperty(tooltipData.protein.id_num) )?.[0];
-              const value = wellIndex ? positions[Number(wellIndex)]?.[tooltipData.protein.id_num] ?? 0 : 0;
-              return (value / ticks).toFixed(3);
-            })()}
-          </div>
-          <div>
-            PDB:{' '}
-            <a
-              href={`https://www.rcsb.org/structure/${tooltipData.protein.id_num}`}
-              target='_blank'
-              rel='noopener noreferrer'
-            >
-              {tooltipData.protein.id_num}
-            </a>
-          </div>
-        </div>
+        <ProteinTooltip
+          tooltipData={tooltipData}
+          setTooltipData={setTooltipData}
+          positions={positions}
+          ticks={ticks}
+          isDraggingTooltip={isDraggingTooltip}
+          setIsDraggingTooltip={setIsDraggingTooltip}
+          tooltipDragStart={tooltipDragStart}
+          setTooltipDragStart={setTooltipDragStart}
+        />
       )}
 
       {/* Chart */}
