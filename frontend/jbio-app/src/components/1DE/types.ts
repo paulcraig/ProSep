@@ -1,4 +1,4 @@
-import type { StandardProtein } from "./Standards";
+import type { StandardProtein } from "./standards";
 
 export interface ElectrophoresisProps {
     ticks?: number;

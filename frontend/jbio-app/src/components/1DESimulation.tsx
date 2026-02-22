@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { API_URL } from '../config';
-import { standards } from '../components/1DE/Standards';
+import { standards } from '../components/1DE/standards';
 import GoogleScatterModal from '../components/1DE/GoogleScatterModal';
 import Toolbar from './1DE/Toolbar';
 import WellsUI from './1DE/WellsUI';
@@ -26,12 +26,12 @@ import { Select, MenuItem, Button, Chip, Tooltip } from '@mui/material'
 // ];
 
 
-interface ElectrophoresisProps {
-  ticks?: number
-  wells?: number
-  voltage?: number
-  acrylamide?: number
-}
+// interface ElectrophoresisProps {
+//   ticks?: number
+//   wells?: number
+//   voltage?: number
+//   acrylamide?: number
+// }
 
 
 const OneDESim: React.FC<ElectrophoresisProps> = ({

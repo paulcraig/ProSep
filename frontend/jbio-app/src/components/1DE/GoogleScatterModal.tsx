@@ -3,7 +3,7 @@ import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
 import type { PositionsMap } from "./types";
-import type { StandardProtein } from "./Standards";
+import type { StandardProtein } from "./standards";
 
 type Props = {
     open: boolean;

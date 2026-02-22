@@ -1,5 +1,5 @@
 import React from "react";
-import type { StandardProtein } from "./Standards";
+import type { StandardProtein } from "./standards";
 import type { PositionsMap, UploadedProteinsMap } from "./types";
 
 type TooltipState = { protein: StandardProtein; x: number; y: number} | null;
