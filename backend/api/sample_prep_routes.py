@@ -18,8 +18,15 @@ async def ion_exchange_sample_prep(
     ),
     fractions: int = Query(7, ge=1, le=50, description="Number of output fractions"),
     overlap: float = Query(0.10, ge=0.0, le=0.50, description="Fraction overlap as a proportion of bin size"),
-    deadband: float = Query(0.05, ge=0.0, le=5.0, description="Charge magnitue below which proteins are treated as non-binders"),
+    deadband: float = Query(0.05, ge=0.0, le=5.0, description="Charge magnitude below which proteins are treated as non-binders"),
 ) -> Dict[str, Any]:
+    """
+    Ion Exchange sample prep:
+    - Compute net charge at pH for each protein
+    - Flow-through (wash) vs retained based on exchanger type
+    - Retained proteins are sorted from weak binders to strong binders
+    - Retained proteins are split into N fractions (+ optional overlap)
+    """
     return IonExchangePrep.run(
         file=file,
         pH=pH,

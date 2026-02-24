@@ -72,13 +72,21 @@ const IonExchange: React.FC = () => {
             const form = new FormData();
             form.append("file", file);
 
-            const response = await fetch(
-                `${API_URL}/sample-prep/ion-exchange?${params.toString()}`,
-                {
-                    method: "POST",
-                    body: form,
-                }
-            );
+            const url = `${API_URL}/sample-prep/ion-exchange?${params.toString()}`;
+            console.log("Ion Exchange URL:", url);
+
+            // const response = await fetch(
+            //     `${API_URL}/sample-prep/ion-exchange?${params.toString()}`,
+            //     {
+            //         method: "POST",
+            //         body: form,
+            //     }
+            // );
+
+            const response = await fetch(url, {
+                method: "POST",
+                body: form,
+            });
 
             if (!response.ok) {
                 throw new Error(`API error: ${response.status} ${response.statusText}`);
@@ -92,17 +100,52 @@ const IonExchange: React.FC = () => {
             setResult(data);
         } catch (err: any) {
             setErrorMessage(`Error: ${err.message}`);
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     };
 
     return (
-        <div style={{ padding: "2rem" }}>
+        <div style={{ padding: "2rem", maxWidth: 700 }}>
             <Card>
                 <CardHeader title="Ion Exchange Sample Prep" />
-                <CardContent>
-                    <p>Ion Exchange sample prep UI coming soon</p>
+                <CardContent style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <input
+                        type="file"
+                        accept=".fasta,.faa"
+                        onChange={(e) => newFile(e.target.files?.[0] ?? null)}
+                    />
+                    <TextField label="Buffer pH" type="number" value={pH} onChange={(e) => setPH(Number(e.target.value))} />
+                    <FormControl>
+                        <InputLabel>Exchanger</InputLabel>
+                        <Select value={exchanger} label="Exchanger" onChange={(e) => setExchanger(e.target.value)}>
+                            <MenuItem value="anion">Anion</MenuItem>
+                            <MenuItem value="cation">Cation</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    <TextField label="Fractions" type="number" value={fractions} onChange={(e) => setFractions(Number(e.target.value))} />
+                    <Button variant="contained" onClick={runIonExchange}>Run Ion Exchange</Button>
+
+                    {isLoading && <CircularProgress />}
+                    {errorMessage && <Alert security="error">{errorMessage}</Alert>}
+
+                    {result?.counts && (
+                        <div>
+                            <p>Total: {result.counts.total}</p>
+                            <p>Wash: {result.counts.wash}</p>
+                            <p>Retained: {result.counts.retained}</p>
+                        </div>
+                    )}
+
+                    {result && (
+                        <Card variant="outlined" style={{ marginTop: "1rem" }}>
+                            <CardHeader title="Proteins per Fraction"/>
+                            <CardContent>
+                                <IonExchangeGraph result={result}/>
+                            </CardContent>
+                        </Card>
+                    )}   
                 </CardContent>
             </Card>
         </div>

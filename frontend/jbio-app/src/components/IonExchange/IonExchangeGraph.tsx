@@ -1,5 +1,25 @@
 import React, { useMemo } from "react";
-import { BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Bar, Line } from "recharts";
+import { Line } from "react-chartjs-2";
+import { ChartData, ChartOptions } from "chart.js";
+
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Tooltip,
+    Legend,
+} from "chart.js";
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Tooltip,
+    Legend
+);
 
 type Protein = {
     id: string;
@@ -27,57 +47,83 @@ type IonExchangeResponse = {
     fractions?: Fraction[];
 };
 
-type ChartRow = {
-    label: string;
-    count: number;
-};
-
-const IonExchangeGraph: React.FC<{ result: IonExchangeResponse }> = ({
-    result,
-}) => {
-    const data: ChartRow[] = useMemo(() => {
-        const rows: ChartRow[] = [];
-
-        const washCount = result.wash?.length ?? 0;
-        rows.push({ label: "Wash", count: washCount });
-
-        const fracs = result.fractions ?? [];
-        for (const f of fracs) {
-            rows.push({
-                label: `F${f.fractionIndex}`,
-                count: f.proteins?.length ?? 0,
-            });
+const IonExchangeGraph: React.FC<{ result: IonExchangeResponse }> = ({ result }) => {
+    const labels = useMemo((): string[] =>  {
+        const labs: string[] = [];
+        labs.push("Wash");
+        for (const f of result.fractions ?? []) {
+            labs.push(`F${f.fractionIndex}`);
         }
-
-        return rows;
+        return labs;
     }, [result]);
 
-    if (!data.length) return null;
+    const counts = useMemo((): number[] =>  {
+        const vals: number[] = [];
+        vals.push(result.wash?.length ?? 0);
+        for (const f of result.fractions ?? []) {
+            vals.push(f.proteins?.length ?? 0);
+        }
+        return vals;
+    }, [result]);
+
+    const chartData = useMemo<ChartData<"line", number[], string>>(() => {
+        return {
+            labels,
+            datasets: [
+                {
+                    label: "Proteins per fraction",
+                    data: counts,
+                    tension: 0.25,
+                    borderColor: "#4da6ff",    
+                    backgroundColor: "rgba(77,166,255,0.25)", 
+                    pointBackgroundColor: "#4da6ff",
+                    pointBorderColor: "#ffffff",
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                },
+            ],
+        };
+    }, [labels, counts]);
+
+    const options = useMemo<ChartOptions<"line">>(() => {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true },
+                tooltip: { enabled: true },
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: "Elution fraction",
+                        color: "#ffffff",
+                    },
+                    ticks: { color: "#dddddd" },
+                    grid: { color: "rgba(255,255,255,0.1)" },
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: "# proteins",
+                        color: "#ffffff",
+                    },
+                    ticks: {
+                        color: "#dddddd",
+                        precision: 0,
+                    },
+                    grid: { color: "rgba(255,255,255,0.1)" },
+                    beginAtZero: true,
+                },
+            },
+        };
+    }, []);
 
     return (
         <div style={{ width: "100%", height: 320 }}>
-            <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="label" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-
-                    {/* Bars = fraction protein counts */}
-                    <Bar 
-                        dataKey="count" 
-                        fill="var(--accent)"
-                    />
-
-                    <Line 
-                        type="monotone"
-                        dataKey="count"
-                        stroke="white"
-                        strokeWidth={2}
-                        dot={false} 
-                    />
-                </BarChart>
-            </ResponsiveContainer>
+            <Line data={chartData} options={options} />
         </div>
     );
 };

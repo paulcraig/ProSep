@@ -15,7 +15,7 @@ import { ReactComponent as OneDEIcon } from './assets/electrophoresis/1DE.svg';
 import { ReactComponent as TwoDEIcon } from './assets/electrophoresis/2DE.svg';
 import PeptideRetention from './pages/PeptideRetention';
 import IonExchange from './pages/IonExchange';
-import { IconButton } from '@mui/material';
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 
 function App() {
   const pages = [
@@ -23,7 +23,7 @@ function App() {
     { id: 2, icon: <OneDEIcon />, component: <OneDESim />, label: '1D Electrophoresis' },
     { id: 3, icon: <TwoDEIcon />, component: <TwoDE />, label: '2D Electrophoresis' },
     { id: 4, icon: <InsightsIcon/>, component: <PeptideRetention />, label: 'Peptide Retention' },
-    { id: 5, icon: <IconButton/>, component: <IonExchange />, label: 'Ion Exchange' },
+    { id: 5, icon: <FilterAltIcon/>, component: <IonExchange />, label: 'Ion Exchange' },
     { id: 4, icon: <GitHubIcon />, link: 'https://github.com/paulcraig/ProSep', label: 'GitHub Repository' },
   ];
 
