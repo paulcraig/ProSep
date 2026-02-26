@@ -37,7 +37,7 @@ interface VersionInfo {
 }
 
 interface ServiceMetrics {
-  requestsPerMinute: number;
+  cpuLoad: number;
   errorRate: number;
   memoryMb: number;
   serviceRunning?: boolean;
@@ -144,13 +144,13 @@ const Hidden: React.FC = () => {
         setServerHealth({
           uptime: data.uptime,
           apache: {
-            requestsPerMinute: data.apache.requests_per_minute,
+            cpuLoad: data.apache.cpu_load,
             errorRate: data.apache.error_rate,
             memoryMb: data.apache.memory_mb,
             serviceRunning: data.apache.service_running
           },
           uvicorn: {
-            requestsPerMinute: data.uvicorn.requests_per_minute,
+            cpuLoad: data.uvicorn.cpu_load,
             errorRate: data.uvicorn.error_rate,
             memoryMb: data.uvicorn.memory_mb,
             processRunning: data.uvicorn.process_running
@@ -696,12 +696,12 @@ const Hidden: React.FC = () => {
               <div className="metric-section">
                 <div className="metric-section-title">Apache (Frontend)</div>
                 <div className="metric-item">
-                  <span className="metric-label">Req/min:</span>
-                  <span className="metric-value">{serverHealth?.apache?.requestsPerMinute?.toLocaleString() || "..."}</span>
-                </div>
-                <div className="metric-item">
                   <span className="metric-label">Error Rate:</span>
                   <span className="metric-value">{serverHealth?.apache?.errorRate ?? "0"}%</span>
+                </div>
+                <div className="metric-item">
+                  <span className="metric-label">CPU Load:</span>
+                  <span className="metric-value">{serverHealth?.apache?.cpuLoad ?? "0"}%</span>
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">Memory Use:</span>
@@ -719,12 +719,12 @@ const Hidden: React.FC = () => {
               <div className="metric-section">
                 <div className="metric-section-title">Uvicorn (Backend)</div>
                 <div className="metric-item">
-                  <span className="metric-label">Req/min:</span>
-                  <span className="metric-value">{serverHealth?.uvicorn?.requestsPerMinute?.toLocaleString() || "..."}</span>
-                </div>
-                <div className="metric-item">
                   <span className="metric-label">Error Rate:</span>
                   <span className="metric-value">{serverHealth?.uvicorn?.errorRate ?? "0"}%</span>
+                </div>
+                <div className="metric-item">
+                  <span className="metric-label">CPU Load:</span>
+                  <span className="metric-value">{serverHealth?.uvicorn?.cpuLoad ?? "0"}%</span>
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">Memory Use:</span>

@@ -328,7 +328,7 @@ class StatusService:
     
 
     @classmethod
-    def _parse_log_metrics(cls, log_path: str, filter_requests: bool = False) -> dict:
+    def _parse_log_error_rate(cls, log_path: str, filter_requests: bool = False) -> float:
         try:
             result = subprocess.run(
                 ["tail", "-n", "1000", log_path],
@@ -338,32 +338,17 @@ class StatusService:
             )
             
             if result.returncode != 0 or not result.stdout.strip():
-                return {"requests_per_minute": 0, "error_rate": 0.0}
+                return 0.0
             
             lines = result.stdout.strip().split('\n')
             total_requests = 0
             error_count = 0
-            first_timestamp = None
-            last_timestamp = None
             
             for line in lines:
                 if filter_requests and not any(m in line for m in ['"GET ', '"POST ', '"PUT ', '"DELETE ', '"PATCH ']):
                     continue
                 
                 total_requests += 1
-                
-                # Extract timestamp:
-                timestamp_match = re.search(r'\[(\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2})\s+[+-]\d{4}\]', line)
-
-                if timestamp_match:
-                    try:
-                        ts = datetime.strptime(timestamp_match.group(1), '%d/%b/%Y:%H:%M:%S')
-                        if first_timestamp is None:
-                            first_timestamp = ts
-                        last_timestamp = ts
-
-                    except ValueError:
-                        pass
                 
                 # Count only 5xx errors:
                 status_match = re.search(r'" (\d{3}) ', line)
@@ -372,33 +357,55 @@ class StatusService:
                     error_count += 1
             
             if total_requests == 0:
-                return {"requests_per_minute": 0, "error_rate": 0.0}
+                return 0.0
             
-            requests_per_minute = total_requests
-
-            if first_timestamp and last_timestamp:
-                time_diff = (last_timestamp - first_timestamp).total_seconds()
-
-                if time_diff > 0:
-                    requests_per_minute = int((total_requests / time_diff) * 60)
-            
-            return {
-                "requests_per_minute": requests_per_minute,
-                "error_rate": round((error_count / total_requests * 100), 2)
-            }
+            return round((error_count / total_requests * 100), 2)
         
         except Exception:
-            return {"requests_per_minute": 0, "error_rate": 0.0}
+            return 0.0
+    
+
+    @classmethod
+    def _get_service_cpu(cls, service_name: str) -> float:
+        try:
+            result = subprocess.run(
+                ["systemctl", "show", service_name, "--property=MainPID", "--value"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0 or not result.stdout.strip():
+                return 0.0
+            
+            pid = result.stdout.strip()
+            if pid == "0":
+                return 0.0
+            
+            cpu_result = subprocess.run(
+                ["ps", "-o", "%cpu=", "-p", pid],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if cpu_result.returncode == 0 and cpu_result.stdout.strip():
+                return round(float(cpu_result.stdout.strip()), 1)
+            
+            return 0.0
+        
+        except Exception:
+            return 0.0
     
 
     @classmethod
     def _parse_apache_metrics(cls) -> dict:
-        return cls._parse_log_metrics("/var/log/apache2/prosep_access.log")
+        return {"error_rate": cls._parse_log_error_rate("/var/log/apache2/prosep_access.log")}
     
 
     @classmethod
     def _parse_uvicorn_metrics(cls) -> dict:
-        return cls._parse_log_metrics(str(cls.SERVER_REPO_DIR / "uvicorn.log"), filter_requests=True)
+        return {"error_rate": cls._parse_log_error_rate(str(cls.SERVER_REPO_DIR / "uvicorn.log"), filter_requests=True)}
     
 
     @classmethod
@@ -556,34 +563,34 @@ class StatusService:
             uvicorn_running = cls._is_service_active(cls.BACKEND_SERVICE)
             uptime_str = cls._get_build_age()
             
-            apache_metrics = cls._parse_apache_metrics() if apache_running else {
-                "requests_per_minute": 0, "error_rate": 0.0
-            }
-            uvicorn_metrics = cls._parse_uvicorn_metrics() if uvicorn_running else {
-                "requests_per_minute": 0, "error_rate": 0.0
-            }
+            apache_metrics = cls._parse_apache_metrics() if apache_running else {"error_rate": 0.0}
+            uvicorn_metrics = cls._parse_uvicorn_metrics() if uvicorn_running else {"error_rate": 0.0}
             
             apache_memory = cls._get_service_memory(cls.APACHE_SERVICE) if apache_running else 0
             uvicorn_memory = cls._get_service_memory(cls.BACKEND_SERVICE) if uvicorn_running else 0
+            apache_cpu = cls._get_service_cpu(cls.APACHE_SERVICE) if apache_running else 0.0
+            uvicorn_cpu = cls._get_service_cpu(cls.BACKEND_SERVICE) if uvicorn_running else 0.0
 
         else:
             uvicorn_running = cls._is_uvicorn_running_dev()
             uptime_str = cls._get_uvicorn_uptime_dev() if uvicorn_running else "None"
-            apache_metrics = {"requests_per_minute": 0, "error_rate": 0.0}
-            uvicorn_metrics = {"requests_per_minute": 0, "error_rate": 0.0}
+            apache_metrics = {"error_rate": 0.0}
+            uvicorn_metrics = {"error_rate": 0.0}
             apache_memory = 0
             uvicorn_memory = 0
+            apache_cpu = 0.0
+            uvicorn_cpu = 0.0
 
         return {
             "uptime": uptime_str,
             "apache": {
-                "requests_per_minute": apache_metrics["requests_per_minute"],
+                "cpu_load": apache_cpu,
                 "error_rate": apache_metrics["error_rate"],
                 "memory_mb": apache_memory,
                 "service_running": apache_running
             },
             "uvicorn": {
-                "requests_per_minute": uvicorn_metrics["requests_per_minute"],
+                "cpu_load": uvicorn_cpu,
                 "error_rate": uvicorn_metrics["error_rate"],
                 "memory_mb": uvicorn_memory,
                 "process_running": uvicorn_running
