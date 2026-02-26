@@ -93,7 +93,7 @@ if [[ "$LOCK_VERSION" == true ]] && [[ "$FORCE_REBUILD" == false ]]; then
       echo "Cannot lock: Current tag does not exist."
       exit 1
     fi
-    LOCK_TAG=$CURRENT_TAG
+    LOCK_TAG="$CURRENT_TAG"
   else
     if ! git -C "$REPO_DIR" rev-parse "$LOCK_TAG" >/dev/null 2>&1; then
       echo "Cannot lock: Tag '$LOCK_TAG' does not exist."
@@ -109,7 +109,11 @@ if [[ "$LOCK_VERSION" == true ]] && [[ "$FORCE_REBUILD" == false ]]; then
   fi
 
   FORCE_REBUILD=true
-  FORCE_TAG=$LOCK_TAG
+  FORCE_TAG="$LOCK_TAG"
+fi
+
+if [[ "$FORCE_REBUILD" == true && -z "$FORCE_TAG" && -n "$LOCK_TAG" ]]; then
+  FORCE_TAG="$LOCK_TAG"
 fi
 
 # ---> Handle tagless-deploy <--- #
@@ -162,10 +166,21 @@ if [[ -n "$FORCE_TAG" ]]; then
     echo "Using specified tag: $TARGET_TAG"
   else
     echo "Tag '$FORCE_TAG' not found. Aborting."
-    exit 0
+    exit 1
   fi
 else
-  if [[ "$is_locked" == true ]]; then
+  if [[ "$FORCE_REBUILD" == true ]]; then
+    if [[ -n "$CURRENT_TAG" ]]; then
+      TARGET_TAG="$CURRENT_TAG"
+      echo "Force rebuild: using current deployed tag: $TARGET_TAG"
+    else
+      TARGET_TAG="$(git tag --merged origin/main --sort=version:refname | tail -n1 || true)"
+      if [[ -z "$TARGET_TAG" ]]; then
+        TARGET_TAG="$(git rev-parse origin/main)"
+      fi
+      echo "Force rebuild: no current state tag, using: $TARGET_TAG"
+    fi
+  elif [[ "$is_locked" == true ]]; then
     TARGET_TAG="$CURRENT_TAG"
   else
     TARGET_TAG="$(git tag --merged origin/main --sort=version:refname | tail -n1 || true)"
@@ -204,7 +219,7 @@ python3 -m pip install -r requirements.txt
 # ---> Finalize <--- #
 
 if [[ "$FORCE_REBUILD" == true || "$is_locked" == false ]]; then
-  if [[ "$LOCK_VERSION" == true ]]; then
+  if [[ "$LOCK_VERSION" == true || "$is_locked" == true ]]; then
     echo "${TARGET_TAG}-locked" | sudo tee "$STATE_FILE" >/dev/null
   else
     echo "$TARGET_TAG" | sudo tee "$STATE_FILE" >/dev/null
