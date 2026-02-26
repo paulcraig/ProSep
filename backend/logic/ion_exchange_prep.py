@@ -20,7 +20,7 @@ class ProteinEntry:
     molecular_weight: float
 
 class IonExchangePrep:
-    ACCEPTED_FILE_TYPES = ['fasta', 'faa', 'a']
+    ACCEPTED_FILE_TYPES = ['fasta', 'faa']
     
     @staticmethod
     def _stable_color(seed: str) -> str:
@@ -79,7 +79,7 @@ class IonExchangePrep:
           - if abs(charge) < deadband -> treated as non-binder (wash)
         """
         try:
-            filetype = (file.filename or "").strip(".")[-1].lower()
+            filetype = (file.filename or "").split(".")[-1].lower()
             if filetype not in IonExchangePrep.ACCEPTED_FILE_TYPES:
                 return {
                     "ok": False,
@@ -122,10 +122,18 @@ class IonExchangePrep:
                     wash.append(e)
                     continue
                 if exchanger_norm == "anion":
+                    # positive resin binds negative proteins
                     if e.charge <= -deadband:
                         retained.append(e)
                     else:
                         wash.append(e)
+                else:
+                    # cation exchanger: negative resin binds positive proteins
+                    if e.charge >= deadband:
+                        retained.append(e)
+                    else:
+                        wash.append(e)
+                    
             
             # Elution order: weak binders first -> strong binders last
             # Use abs(charge) as a simple proxy for binding strength.
