@@ -457,11 +457,22 @@ const IonExchangeFractionation: React.FC = () => {
                                 const label = protein
                                   ? `${hitIndex} - ${String(protein.ID)}`
                                   : `${hitIndex} - Unknown`;
-                                const truncLabel = label.length > 20 ? label.slice(0, 47) + "..." : label;
-                                const chipColor = chipColorFromLabel(truncLabel);
+                                const truncLabel =
+                                  label.length > 20
+                                    ? label.slice(0, 47) + "..."
+                                    : label;
+                                const chipColor =
+                                  chipColorFromLabel(truncLabel);
 
                                 return (
-                                  <BTooltip title={protein ? `${protein.sequence}\n${protein.description}` : "Unknown protein"} placement="top">
+                                  <BTooltip
+                                    title={
+                                      protein
+                                        ? `${protein.sequence}\n${protein.description}`
+                                        : "Unknown protein"
+                                    }
+                                    placement="top"
+                                  >
                                     <Chip
                                       key={`${row.fraction}-${hitIndex}`}
                                       size="small"
@@ -505,10 +516,12 @@ const IonExchangeFractionation: React.FC = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>index</TableCell>
-                      <TableCell>sequence</TableCell>
-                      <TableCell>description</TableCell>
-                      <TableCell>{chargeKey}</TableCell>
+                      <TableCell>#</TableCell>
+                      <TableCell>Sequence</TableCell>
+                      <TableCell>Description</TableCell>
+                      <TableCell>
+                        {chargeKey.replace("charge_at_ph_", "Charge at pH ")}
+                      </TableCell>
                       <TableCell>ID</TableCell>
                     </TableRow>
                   </TableHead>
