@@ -1,0 +1,66 @@
+.ionx-page {
+  background: var(--background);
+  color: var(--text);
+  padding: 2rem;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ionx-card {
+  margin-bottom: 1.25rem;
+  background-color: var(--sub-background) !important;
+  border: 0.25rem solid var(--accent);
+  width: 90vw;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.ionx-card .MuiCardHeader-title {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.ionx-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.ionx-button {
+  background-color: var(--accent) !important;
+}
+
+.ionx-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.ionx-chart-wrap {
+  width: 100%;
+  min-height: 320px;
+  height: 360px;
+}
+
+.ionx-card .MuiTableContainer-root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ionx-card .MuiTable-root {
+  width: 100%;
+}
+
+.ionx-card .MuiTableCell-root {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+* {
+  color: var(--text) !important;
+}
