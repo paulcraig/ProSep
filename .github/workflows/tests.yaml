@@ -16,4 +16,3 @@ jobs:
     - name: Run tests
       run: |
         pytest backend/tests
-      continue-on-error: true
