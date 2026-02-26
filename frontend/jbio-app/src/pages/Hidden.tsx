@@ -72,7 +72,6 @@ const Hidden: React.FC = () => {
   const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   
-  const artifactRef = useRef<ArtifactListRef>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean; 
@@ -92,6 +91,9 @@ const Hidden: React.FC = () => {
     lockVersion: false
   });
 
+  const artifactRef = useRef<ArtifactListRef>(null);
+  const confirmModalRef = useRef(confirmModal);
+
   useEffect(() => {
     if (password) {
       localStorage.setItem("admin-cached-password", password);
@@ -99,6 +101,10 @@ const Hidden: React.FC = () => {
       localStorage.removeItem("admin-cached-password");
     }
   }, [password]);
+
+  useEffect(() => {
+    confirmModalRef.current = confirmModal;
+  }, [confirmModal]);
 
 
   const getAuthHeaders = (): HeadersInit => {
@@ -424,7 +430,7 @@ const Hidden: React.FC = () => {
       const res = await fetch(`${API_URL}/status/version/checkout`, {
         method: "POST",
         headers: getAuthJsonHeaders(),
-        body: JSON.stringify({ version: checkoutVersion, lock: confirmModal.lockVersion || false })
+        body: JSON.stringify({ version: checkoutVersion, lock: confirmModalRef.current.lockVersion || false })
       });
       if (res.ok) {
         console.log(`Checked out version ${checkoutVersion}`);
