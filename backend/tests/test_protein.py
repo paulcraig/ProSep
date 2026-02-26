@@ -81,7 +81,8 @@ class TestProtein(unittest.TestCase):
         proteins: dict = Protein.parse_protein("backend/tests/data/twoProteins.fasta")
         notExpected = 0
         for key in proteins.keys():
-            achual = Protein.find_links(key)
+            reorganized = [{"header": key}]
+            achual = Protein.find_links(reorganized)
             self.assertNotEqual(notExpected, achual)
 
     def test_get_mw(self):
