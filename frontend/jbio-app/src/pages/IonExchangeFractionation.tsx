@@ -24,7 +24,11 @@ import {
   TableRow,
   TextField,
   Typography,
+  Tooltip as MuiTooltip,
+  styled,
+  colors,
 } from "@mui/material";
+import { TooltipProps, tooltipClasses } from '@mui/material/Tooltip';
 import { Bar, Scatter } from "react-chartjs-2";
 import {
   BarElement,
@@ -88,6 +92,18 @@ type IonExchangeResponse = {
   seqhits: SeqHitRow[];
   error?: string;
 };
+
+const BTooltip = styled(({ className, ...props }: TooltipProps) => (
+  <MuiTooltip {...props} arrow classes={{ popper: className }} />
+))(({ theme }) => ({
+  [`& .${tooltipClasses.arrow}`]: {
+    color: theme.palette.common.black,
+  },
+  [`& .${tooltipClasses.tooltip}`]: {
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    color: "#fff !important",
+  },
+}));
 
 const IonExchangeFractionation: React.FC = () => {
   const [fastaText, setFastaText] = useState<string>("");
@@ -432,8 +448,8 @@ const IonExchangeFractionation: React.FC = () => {
                               sx={{
                                 display: "flex",
                                 flexWrap: "wrap",
-                                gap: 0.5,
-                                maxWidth: 200,
+                                gap: 1,
+                                minWidth: 600,
                               }}
                             >
                               {row.hit_indices.map((hitIndex) => {
@@ -441,19 +457,22 @@ const IonExchangeFractionation: React.FC = () => {
                                 const label = protein
                                   ? `${hitIndex} - ${String(protein.ID)}`
                                   : `${hitIndex} - Unknown`;
-                                const chipColor = chipColorFromLabel(label);
+                                const truncLabel = label.length > 20 ? label.slice(0, 47) + "..." : label;
+                                const chipColor = chipColorFromLabel(truncLabel);
 
                                 return (
-                                  <Chip
-                                    key={`${row.fraction}-${hitIndex}`}
-                                    size="small"
-                                    label={label}
-                                    sx={{
-                                      border: `3px solid ${chipColor}`,
-                                      backgroundColor: `rgba(0,0,0, 0.2)`,
-                                      fontWeight: 600,
-                                    }}
-                                  />
+                                  <BTooltip title={protein ? `${protein.sequence}\n${protein.description}` : "Unknown protein"} placement="top">
+                                    <Chip
+                                      key={`${row.fraction}-${hitIndex}`}
+                                      size="small"
+                                      label={truncLabel}
+                                      sx={{
+                                        border: `3px solid ${chipColor}`,
+                                        backgroundColor: `rgba(0,0,0, 0.2)`,
+                                        fontWeight: 600,
+                                      }}
+                                    />
+                                  </BTooltip>
                                 );
                               })}
                             </Box>
