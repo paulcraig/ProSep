@@ -109,11 +109,11 @@ const Hidden: React.FC = () => {
     confirmModalRef.current = confirmModal;
   }, [confirmModal]);
 
-  
+
   const showToast = (message: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message, visible: true });
-    toastTimerRef.current = setTimeout(() => setToast(t => ({ ...t, visible: false })), 3000);
+    toastTimerRef.current = setTimeout(() => setToast(t => ({ ...t, visible: false })), 10000);
   };
 
 

@@ -45,6 +45,7 @@ Deployment options:
 
 Version locking:
   --lock-version [TAG]  Lock current deployment to TAG. If TAG provided and not pre-deployed, lock and deploy.
+                        When combined with --force-rebuild, do not specify a TAG — the forced tag is locked automatically.
   --unlock-version      Remove lock. Future deployments follow the latest tag.
 
 EOF
@@ -57,6 +58,14 @@ EOF
   esac
   shift
 done
+
+
+# ---> Validate Flag Combinations <--- #
+
+if [[ "$FORCE_REBUILD" == true && "$LOCK_VERSION" == true && -n "$LOCK_TAG" ]]; then
+  echo "Error: --lock-version cannot specify a tag when used with --force-rebuild. The forced tag will be locked automatically."
+  exit 1
+fi
 
 
 # ---> Get current state <--- #
@@ -103,13 +112,7 @@ if [[ "$LOCK_VERSION" == true ]] && [[ "$FORCE_REBUILD" == false ]]; then
 
   echo "${LOCK_TAG}-locked" | sudo tee "$STATE_FILE" >/dev/null
   echo "Locked version: Tag '$LOCK_TAG'"
-
-  if [[ "$CURRENT_TAG" == "$LOCK_TAG" ]]; then
-    exit 0
-  fi
-
-  FORCE_REBUILD=true
-  FORCE_TAG="$LOCK_TAG"
+  exit 0
 fi
 
 if [[ "$FORCE_REBUILD" == true && -z "$FORCE_TAG" && -n "$LOCK_TAG" ]]; then
@@ -219,7 +222,7 @@ python3 -m pip install -r requirements.txt
 # ---> Finalize <--- #
 
 if [[ "$FORCE_REBUILD" == true || "$is_locked" == false ]]; then
-  if [[ "$LOCK_VERSION" == true || "$is_locked" == true ]]; then
+  if [[ "$LOCK_VERSION" == true ]]; then
     echo "${TARGET_TAG}-locked" | sudo tee "$STATE_FILE" >/dev/null
   else
     echo "$TARGET_TAG" | sudo tee "$STATE_FILE" >/dev/null
