@@ -61,12 +61,6 @@ done
 
 # ---> Get current state <--- #
 
-echo "DEBUG: After flag parsing:"
-echo "  FORCE_REBUILD=$FORCE_REBUILD"
-echo "  FORCE_TAG='$FORCE_TAG'"
-echo "  LOCK_VERSION=$LOCK_VERSION"
-echo "  LOCK_TAG='$LOCK_TAG'"
-
 CURRENT_STATE="$(cat "$STATE_FILE" 2>/dev/null || echo "")"
 CURRENT_TAG="$CURRENT_STATE"
 
@@ -162,11 +156,6 @@ git pull origin main
 
 
 # ---> Determine target tag <--- #
-echo "DEBUG: Before determining target:"
-echo "  FORCE_TAG='$FORCE_TAG'"
-echo "  CURRENT_TAG='$CURRENT_TAG'"
-echo "  is_locked=$is_locked"
-
 if [[ -n "$FORCE_TAG" ]]; then
   if git rev-parse "$FORCE_TAG" >/dev/null 2>&1; then
     TARGET_TAG="$FORCE_TAG"
@@ -214,9 +203,9 @@ python3 -m pip install -r requirements.txt
 
 # ---> Finalize <--- #
 
-if [[ "$is_locked" == false ]]; then
+if [[ "$FORCE_REBUILD" == true || "$is_locked" == false ]]; then
   if [[ "$LOCK_VERSION" == true ]]; then
-     echo "${TARGET_TAG}-locked" | sudo tee "$STATE_FILE" >/dev/null
+    echo "${TARGET_TAG}-locked" | sudo tee "$STATE_FILE" >/dev/null
   else
     echo "$TARGET_TAG" | sudo tee "$STATE_FILE" >/dev/null
   fi
