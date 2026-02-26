@@ -73,6 +73,9 @@ const Hidden: React.FC = () => {
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: "", visible: false });
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean; 
     title: string; 
@@ -105,6 +108,13 @@ const Hidden: React.FC = () => {
   useEffect(() => {
     confirmModalRef.current = confirmModal;
   }, [confirmModal]);
+
+  
+  const showToast = (message: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, visible: true });
+    toastTimerRef.current = setTimeout(() => setToast(t => ({ ...t, visible: false })), 3000);
+  };
 
 
   const getAuthHeaders = (): HeadersInit => {
@@ -142,7 +152,6 @@ const Hidden: React.FC = () => {
         });
         setAvailableVersions(data.available_versions);
         setIsLocked(data.locked);
-        setCheckoutVersion(data.version);
       }
 
       if (perfRes.ok) {
@@ -362,9 +371,11 @@ const Hidden: React.FC = () => {
         method: "POST",
         headers: getAuthHeaders()
       });
-      if (res.ok) console.log("Apache restart initiated");
+      const data = await res.json();
+      showToast(data.message || (res.ok ? "Apache restart initiated" : "Apache restart failed"));
     } catch (err) {
       console.error("Failed to restart Apache:", err);
+      showToast("Apache restart failed");
     }
   };
 
@@ -374,15 +385,11 @@ const Hidden: React.FC = () => {
       fetch(`${API_URL}/status/restart/uvicorn`, {
         method: "POST",
         headers: getAuthHeaders()
-
-      }).catch(() => {
-        console.log("Uvicorn restart initiated (connection lost as expected)");
-      });
-      
-      console.log("Uvicorn restart initiated - backend will restart shortly");
-
+      }).catch(() => {});
+      showToast("Uvicorn restart initiated");
     } catch (err) {
       console.error("Failed to restart Uvicorn:", err);
+      showToast("Uvicorn restart failed");
     }
   };
 
@@ -392,15 +399,11 @@ const Hidden: React.FC = () => {
       fetch(`${API_URL}/status/restart/app`, {
         method: "POST",
         headers: getAuthHeaders()
-
-      }).catch(() => {
-        console.log("App restart initiated (connection lost as expected)");
-      });
-      
-      console.log("Full app restart initiated - services will restart shortly");
-
+      }).catch(() => {});
+      showToast("Application restart initiated");
     } catch (err) {
       console.error("Failed to restart app:", err);
+      showToast("Application restart failed");
     }
   };
 
@@ -432,12 +435,12 @@ const Hidden: React.FC = () => {
         headers: getAuthJsonHeaders(),
         body: JSON.stringify({ version: checkoutVersion, lock: confirmModalRef.current.lockVersion || false })
       });
-      if (res.ok) {
-        console.log(`Checked out version ${checkoutVersion}`);
-        await fetchData();
-      }
+      const data = await res.json();
+      showToast(data.message || (res.ok ? `Deployment of ${checkoutVersion} initiated` : "Checkout failed"));
+      if (res.ok) await fetchData();
     } catch (err) {
       console.error("Failed to checkout version:", err);
+      showToast("Checkout failed");
     }
   };
 
@@ -928,6 +931,11 @@ const Hidden: React.FC = () => {
           />
         </div>
       </div>
+      {toast.message && (
+        <div className={`admin-toast ${toast.visible ? "admin-toast-visible" : "admin-toast-hidden"}`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 };
