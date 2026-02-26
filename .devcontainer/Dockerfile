@@ -6,4 +6,5 @@ RUN apt-get update && apt-get install --no-install-recommends nodejs curl git su
 COPY .devcontainer/supervisord.conf /etc/supervisor/
 WORKDIR /app
 COPY requirements.txt .
+ENV RUNNING_DEVCONTAINER=true
 RUN pip install -r requirements.txt && rm -rf /var/lib/apt/lists/*

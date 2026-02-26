@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "My Task",
+            "type": "shell",
+            "command": "if [ \"$RUNNING_DEVCONTAINER\" = \"true\" ]; then supervisord -n -c /etc/supervisor/supervisord.conf; fi",
+            "options": {
+                "shell": {
+                    "executable": "/bin/sh",
+                    "args": [
+                        "-c"
+                    ]
+                }
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                    "owner": "python",
+                    "fileLocation":[
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^\\s*File\\s+\"([^\"]+)\",\\s+line\\s+(\\d+).*",
+                        "file": 1,
+                        "line": 2
+                    },
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "^.*Will watch for changes in these directories.*$|^.*Shutting down.*$",
+                        "endsPattern": "^.*Application startup complete.*$|^.*Uvicorn running on.*$"
+                    }
+                }
+            ]
+        }
+    ]
+}
