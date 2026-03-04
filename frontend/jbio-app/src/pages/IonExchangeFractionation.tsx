@@ -15,6 +15,7 @@ import {
   MenuItem,
   Select,
   Slider,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -22,19 +23,21 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TableSortLabel,
   TextField,
   Typography,
+  FormControlLabel,
   Tooltip as MuiTooltip,
   styled,
-  colors,
 } from "@mui/material";
-import { TooltipProps, tooltipClasses } from '@mui/material/Tooltip';
-import { Bar, Scatter } from "react-chartjs-2";
+import { TooltipProps, tooltipClasses } from "@mui/material/Tooltip";
+import { Line, Scatter } from "react-chartjs-2";
 import {
   BarElement,
   CategoryScale,
   Chart as ChartJS,
   Legend,
+  LineElement,
   LinearScale,
   PointElement,
   Tooltip,
@@ -47,6 +50,7 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
   PointElement,
   Tooltip,
   Legend,
@@ -83,6 +87,9 @@ type Summary = {
   bound_count: number;
   wash_count: number;
   fraction_count: number;
+  media_type?: MediaType;
+  exchanger?: "anion" | "cation";
+  deadband?: number;
 };
 
 type IonExchangeResponse = {
@@ -111,6 +118,7 @@ const IonExchangeFractionation: React.FC = () => {
   const [mediaType, setMediaType] = useState<MediaType>("Q");
   const [fractionCount, setFractionCount] = useState<number>(80);
   const [noise, setNoise] = useState<number>(0.1);
+  const [deadband, setDeadband] = useState<number>(0.05);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [data, setData] = useState<IonExchangeResponse | null>(null);
@@ -119,6 +127,16 @@ const IonExchangeFractionation: React.FC = () => {
   const [proteinRowsPerPage, setProteinRowsPerPage] = useState<number>(10);
   const [fractionPage, setFractionPage] = useState<number>(0);
   const [fractionRowsPerPage, setFractionRowsPerPage] = useState<number>(10);
+  const [showLineGraph, setShowLineGraph] = useState<boolean>(false);
+
+  const [fractionSortBy, setFractionSortBy] = useState<
+    "fraction" | "protein_count" | "hit_count"
+  >("fraction");
+  const [fractionSortDir, setFractionSortDir] = useState<"asc" | "desc">("asc");
+
+  const [proteinPhSortDir, setProteinPhSortDir] = useState<
+    "asc" | "desc" | null
+  >(null);
 
   const handleLoadFasta = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -149,6 +167,7 @@ const IonExchangeFractionation: React.FC = () => {
             media_type: mediaType,
             fraction_count: fractionCount,
             noise,
+            deadband,
           }),
         },
       );
@@ -204,42 +223,110 @@ const IonExchangeFractionation: React.FC = () => {
     return detectedKey ?? `charge_at_ph_${ph}`;
   }, [proteinRows, ph]);
 
+  const sortedFractionRows = useMemo(() => {
+    const rows = [...fractionRows];
+    rows.sort((a, b) => {
+      const aVal = a[fractionSortBy];
+      const bVal = b[fractionSortBy];
+      if (aVal === bVal) {
+        return 0;
+      }
+      const baseCmp = aVal < bVal ? -1 : 1;
+      return fractionSortDir === "asc" ? baseCmp : -baseCmp;
+    });
+    return rows;
+  }, [fractionRows, fractionSortBy, fractionSortDir]);
+
+  const sortedProteinRows = useMemo(() => {
+    if (!proteinPhSortDir) {
+      return proteinRows;
+    }
+
+    const rows = [...proteinRows];
+    rows.sort((a, b) => {
+      const aVal = Number(a[chargeKey]);
+      const bVal = Number(b[chargeKey]);
+      if (Number.isNaN(aVal) && Number.isNaN(bVal)) {
+        return 0;
+      }
+      if (Number.isNaN(aVal)) {
+        return 1;
+      }
+      if (Number.isNaN(bVal)) {
+        return -1;
+      }
+      return proteinPhSortDir === "asc" ? aVal - bVal : bVal - aVal;
+    });
+    return rows;
+  }, [proteinRows, chargeKey, proteinPhSortDir]);
+
   const pagedProteins = useMemo(() => {
     const start = proteinPage * proteinRowsPerPage;
-    return proteinRows.slice(start, start + proteinRowsPerPage);
-  }, [proteinRows, proteinPage, proteinRowsPerPage]);
+    return sortedProteinRows.slice(start, start + proteinRowsPerPage);
+  }, [sortedProteinRows, proteinPage, proteinRowsPerPage]);
 
   const pagedFractions = useMemo(() => {
     const start = fractionPage * fractionRowsPerPage;
-    return fractionRows.slice(start, start + fractionRowsPerPage);
-  }, [fractionRows, fractionPage, fractionRowsPerPage]);
+    return sortedFractionRows.slice(start, start + fractionRowsPerPage);
+  }, [sortedFractionRows, fractionPage, fractionRowsPerPage]);
 
-  const fractionChartData = useMemo(() => {
-    return {
-      labels: fractionRows.map((f) => f.fraction),
-      datasets: [
-        {
-          label: "Protein count per fraction",
-          data: fractionRows.map((f) => f.protein_count),
-          backgroundColor: "rgba(69, 133, 226, 0.7)",
-          borderColor: "rgba(69, 133, 226, 1)",
-          borderWidth: 1,
-        },
-      ],
-    };
-  }, [fractionRows]);
+  const handleFractionSort = (
+    key: "fraction" | "protein_count" | "hit_count",
+  ) => {
+    setFractionPage(0);
+    if (fractionSortBy === key) {
+      setFractionSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setFractionSortBy(key);
+    setFractionSortDir("asc");
+  };
+
+  const handleProteinPhSort = () => {
+    setProteinPage(0);
+    setProteinPhSortDir((prev) => {
+      if (prev === null) {
+        return "asc";
+      }
+      return prev === "asc" ? "desc" : "asc";
+    });
+  };
+
+  const hitSeriesPoints = useMemo(
+    () => seqHitRows.map((s) => ({ x: s.fraction, y: s.hit_count })),
+    [seqHitRows],
+  );
 
   const scatterData = useMemo(() => {
     return {
       datasets: [
         {
           label: "Hit count by fraction",
-          data: seqHitRows.map((s) => ({ x: s.fraction, y: s.hit_count })),
+          data: hitSeriesPoints,
           backgroundColor: "rgba(107, 224, 57, 0.8)",
+          pointRadius: 4,
         },
       ],
     };
-  }, [seqHitRows]);
+  }, [hitSeriesPoints]);
+
+  const lineData = useMemo(() => {
+    return {
+      datasets: [
+        {
+          label: "Hit count by fraction",
+          data: hitSeriesPoints,
+          borderColor: "rgba(107, 224, 57, 1)",
+          backgroundColor: "rgba(107, 224, 57, 0.8)",
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+          tension: 0.25,
+          fill: false,
+        },
+      ],
+    };
+  }, [hitSeriesPoints]);
 
   return (
     <div className="ionx-page">
@@ -334,6 +421,19 @@ const IonExchangeFractionation: React.FC = () => {
                   onChange={(_, value) => setNoise(value as number)}
                 />
               </Box>
+
+              <Box sx={{ marginTop: "0.5rem", marginBottom: "0.5rem" }}>
+                <Typography gutterBottom>
+                  Charge deadband: ±{deadband.toFixed(2)}
+                </Typography>
+                <Slider
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={deadband}
+                  onChange={(_, value) => setDeadband(value as number)}
+                />
+              </Box>
             </AccordionDetails>
           </Accordion>
 
@@ -355,28 +455,10 @@ const IonExchangeFractionation: React.FC = () => {
                 <div>Skipped records: {data.summary.skipped}</div>
                 <div>Bound proteins: {data.summary.bound_count}</div>
                 <div>Wash proteins: {data.summary.wash_count}</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="ionx-card">
-            <CardHeader title="Fraction Distribution" />
-            <CardContent>
-              <div className="ionx-chart-wrap">
-                <Bar
-                  data={fractionChartData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                      x: { title: { display: true, text: "Fraction Number" } },
-                      y: {
-                        title: { display: true, text: "Protein Count" },
-                        beginAtZero: true,
-                      },
-                    },
-                  }}
-                />
+                <div>Resin mode: {data.summary.exchanger ?? "-"}</div>
+                <div>
+                  Deadband: ±{(data.summary.deadband ?? deadband).toFixed(2)}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -385,26 +467,60 @@ const IonExchangeFractionation: React.FC = () => {
             <CardHeader title="Hits by Fraction" />
             <CardContent>
               <div className="ionx-chart-wrap">
-                <Scatter
-                  data={scatterData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                      x: {
-                        title: { display: true, text: "Fraction Number" },
-                        beginAtZero: true,
-                      },
-                      y: {
-                        title: {
-                          display: true,
-                          text: "Hit Count",
-                        },
-                        beginAtZero: true,
-                      },
-                    },
-                  }}
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showLineGraph}
+                      onChange={(_, checked) => setShowLineGraph(checked)}
+                    />
+                  }
+                  label="Line Chart"
+                  sx={{ marginBottom: "0.25rem" }}
                 />
+                {showLineGraph ? (
+                  <Line
+                    data={lineData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        x: {
+                          type: "linear",
+                          title: { display: true, text: "Fraction Number" },
+                          beginAtZero: true,
+                        },
+                        y: {
+                          title: {
+                            display: true,
+                            text: "Hit Count",
+                          },
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                  />
+                ) : (
+                  <Scatter
+                    data={scatterData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        x: {
+                          title: { display: true, text: "Fraction Number" },
+                          beginAtZero: true,
+                        },
+                        y: {
+                          title: {
+                            display: true,
+                            text: "Hit Count",
+                          },
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -414,7 +530,7 @@ const IonExchangeFractionation: React.FC = () => {
             <CardContent>
               <TablePagination
                 component="div"
-                count={fractionRows.length}
+                count={sortedFractionRows.length}
                 page={fractionPage}
                 onPageChange={(_, newPage) => setFractionPage(newPage)}
                 rowsPerPage={fractionRowsPerPage}
@@ -428,9 +544,45 @@ const IonExchangeFractionation: React.FC = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Fraction</TableCell>
-                      <TableCell>Protein Count</TableCell>
-                      <TableCell>Hit Count</TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={fractionSortBy === "fraction"}
+                          direction={
+                            fractionSortBy === "fraction"
+                              ? fractionSortDir
+                              : "asc"
+                          }
+                          onClick={() => handleFractionSort("fraction")}
+                        >
+                          Fraction
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={fractionSortBy === "protein_count"}
+                          direction={
+                            fractionSortBy === "protein_count"
+                              ? fractionSortDir
+                              : "asc"
+                          }
+                          onClick={() => handleFractionSort("protein_count")}
+                        >
+                          Protein Count
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={fractionSortBy === "hit_count"}
+                          direction={
+                            fractionSortBy === "hit_count"
+                              ? fractionSortDir
+                              : "asc"
+                          }
+                          onClick={() => handleFractionSort("hit_count")}
+                        >
+                          Hit Count
+                        </TableSortLabel>
+                      </TableCell>
                       <TableCell sx={{ width: 250 }}>Hits</TableCell>
                     </TableRow>
                   </TableHead>
@@ -458,7 +610,7 @@ const IonExchangeFractionation: React.FC = () => {
                                   ? `${hitIndex} - ${String(protein.ID)}`
                                   : `${hitIndex} - Unknown`;
                                 const truncLabel =
-                                  label.length > 20
+                                  label.length > 50
                                     ? label.slice(0, 47) + "..."
                                     : label;
                                 const chipColor =
@@ -466,6 +618,7 @@ const IonExchangeFractionation: React.FC = () => {
 
                                 return (
                                   <BTooltip
+                                    key={`${row.fraction}-${hitIndex}`}
                                     title={
                                       protein
                                         ? `${protein.sequence}\n${protein.description}`
@@ -474,7 +627,6 @@ const IonExchangeFractionation: React.FC = () => {
                                     placement="top"
                                   >
                                     <Chip
-                                      key={`${row.fraction}-${hitIndex}`}
                                       size="small"
                                       label={truncLabel}
                                       sx={{
@@ -502,7 +654,7 @@ const IonExchangeFractionation: React.FC = () => {
             <CardContent>
               <TablePagination
                 component="div"
-                count={proteinRows.length}
+                count={sortedProteinRows.length}
                 page={proteinPage}
                 onPageChange={(_, newPage) => setProteinPage(newPage)}
                 rowsPerPage={proteinRowsPerPage}
@@ -520,7 +672,13 @@ const IonExchangeFractionation: React.FC = () => {
                       <TableCell>Sequence</TableCell>
                       <TableCell>Description</TableCell>
                       <TableCell>
-                        {chargeKey.replace("charge_at_ph_", "Charge at pH ")}
+                        <TableSortLabel
+                          active={proteinPhSortDir !== null}
+                          direction={proteinPhSortDir ?? "asc"}
+                          onClick={handleProteinPhSort}
+                        >
+                          {chargeKey.replace("charge_at_ph_", "Charge at pH ")}
+                        </TableSortLabel>
                       </TableCell>
                       <TableCell>ID</TableCell>
                     </TableRow>
@@ -528,7 +686,11 @@ const IonExchangeFractionation: React.FC = () => {
                   <TableBody>
                     {pagedProteins.map((row, idx) => (
                       <TableRow key={`${row.ID}-${idx}`}>
-                        <TableCell>{row.index}</TableCell>
+                        <TableCell>
+                          <MuiTooltip title={String(row.index)} arrow>
+                            <span>{row.index}</span>
+                          </MuiTooltip>
+                        </TableCell>
                         <TableCell
                           sx={{
                             maxWidth: 280,
@@ -536,9 +698,10 @@ const IonExchangeFractionation: React.FC = () => {
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                           }}
-                          title={row.sequence}
                         >
-                          {row.sequence}
+                          <MuiTooltip title={String(row.sequence)} arrow>
+                            <span>{row.sequence}</span>
+                          </MuiTooltip>
                         </TableCell>
                         <TableCell
                           sx={{
@@ -547,12 +710,17 @@ const IonExchangeFractionation: React.FC = () => {
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                           }}
-                          title={row.description}
                         >
-                          {row.description}
+                          <MuiTooltip title={String(row.description)} arrow>
+                            <span>{row.description}</span>
+                          </MuiTooltip>
                         </TableCell>
                         <TableCell>{row[chargeKey] as number}</TableCell>
-                        <TableCell>{row.ID}</TableCell>
+                        <TableCell>
+                          <MuiTooltip title={String(row.ID)} arrow>
+                            <span>{row.ID}</span>
+                          </MuiTooltip>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

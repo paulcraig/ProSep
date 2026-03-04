@@ -18,6 +18,7 @@ class IonExchangeRequest(BaseModel):
     media_type: Literal["Q", "S"] = Field("Q", description="Q (anion exchange) or S (cation exchange)")
     fraction_count: int = Field(80, ge=1, le=500)
     noise: float = Field(0.10, ge=0.0, le=1.0)
+    deadband: float = Field(0.05, ge=0.0, le=2.0)
 
 
 @router.post("/process", response_model=Dict[str, Any])
@@ -32,6 +33,7 @@ async def process_ion_exchange(body: IonExchangeRequest) -> Any:
             media_type=body.media_type,
             fraction_count=body.fraction_count,
             noise=body.noise,
+            deadband=body.deadband,
         )
     except ValueError as exc:
         return {"error": str(exc)}

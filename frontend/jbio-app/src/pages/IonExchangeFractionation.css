@@ -32,6 +32,7 @@
 
 .ionx-button {
   background-color: var(--accent) !important;
+  color: white !important;
 }
 
 .ionx-summary-grid {

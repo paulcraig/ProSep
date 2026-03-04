@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from io import StringIO
 from typing import Any, Dict, List
 
@@ -8,9 +9,9 @@ from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
 
 class IonExchangeFractionation:
-    MEDIA_CHARGES = {
-        "Q": -1,  # triethylamine
-        "S": 1,   # sulfite
+    MEDIA_TO_EXCHANGER = {
+        "Q": "anion",   # positively charged resin, binds negative proteins
+        "S": "cation",  # negatively charged resin, binds positive proteins
     }
 
     NORMALIZATION_MAP = {
@@ -119,23 +120,53 @@ class IonExchangeFractionation:
         return list(SeqIO.parse(handle, "fasta"))
 
     @staticmethod
+    def _fractionate_with_overlap(
+        items: List[Dict[str, Any]],
+        n_fractions: int,
+        overlap: float,
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Split retained proteins into n_fractions with optional overlap.
+        Overlap is a fraction of nominal bin size.
+        """
+        if n_fractions <= 0:
+            return []
+        if not items:
+            return [[] for _ in range(n_fractions)]
+
+        total = len(items)
+        bin_size = math.ceil(total / n_fractions)
+        overlap_count = int(round(bin_size * overlap))
+
+        fractions: List[List[Dict[str, Any]]] = []
+        for i in range(n_fractions):
+            start = max(i * bin_size - overlap_count, 0)
+            end = min((i + 1) * bin_size + overlap_count, total)
+            fractions.append(items[start:end])
+
+        return fractions
+
+    @staticmethod
     def process(
         fasta_content: str,
         ph: float = 7.0,
         media_type: str = "Q",
         fraction_count: int = 80,
         noise: float = 0.10,
+        deadband: float = 0.05,
     ) -> Dict[str, Any]:
-        if media_type not in IonExchangeFractionation.MEDIA_CHARGES:
+        if media_type not in IonExchangeFractionation.MEDIA_TO_EXCHANGER:
             raise ValueError("media_type must be one of: Q, S")
 
         if fraction_count < 1:
             raise ValueError("fraction_count must be at least 1")
         if noise < 0:
             raise ValueError("noise must be >= 0")
+        if deadband < 0:
+            raise ValueError("deadband must be >= 0")
 
         records = IonExchangeFractionation._parse_fasta_text(fasta_content)
-        media_charge = IonExchangeFractionation.MEDIA_CHARGES[media_type]
+        exchanger = IonExchangeFractionation.MEDIA_TO_EXCHANGER[media_type]
 
         bound: List[Dict[str, Any]] = []
         wash_count = 0
@@ -161,30 +192,36 @@ class IonExchangeFractionation:
                 "charge": round(charge, 2),
             }
 
-            if (charge * media_charge) < 0:
+            if abs(charge) < deadband:
                 wash_count += 1
-            else:
-                bound.append(protein)
+                continue
 
-        sort_ascending = media_type == "Q"
-        bound.sort(key=lambda item: item["charge"], reverse=not sort_ascending)
+            if exchanger == "anion":
+                if charge <= -deadband:
+                    bound.append(protein)
+                else:
+                    wash_count += 1
+            else:
+                if charge >= deadband:
+                    bound.append(protein)
+                else:
+                    wash_count += 1
+
+        bound.sort(key=lambda item: abs(float(item["charge"])))
 
         for idx, protein in enumerate(bound):
             protein["index"] = idx
 
-        fraclen = round(len(bound) / fraction_count) if fraction_count > 0 else 0
+        fraction_lists = IonExchangeFractionation._fractionate_with_overlap(
+            items=bound,
+            n_fractions=fraction_count,
+            overlap=noise,
+        )
+
         seqhits: Dict[int, List[Any]] = {}
         fraction_overview: List[Dict[str, Any]] = []
 
-        for n in range(fraction_count - 1):
-            fuzzymin = int(round(n * fraclen - noise * fraclen, 0))
-            fuzzymax = int(round((n + 1) * fraclen + noise * fraclen, 0))
-            if fuzzymin < 0:
-                fuzzymin = 0
-            if fuzzymax > len(bound):
-                fuzzymax = len(bound)
-
-            temp = bound[fuzzymin:fuzzymax]
+        for n, temp in enumerate(fraction_lists):
             fraction_number = n + 1
 
             for protein in temp:
@@ -194,6 +231,9 @@ class IonExchangeFractionation:
                         seqhits[fraction_number][1].append(protein["index"])
                     else:
                         seqhits[fraction_number] = [1, [protein["index"]]]
+
+            fuzzymin = min((protein["index"] for protein in temp), default=0)
+            fuzzymax = max((protein["index"] for protein in temp), default=-1) + 1
 
             fraction_overview.append(
                 {
@@ -205,33 +245,6 @@ class IonExchangeFractionation:
                     "hit_indices": seqhits[fraction_number][1] if fraction_number in seqhits else [],
                 }
             )
-
-        remainder_start = (fraction_count - 1) * fraclen
-        if remainder_start < 0:
-            remainder_start = 0
-        if remainder_start > len(bound):
-            remainder_start = len(bound)
-
-        remainder = bound[remainder_start:]
-        last_fraction = fraction_count
-        for protein in remainder:
-            if IonExchangeFractionation._param_of_interest(protein["sequence"]):
-                if last_fraction in seqhits:
-                    seqhits[last_fraction][0] += 1
-                    seqhits[last_fraction][1].append(protein["index"])
-                else:
-                    seqhits[last_fraction] = [1, [protein["index"]]]
-
-        fraction_overview.append(
-            {
-                "fraction": last_fraction,
-                "fuzzymin": remainder_start,
-                "fuzzymax": len(bound),
-                "protein_count": len(remainder),
-                "hit_count": seqhits[last_fraction][0] if last_fraction in seqhits else 0,
-                "hit_indices": seqhits[last_fraction][1] if last_fraction in seqhits else [],
-            }
-        )
 
         display_rows = [
             {
@@ -260,6 +273,9 @@ class IonExchangeFractionation:
                 "bound_count": len(bound),
                 "wash_count": wash_count,
                 "fraction_count": fraction_count,
+                "media_type": media_type,
+                "exchanger": exchanger,
+                "deadband": deadband,
             },
             "fraction_overview": fraction_overview,
             "filtered_proteins": display_rows,
