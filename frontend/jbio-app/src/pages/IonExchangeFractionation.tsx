@@ -9,13 +9,12 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Chip,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
   Slider,
-  Switch,
   Table,
   TableBody,
   TableCell,
@@ -23,14 +22,12 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  TableSortLabel,
   TextField,
   Typography,
-  FormControlLabel,
-  Tooltip as MuiTooltip,
-  styled,
+  Switch,
+  Chip,
+  IconButton,
 } from "@mui/material";
-import { TooltipProps, tooltipClasses } from "@mui/material/Tooltip";
 import { Line, Scatter } from "react-chartjs-2";
 import {
   BarElement,
@@ -44,7 +41,13 @@ import {
 } from "chart.js";
 import { API_URL } from "../config";
 import "./IonExchangeFractionation.css";
-import { ExpandMore, FileUpload, PlayArrow } from "@mui/icons-material";
+import {
+  ArrowDropDown,
+  ArrowDropUp,
+  ExpandMore,
+  FileUpload,
+  PlayArrow,
+} from "@mui/icons-material";
 
 ChartJS.register(
   CategoryScale,
@@ -58,59 +61,53 @@ ChartJS.register(
 
 type MediaType = "Q" | "S";
 
-type FractionOverview = {
-  fraction: number;
-  fuzzymin: number;
-  fuzzymax: number;
-  protein_count: number;
-  hit_count: number;
-  hit_indices: number[];
-};
-
-type ProteinRow = {
-  index: number;
-  ID: string;
-  sequence: string;
+type ProteinDto = {
+  id: string;
+  name: string;
   description: string;
-  [key: string]: number | string;
+  sequence: string;
+  molecularWeight: number;
+  charge: number;
+  color: string;
 };
 
-type SeqHitRow = {
-  fraction: number;
-  hit_count: number;
-  hit_indices: number[];
+type FractionDto = {
+  fractionIndex: number;
+  proteinCount?: number;
+  hitCount?: number;
+  hitProteinIds?: string[];
+  proteins: ProteinDto[];
 };
 
-type Summary = {
-  processed: number;
+type ParamsDto = {
+  pH: number;
+  mediaType: MediaType;
+  exchanger: "anion" | "cation";
+  fractions: number;
+  overlap: number;
+  deadband: number;
+};
+
+type CountsDto = {
+  total: number;
+  wash: number;
+  retained: number;
   skipped: number;
-  bound_count: number;
-  wash_count: number;
-  fraction_count: number;
-  media_type?: MediaType;
-  exchanger?: "anion" | "cation";
-  deadband?: number;
 };
 
 type IonExchangeResponse = {
-  summary: Summary;
-  fraction_overview: FractionOverview[];
-  filtered_proteins: ProteinRow[];
-  seqhits: SeqHitRow[];
+  ok: boolean;
+  params: ParamsDto;
+  counts: CountsDto;
+  wash: ProteinDto[];
+  fractions: FractionDto[];
   error?: string;
 };
 
-const BTooltip = styled(({ className, ...props }: TooltipProps) => (
-  <MuiTooltip {...props} arrow classes={{ popper: className }} />
-))(({ theme }) => ({
-  [`& .${tooltipClasses.arrow}`]: {
-    color: theme.palette.common.black,
-  },
-  [`& .${tooltipClasses.tooltip}`]: {
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
-    color: "#fff !important",
-  },
-}));
+type SortDirection = "asc" | "desc";
+
+type FractionSortKey = "fractionIndex" | "proteinCount" | "hitCount";
+type ProteinSortKey = "charge" | "molecularWeight";
 
 const IonExchangeFractionation: React.FC = () => {
   const [fastaText, setFastaText] = useState<string>("");
@@ -123,20 +120,25 @@ const IonExchangeFractionation: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [data, setData] = useState<IonExchangeResponse | null>(null);
 
-  const [proteinPage, setProteinPage] = useState<number>(0);
-  const [proteinRowsPerPage, setProteinRowsPerPage] = useState<number>(10);
   const [fractionPage, setFractionPage] = useState<number>(0);
   const [fractionRowsPerPage, setFractionRowsPerPage] = useState<number>(10);
-  const [showLineGraph, setShowLineGraph] = useState<boolean>(false);
-
-  const [fractionSortBy, setFractionSortBy] = useState<
-    "fraction" | "protein_count" | "hit_count"
-  >("fraction");
-  const [fractionSortDir, setFractionSortDir] = useState<"asc" | "desc">("asc");
-
-  const [proteinPhSortDir, setProteinPhSortDir] = useState<
-    "asc" | "desc" | null
-  >(null);
+  const [proteinPage, setProteinPage] = useState<number>(0);
+  const [proteinRowsPerPage, setProteinRowsPerPage] = useState<number>(10);
+  const [showLineGraph, setShowLineGraph] = useState<boolean>(true);
+  const [fractionSort, setFractionSort] = useState<{
+    key: FractionSortKey;
+    direction: SortDirection;
+  }>({
+    key: "fractionIndex",
+    direction: "asc",
+  });
+  const [proteinSort, setProteinSort] = useState<{
+    key: ProteinSortKey;
+    direction: SortDirection;
+  }>({
+    key: "charge",
+    direction: "asc",
+  });
 
   const handleLoadFasta = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -173,7 +175,7 @@ const IonExchangeFractionation: React.FC = () => {
       );
 
       const json = (await response.json()) as IonExchangeResponse;
-      if (!response.ok || json.error) {
+      if (!response.ok || !json.ok || json.error) {
         throw new Error(
           json.error || "Failed to process ion exchange fractionation.",
         );
@@ -190,132 +192,118 @@ const IonExchangeFractionation: React.FC = () => {
     }
   };
 
-  const proteinRows = useMemo(() => data?.filtered_proteins ?? [], [data]);
-  const fractionRows = useMemo(() => data?.fraction_overview ?? [], [data]);
-  const seqHitRows = useMemo(() => data?.seqhits ?? [], [data]);
+  const fractionRows = useMemo(() => data?.fractions ?? [], [data]);
 
-  const proteinByIndex = useMemo(() => {
-    const map = new Map<number, ProteinRow>();
-    for (const protein of proteinRows) {
-      map.set(Number(protein.index), protein);
+  const retainedRows = useMemo(() => {
+    const byKey = new Map<string, ProteinDto>();
+    for (const fraction of fractionRows) {
+      for (const protein of fraction.proteins) {
+        byKey.set(`${protein.id}::${protein.sequence}`, protein);
+      }
     }
-    return map;
-  }, [proteinRows]);
-
-  const chipColorFromLabel = (label: string) => {
-    let hash = 0;
-    for (let i = 0; i < label.length; i += 1) {
-      hash = label.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue} 65% 42%)`;
-  };
-  const chargeKey = useMemo(() => {
-    if (proteinRows.length === 0) {
-      return `charge_at_ph_${ph}`;
-    }
-
-    const detectedKey = Object.keys(proteinRows[0]).find((key) =>
-      key.startsWith("charge_at_ph_"),
+    return Array.from(byKey.values()).sort(
+      (a, b) => Math.abs(a.charge) - Math.abs(b.charge),
     );
-
-    return detectedKey ?? `charge_at_ph_${ph}`;
-  }, [proteinRows, ph]);
+  }, [fractionRows]);
 
   const sortedFractionRows = useMemo(() => {
     const rows = [...fractionRows];
-    rows.sort((a, b) => {
-      const aVal = a[fractionSortBy];
-      const bVal = b[fractionSortBy];
-      if (aVal === bVal) {
-        return 0;
-      }
-      const baseCmp = aVal < bVal ? -1 : 1;
-      return fractionSortDir === "asc" ? baseCmp : -baseCmp;
-    });
-    return rows;
-  }, [fractionRows, fractionSortBy, fractionSortDir]);
+    const directionMultiplier = fractionSort.direction === "asc" ? 1 : -1;
 
-  const sortedProteinRows = useMemo(() => {
-    if (!proteinPhSortDir) {
-      return proteinRows;
-    }
-
-    const rows = [...proteinRows];
     rows.sort((a, b) => {
-      const aVal = Number(a[chargeKey]);
-      const bVal = Number(b[chargeKey]);
-      if (Number.isNaN(aVal) && Number.isNaN(bVal)) {
-        return 0;
-      }
-      if (Number.isNaN(aVal)) {
-        return 1;
-      }
-      if (Number.isNaN(bVal)) {
-        return -1;
-      }
-      return proteinPhSortDir === "asc" ? aVal - bVal : bVal - aVal;
+      const aValue =
+        fractionSort.key === "fractionIndex"
+          ? a.fractionIndex
+          : fractionSort.key === "proteinCount"
+            ? (a.proteinCount ?? a.proteins.length)
+            : (a.hitCount ?? 0);
+
+      const bValue =
+        fractionSort.key === "fractionIndex"
+          ? b.fractionIndex
+          : fractionSort.key === "proteinCount"
+            ? (b.proteinCount ?? b.proteins.length)
+            : (b.hitCount ?? 0);
+
+      return (aValue - bValue) * directionMultiplier;
     });
+
     return rows;
-  }, [proteinRows, chargeKey, proteinPhSortDir]);
+  }, [fractionRows, fractionSort]);
+
+  const sortedRetainedRows = useMemo(() => {
+    const rows = [...retainedRows];
+    const directionMultiplier = proteinSort.direction === "asc" ? 1 : -1;
+
+    rows.sort((a, b) => {
+      const aValue =
+        proteinSort.key === "charge" ? a.charge : a.molecularWeight;
+      const bValue =
+        proteinSort.key === "charge" ? b.charge : b.molecularWeight;
+
+      return (aValue - bValue) * directionMultiplier;
+    });
+
+    return rows;
+  }, [retainedRows, proteinSort]);
+
+  const handleFractionSort = (
+    key: FractionSortKey,
+    direction: SortDirection,
+  ) => {
+    setFractionSort({ key, direction });
+    setFractionPage(0);
+  };
+
+  const handleProteinSort = (key: ProteinSortKey, direction: SortDirection) => {
+    setProteinSort({ key, direction });
+    setProteinPage(0);
+  };
 
   const pagedProteins = useMemo(() => {
     const start = proteinPage * proteinRowsPerPage;
-    return sortedProteinRows.slice(start, start + proteinRowsPerPage);
-  }, [sortedProteinRows, proteinPage, proteinRowsPerPage]);
+    return sortedRetainedRows.slice(start, start + proteinRowsPerPage);
+  }, [sortedRetainedRows, proteinPage, proteinRowsPerPage]);
 
   const pagedFractions = useMemo(() => {
     const start = fractionPage * fractionRowsPerPage;
     return sortedFractionRows.slice(start, start + fractionRowsPerPage);
   }, [sortedFractionRows, fractionPage, fractionRowsPerPage]);
 
-  const handleFractionSort = (
-    key: "fraction" | "protein_count" | "hit_count",
-  ) => {
-    setFractionPage(0);
-    if (fractionSortBy === key) {
-      setFractionSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
-      return;
+  const proteinSeriesPoints = useMemo(() => {
+    const points: Array<{ x: number; y: number }> = [
+      { x: 0, y: data?.wash?.length ?? 0 },
+    ];
+
+    for (const fraction of fractionRows) {
+      points.push({
+        x: fraction.fractionIndex,
+        y: fraction.proteinCount ?? fraction.proteins.length,
+      });
     }
-    setFractionSortBy(key);
-    setFractionSortDir("asc");
-  };
 
-  const handleProteinPhSort = () => {
-    setProteinPage(0);
-    setProteinPhSortDir((prev) => {
-      if (prev === null) {
-        return "asc";
-      }
-      return prev === "asc" ? "desc" : "asc";
-    });
-  };
-
-  const hitSeriesPoints = useMemo(
-    () => seqHitRows.map((s) => ({ x: s.fraction, y: s.hit_count })),
-    [seqHitRows],
-  );
+    return points;
+  }, [data, fractionRows]);
 
   const scatterData = useMemo(() => {
     return {
       datasets: [
         {
-          label: "Hit count by fraction",
-          data: hitSeriesPoints,
+          label: "Proteins per fraction",
+          data: proteinSeriesPoints,
           backgroundColor: "rgba(107, 224, 57, 0.8)",
           pointRadius: 4,
         },
       ],
     };
-  }, [hitSeriesPoints]);
+  }, [proteinSeriesPoints]);
 
   const lineData = useMemo(() => {
     return {
       datasets: [
         {
-          label: "Hit count by fraction",
-          data: hitSeriesPoints,
+          label: "Proteins per fraction",
+          data: proteinSeriesPoints,
           borderColor: "rgba(107, 224, 57, 1)",
           backgroundColor: "rgba(107, 224, 57, 0.8)",
           borderWidth: 2,
@@ -326,7 +314,7 @@ const IonExchangeFractionation: React.FC = () => {
         },
       ],
     };
-  }, [hitSeriesPoints]);
+  }, [proteinSeriesPoints]);
 
   return (
     <div className="ionx-page">
@@ -370,6 +358,10 @@ const IonExchangeFractionation: React.FC = () => {
               onChange={(e) =>
                 setFractionCount(Math.max(1, Number(e.target.value) || 80))
               }
+              inputProps={{
+                step: fractionCount > 20 ? 10 : 1,
+                min: 1,
+              }}
               sx={{ width: 140 }}
             />
 
@@ -451,20 +443,18 @@ const IonExchangeFractionation: React.FC = () => {
             <CardHeader title="Summary" />
             <CardContent>
               <div className="ionx-summary-grid">
-                <div>Processed records: {data.summary.processed}</div>
-                <div>Skipped records: {data.summary.skipped}</div>
-                <div>Bound proteins: {data.summary.bound_count}</div>
-                <div>Wash proteins: {data.summary.wash_count}</div>
-                <div>Resin mode: {data.summary.exchanger ?? "-"}</div>
-                <div>
-                  Deadband: ±{(data.summary.deadband ?? deadband).toFixed(2)}
-                </div>
+                <div>Processed records: {data.counts.total}</div>
+                <div>Skipped records: {data.counts.skipped}</div>
+                <div>Retained proteins: {data.counts.retained}</div>
+                <div>Wash proteins: {data.counts.wash}</div>
+                <div>Resin mode: {data.params.exchanger}</div>
+                <div>Deadband: ±{data.params.deadband.toFixed(2)}</div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="ionx-card">
-            <CardHeader title="Hits by Fraction" />
+            <CardHeader title="Proteins by Fraction" />
             <CardContent>
               <div className="ionx-chart-wrap">
                 <FormControlLabel
@@ -486,13 +476,20 @@ const IonExchangeFractionation: React.FC = () => {
                       scales: {
                         x: {
                           type: "linear",
-                          title: { display: true, text: "Fraction Number" },
+                          title: {
+                            display: true,
+                            text: "0 = Wash, 1..N = Fractions",
+                          },
                           beginAtZero: true,
+                          ticks: {
+                            callback: (value) =>
+                              Number(value) === 0 ? "Wash" : String(value),
+                          },
                         },
                         y: {
                           title: {
                             display: true,
-                            text: "Hit Count",
+                            text: "Protein Count",
                           },
                           beginAtZero: true,
                         },
@@ -507,13 +504,20 @@ const IonExchangeFractionation: React.FC = () => {
                       maintainAspectRatio: false,
                       scales: {
                         x: {
-                          title: { display: true, text: "Fraction Number" },
+                          title: {
+                            display: true,
+                            text: "0 = Wash, 1..N = Fractions",
+                          },
                           beginAtZero: true,
+                          ticks: {
+                            callback: (value) =>
+                              Number(value) === 0 ? "Wash" : String(value),
+                          },
                         },
                         y: {
                           title: {
                             display: true,
-                            text: "Hit Count",
+                            text: "Protein Count",
                           },
                           beginAtZero: true,
                         },
@@ -530,7 +534,7 @@ const IonExchangeFractionation: React.FC = () => {
             <CardContent>
               <TablePagination
                 component="div"
-                count={sortedFractionRows.length}
+                count={fractionRows.length}
                 page={fractionPage}
                 onPageChange={(_, newPage) => setFractionPage(newPage)}
                 rowsPerPage={fractionRowsPerPage}
@@ -540,104 +544,153 @@ const IonExchangeFractionation: React.FC = () => {
                 }}
                 rowsPerPageOptions={[10, 25, 50]}
               />
-              <TableContainer>
-                <Table>
+              <TableContainer className="ionx-table-container ionx-fractions-table-container">
+                <Table className="ionx-fractions-table">
                   <TableHead>
                     <TableRow>
                       <TableCell>
-                        <TableSortLabel
-                          active={fractionSortBy === "fraction"}
-                          direction={
-                            fractionSortBy === "fraction"
-                              ? fractionSortDir
-                              : "asc"
-                          }
-                          onClick={() => handleFractionSort("fraction")}
+                        <Box
+                          className="ionx-sort-header"
+                          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
                         >
                           Fraction
-                        </TableSortLabel>
+                          <IconButton
+                            size="small"
+                            color={
+                              fractionSort.key === "fractionIndex" &&
+                              fractionSort.direction === "asc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() => handleFractionSort("fractionIndex", "asc")}
+                            title="Sort ascending"
+                          >
+                            <ArrowDropUp fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color={
+                              fractionSort.key === "fractionIndex" &&
+                              fractionSort.direction === "desc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() => handleFractionSort("fractionIndex", "desc")}
+                            title="Sort descending"
+                          >
+                            <ArrowDropDown fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                       <TableCell>
-                        <TableSortLabel
-                          active={fractionSortBy === "protein_count"}
-                          direction={
-                            fractionSortBy === "protein_count"
-                              ? fractionSortDir
-                              : "asc"
-                          }
-                          onClick={() => handleFractionSort("protein_count")}
+                        <Box
+                          className="ionx-sort-header"
+                          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
                         >
                           Protein Count
-                        </TableSortLabel>
+                          <IconButton
+                            size="small"
+                            color={
+                              fractionSort.key === "proteinCount" &&
+                              fractionSort.direction === "asc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() => handleFractionSort("proteinCount", "asc")}
+                            title="Sort ascending"
+                          >
+                            <ArrowDropUp fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color={
+                              fractionSort.key === "proteinCount" &&
+                              fractionSort.direction === "desc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() => handleFractionSort("proteinCount", "desc")}
+                            title="Sort descending"
+                          >
+                            <ArrowDropDown fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                       <TableCell>
-                        <TableSortLabel
-                          active={fractionSortBy === "hit_count"}
-                          direction={
-                            fractionSortBy === "hit_count"
-                              ? fractionSortDir
-                              : "asc"
-                          }
-                          onClick={() => handleFractionSort("hit_count")}
+                        <Box
+                          className="ionx-sort-header"
+                          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
                         >
                           Hit Count
-                        </TableSortLabel>
+                          <IconButton
+                            size="small"
+                            color={
+                              fractionSort.key === "hitCount" &&
+                              fractionSort.direction === "asc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() => handleFractionSort("hitCount", "asc")}
+                            title="Sort ascending"
+                          >
+                            <ArrowDropUp fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color={
+                              fractionSort.key === "hitCount" &&
+                              fractionSort.direction === "desc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() => handleFractionSort("hitCount", "desc")}
+                            title="Sort descending"
+                          >
+                            <ArrowDropDown fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
-                      <TableCell sx={{ width: 250 }}>Hits</TableCell>
+                      <TableCell>Hit Protein IDs</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {pagedFractions.map((row) => (
-                      <TableRow key={row.fraction}>
-                        <TableCell>{row.fraction}</TableCell>
-                        <TableCell>{row.protein_count}</TableCell>
-                        <TableCell>{row.hit_count}</TableCell>
+                      <TableRow key={row.fractionIndex}>
+                        <TableCell>{row.fractionIndex}</TableCell>
                         <TableCell>
-                          {row.hit_indices.length === 0 ? (
+                          {row.proteinCount ?? row.proteins.length}
+                        </TableCell>
+                        <TableCell>{row.hitCount ?? 0}</TableCell>
+                        <TableCell className="ionx-hit-ids-cell">
+                          {(row.hitProteinIds ?? []).length === 0 ? (
                             "..."
                           ) : (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 1,
-                                minWidth: 600,
-                              }}
-                            >
-                              {row.hit_indices.map((hitIndex) => {
-                                const protein = proteinByIndex.get(hitIndex);
-                                const label = protein
-                                  ? `${hitIndex} - ${String(protein.ID)}`
-                                  : `${hitIndex} - Unknown`;
-                                const truncLabel =
-                                  label.length > 50
-                                    ? label.slice(0, 47) + "..."
-                                    : label;
-                                const chipColor =
-                                  chipColorFromLabel(truncLabel);
-
-                                return (
-                                  <BTooltip
-                                    key={`${row.fraction}-${hitIndex}`}
-                                    title={
-                                      protein
-                                        ? `${protein.sequence}\n${protein.description}`
-                                        : "Unknown protein"
-                                    }
-                                    placement="top"
-                                  >
+                            <Box className="ionx-hit-ids-scroll">
+                              {(row.hitProteinIds ?? []).map(
+                                (proteinId, proteinIndex) => {
+                                  const protein = row.proteins.find(
+                                    (item) => item.id === proteinId,
+                                  );
+                                  return (
                                     <Chip
+                                      key={`${row.fractionIndex}-${proteinId}-${proteinIndex}`}
                                       size="small"
-                                      label={truncLabel}
+                                      label={proteinId}
+                                      title={
+                                        protein
+                                          ? `${protein.description}\nCharge: ${protein.charge.toFixed(2)}`
+                                          : proteinId
+                                      }
                                       sx={{
-                                        border: `3px solid ${chipColor}`,
-                                        backgroundColor: `rgba(0,0,0, 0.2)`,
+                                        border: `2px solid ${protein?.color ?? "#777"}`,
+                                        backgroundColor: "rgba(0,0,0,0.15)",
                                         fontWeight: 600,
+                                        margin: "0.2rem",
                                       }}
                                     />
-                                  </BTooltip>
-                                );
-                              })}
+                                  );
+                                },
+                              )}
                             </Box>
                           )}
                         </TableCell>
@@ -654,7 +707,7 @@ const IonExchangeFractionation: React.FC = () => {
             <CardContent>
               <TablePagination
                 component="div"
-                count={sortedProteinRows.length}
+                count={sortedRetainedRows.length}
                 page={proteinPage}
                 onPageChange={(_, newPage) => setProteinPage(newPage)}
                 rowsPerPage={proteinRowsPerPage}
@@ -664,33 +717,87 @@ const IonExchangeFractionation: React.FC = () => {
                 }}
                 rowsPerPageOptions={[10, 25, 50]}
               />
-              <TableContainer>
+              <TableContainer className="ionx-table-container ionx-proteins-table-container">
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>#</TableCell>
+                      <TableCell>ID</TableCell>
+                      <TableCell>Name</TableCell>
                       <TableCell>Sequence</TableCell>
                       <TableCell>Description</TableCell>
                       <TableCell>
-                        <TableSortLabel
-                          active={proteinPhSortDir !== null}
-                          direction={proteinPhSortDir ?? "asc"}
-                          onClick={handleProteinPhSort}
-                        >
-                          {chargeKey.replace("charge_at_ph_", "Charge at pH ")}
-                        </TableSortLabel>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          Charge at pH {ph.toFixed(1)}
+                          <IconButton
+                            size="small"
+                            color={
+                              proteinSort.key === "charge" &&
+                              proteinSort.direction === "asc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() => handleProteinSort("charge", "asc")}
+                            title="Sort ascending"
+                          >
+                            <ArrowDropUp fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color={
+                              proteinSort.key === "charge" &&
+                              proteinSort.direction === "desc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() => handleProteinSort("charge", "desc")}
+                            title="Sort descending"
+                          >
+                            <ArrowDropDown fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
-                      <TableCell>ID</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          Molecular Weight
+                          <IconButton
+                            size="small"
+                            color={
+                              proteinSort.key === "molecularWeight" &&
+                              proteinSort.direction === "asc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() =>
+                              handleProteinSort("molecularWeight", "asc")
+                            }
+                            title="Sort ascending"
+                          >
+                            <ArrowDropUp fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color={
+                              proteinSort.key === "molecularWeight" &&
+                              proteinSort.direction === "desc"
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() =>
+                              handleProteinSort("molecularWeight", "desc")
+                            }
+                            title="Sort descending"
+                          >
+                            <ArrowDropDown fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {pagedProteins.map((row, idx) => (
-                      <TableRow key={`${row.ID}-${idx}`}>
-                        <TableCell>
-                          <MuiTooltip title={String(row.index)} arrow>
-                            <span>{row.index}</span>
-                          </MuiTooltip>
-                        </TableCell>
+                      <TableRow key={`${row.id}-${idx}`}>
+                        <TableCell>{row.id}</TableCell>
+                        <TableCell>{row.name || "-"}</TableCell>
                         <TableCell
                           sx={{
                             maxWidth: 280,
@@ -698,10 +805,9 @@ const IonExchangeFractionation: React.FC = () => {
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                           }}
+                          title={row.sequence}
                         >
-                          <MuiTooltip title={String(row.sequence)} arrow>
-                            <span>{row.sequence}</span>
-                          </MuiTooltip>
+                          <span>{row.sequence}</span>
                         </TableCell>
                         <TableCell
                           sx={{
@@ -710,17 +816,12 @@ const IonExchangeFractionation: React.FC = () => {
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                           }}
+                          title={row.description}
                         >
-                          <MuiTooltip title={String(row.description)} arrow>
-                            <span>{row.description}</span>
-                          </MuiTooltip>
+                          <span>{row.description}</span>
                         </TableCell>
-                        <TableCell>{row[chargeKey] as number}</TableCell>
-                        <TableCell>
-                          <MuiTooltip title={String(row.ID)} arrow>
-                            <span>{row.ID}</span>
-                          </MuiTooltip>
-                        </TableCell>
+                        <TableCell>{row.charge.toFixed(2)}</TableCell>
+                        <TableCell>{row.molecularWeight.toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
