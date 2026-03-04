@@ -865,8 +865,6 @@ const IonExchangeFractionation: React.FC = () => {
                     <TableRow>
                       <TableCell>ID</TableCell>
                       <TableCell>Name</TableCell>
-                      <TableCell>Sequence</TableCell>
-                      <TableCell>Description</TableCell>
                       <TableCell>
                         <Box
                           sx={{
@@ -945,6 +943,8 @@ const IonExchangeFractionation: React.FC = () => {
                           </IconButton>
                         </Box>
                       </TableCell>
+                      <TableCell>Sequence</TableCell>
+                      <TableCell>Description</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -952,6 +952,8 @@ const IonExchangeFractionation: React.FC = () => {
                       <TableRow key={`${row.id}-${idx}`}>
                         <TableCell>{row.id}</TableCell>
                         <TableCell>{row.name || "-"}</TableCell>
+                        <TableCell>{row.charge.toFixed(2)}</TableCell>
+                        <TableCell>{row.molecularWeight.toFixed(2)}</TableCell>
                         <TableCell
                           sx={{
                             maxWidth: 280,
@@ -974,8 +976,6 @@ const IonExchangeFractionation: React.FC = () => {
                         >
                           <span>{row.description}</span>
                         </TableCell>
-                        <TableCell>{row.charge.toFixed(2)}</TableCell>
-                        <TableCell>{row.molecularWeight.toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
