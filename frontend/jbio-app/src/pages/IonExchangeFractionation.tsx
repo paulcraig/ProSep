@@ -36,6 +36,7 @@ import {
   Legend,
   LineElement,
   LinearScale,
+  LogarithmicScale,
   PointElement,
   Tooltip,
 } from "chart.js";
@@ -53,6 +54,7 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
+  LogarithmicScale,
   BarElement,
   LineElement,
   PointElement,
@@ -126,6 +128,7 @@ const IonExchangeFractionation: React.FC = () => {
   const [proteinPage, setProteinPage] = useState<number>(0);
   const [proteinRowsPerPage, setProteinRowsPerPage] = useState<number>(10);
   const [showLineGraph, setShowLineGraph] = useState<boolean>(true);
+  const [useLogScale, setUseLogScale] = useState<boolean>(false);
   const [fractionSort, setFractionSort] = useState<{
     key: FractionSortKey;
     direction: SortDirection;
@@ -307,8 +310,7 @@ const IonExchangeFractionation: React.FC = () => {
           data: proteinSeriesPoints,
           borderColor: "rgba(107, 224, 57, 1)",
           backgroundColor: "rgba(107, 224, 57, 0.8)",
-          borderWidth: 2,
-          pointRadius: 4,
+          pointRadius: 3,
           pointHoverRadius: 5,
           tension: 0.25,
           fill: false,
@@ -507,7 +509,17 @@ const IonExchangeFractionation: React.FC = () => {
                       onChange={(_, checked) => setShowLineGraph(checked)}
                     />
                   }
-                  label="Line Chart"
+                  label="Line"
+                  sx={{ marginBottom: "0.25rem" }}
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={useLogScale}
+                      onChange={(_, checked) => setUseLogScale(checked)}
+                    />
+                  }
+                  label="Log Scale"
                   sx={{ marginBottom: "0.25rem" }}
                 />
                 {showLineGraph ? (
@@ -530,11 +542,12 @@ const IonExchangeFractionation: React.FC = () => {
                           },
                         },
                         y: {
+                          type: useLogScale ? "logarithmic" : "linear",
                           title: {
                             display: true,
                             text: "Protein Count",
                           },
-                          beginAtZero: true,
+                          beginAtZero: !useLogScale,
                         },
                       },
                     }}
@@ -558,11 +571,12 @@ const IonExchangeFractionation: React.FC = () => {
                           },
                         },
                         y: {
+                          type: useLogScale ? "logarithmic" : "linear",
                           title: {
                             display: true,
                             text: "Protein Count",
                           },
-                          beginAtZero: true,
+                          beginAtZero: !useLogScale,
                         },
                       },
                     }}
