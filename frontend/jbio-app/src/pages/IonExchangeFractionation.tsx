@@ -47,6 +47,7 @@ import {
   ExpandMore,
   FileUpload,
   PlayArrow,
+  SettingsOutlined,
 } from "@mui/icons-material";
 
 ChartJS.register(
@@ -349,44 +350,85 @@ const IonExchangeFractionation: React.FC = () => {
                 <MenuItem value="S">S media (Sulfite -)</MenuItem>
               </Select>
             </FormControl>
-
-            <TextField
-              size="small"
-              type="number"
-              label="Fractions"
-              value={fractionCount}
-              onChange={(e) =>
-                setFractionCount(Math.max(1, Number(e.target.value) || 80))
-              }
-              inputProps={{
-                step: fractionCount > 20 ? 10 : 1,
-                min: 1,
-              }}
-              sx={{ width: 140 }}
-            />
-
             <Button
               className="ionx-button"
               variant="contained"
               disabled={loading || fastaText.trim().length === 0}
               onClick={handleRunFractionation}
               startIcon={<PlayArrow />}
-              sx={{ float: "right" }}
+              sx={{ marginLeft: "auto" }}
             >
               {loading ? "Processing..." : "Run Fractionation"}
             </Button>
           </Box>
-
           <Box sx={{ marginTop: "1rem", marginBottom: "0.5rem" }}>
-            <Typography gutterBottom>pH: {ph.toFixed(1)}</Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "0.5rem",
+              }}
+            >
+              <Typography gutterBottom sx={{ margin: 0 }}>
+                pH: {ph.toFixed(1)}
+              </Typography>
+              <TextField
+                size="small"
+                type="number"
+                value={ph}
+                onChange={(e) =>
+                  setPh(
+                    Math.max(0, Math.min(14, Number(e.target.value) || 7.0)),
+                  )
+                }
+                inputMode="decimal"
+                sx={{ width: 80 }}
+              />
+            </Box>
             <Slider
               min={0}
               max={14}
-              step={0.1}
+              step={0.5}
               value={ph}
+              marks
               onChange={(_, value) => setPh(value as number)}
             />
           </Box>
+
+          <Box sx={{ marginTop: "1rem", marginBottom: "0.5rem" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "0.5rem",
+              }}
+            >
+              <Typography gutterBottom sx={{ margin: 0 }}>
+                Fractions: {fractionCount}
+              </Typography>
+              <TextField
+                size="small"
+                type="number"
+                value={fractionCount}
+                onChange={(e) =>
+                  setFractionCount(Math.max(1, Number(e.target.value) || 80))
+                }
+                inputMode="numeric"
+                sx={{ width: 80 }}
+              />
+            </Box>
+            <Slider
+              min={0}
+              max={200}
+              step={10}
+              value={fractionCount}
+              marks
+              onChange={(_, value) => setFractionCount(value as number)}
+            />
+          </Box>
+
           <Accordion
             sx={{
               marginBottom: "0.5rem",
@@ -398,6 +440,7 @@ const IonExchangeFractionation: React.FC = () => {
               id="panel1-header"
               expandIcon={<ExpandMore />}
             >
+              <SettingsOutlined sx={{ marginRight: "0.5rem" }} />
               <Typography component="span">Advanced</Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -551,7 +594,11 @@ const IonExchangeFractionation: React.FC = () => {
                       <TableCell>
                         <Box
                           className="ionx-sort-header"
-                          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
                         >
                           Fraction
                           <IconButton
@@ -562,7 +609,9 @@ const IonExchangeFractionation: React.FC = () => {
                                 ? "primary"
                                 : "default"
                             }
-                            onClick={() => handleFractionSort("fractionIndex", "asc")}
+                            onClick={() =>
+                              handleFractionSort("fractionIndex", "asc")
+                            }
                             title="Sort ascending"
                           >
                             <ArrowDropUp fontSize="small" />
@@ -575,7 +624,9 @@ const IonExchangeFractionation: React.FC = () => {
                                 ? "primary"
                                 : "default"
                             }
-                            onClick={() => handleFractionSort("fractionIndex", "desc")}
+                            onClick={() =>
+                              handleFractionSort("fractionIndex", "desc")
+                            }
                             title="Sort descending"
                           >
                             <ArrowDropDown fontSize="small" />
@@ -585,7 +636,11 @@ const IonExchangeFractionation: React.FC = () => {
                       <TableCell>
                         <Box
                           className="ionx-sort-header"
-                          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
                         >
                           Protein Count
                           <IconButton
@@ -596,7 +651,9 @@ const IonExchangeFractionation: React.FC = () => {
                                 ? "primary"
                                 : "default"
                             }
-                            onClick={() => handleFractionSort("proteinCount", "asc")}
+                            onClick={() =>
+                              handleFractionSort("proteinCount", "asc")
+                            }
                             title="Sort ascending"
                           >
                             <ArrowDropUp fontSize="small" />
@@ -609,7 +666,9 @@ const IonExchangeFractionation: React.FC = () => {
                                 ? "primary"
                                 : "default"
                             }
-                            onClick={() => handleFractionSort("proteinCount", "desc")}
+                            onClick={() =>
+                              handleFractionSort("proteinCount", "desc")
+                            }
                             title="Sort descending"
                           >
                             <ArrowDropDown fontSize="small" />
@@ -619,7 +678,11 @@ const IonExchangeFractionation: React.FC = () => {
                       <TableCell>
                         <Box
                           className="ionx-sort-header"
-                          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
                         >
                           Hit Count
                           <IconButton
@@ -630,7 +693,9 @@ const IonExchangeFractionation: React.FC = () => {
                                 ? "primary"
                                 : "default"
                             }
-                            onClick={() => handleFractionSort("hitCount", "asc")}
+                            onClick={() =>
+                              handleFractionSort("hitCount", "asc")
+                            }
                             title="Sort ascending"
                           >
                             <ArrowDropUp fontSize="small" />
@@ -643,7 +708,9 @@ const IonExchangeFractionation: React.FC = () => {
                                 ? "primary"
                                 : "default"
                             }
-                            onClick={() => handleFractionSort("hitCount", "desc")}
+                            onClick={() =>
+                              handleFractionSort("hitCount", "desc")
+                            }
                             title="Sort descending"
                           >
                             <ArrowDropDown fontSize="small" />
@@ -726,7 +793,13 @@ const IonExchangeFractionation: React.FC = () => {
                       <TableCell>Sequence</TableCell>
                       <TableCell>Description</TableCell>
                       <TableCell>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
                           Charge at pH {ph.toFixed(1)}
                           <IconButton
                             size="small"
@@ -757,7 +830,13 @@ const IonExchangeFractionation: React.FC = () => {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
                           Molecular Weight
                           <IconButton
                             size="small"
