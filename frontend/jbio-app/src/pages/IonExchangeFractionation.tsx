@@ -45,10 +45,16 @@ import "./IonExchangeFractionation.css";
 import {
   ArrowDropDown,
   ArrowDropUp,
+  CheckCircleOutlined,
+  ChecklistOutlined,
+  ControlPointOutlined,
   ExpandMore,
   FileUpload,
   PlayArrow,
+  RemoveOutlined,
+  RemoveRedEyeOutlined,
   SettingsOutlined,
+  WashOutlined,
 } from "@mui/icons-material";
 
 ChartJS.register(
@@ -487,14 +493,69 @@ const IonExchangeFractionation: React.FC = () => {
           <Card className="ionx-card">
             <CardHeader title="Summary" />
             <CardContent>
-              <div className="ionx-summary-grid">
-                <div>Processed records: {data.counts.total}</div>
-                <div>Skipped records: {data.counts.skipped}</div>
-                <div>Retained proteins: {data.counts.retained}</div>
-                <div>Wash proteins: {data.counts.wash}</div>
-                <div>Resin mode: {data.params.exchanger}</div>
-                <div>Deadband: ±{data.params.deadband.toFixed(2)}</div>
-              </div>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: 2,
+                }}
+              >
+                <Card className="ionx-summary-info-card">
+                  <Box>
+                    <ChecklistOutlined />
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Processed Records
+                    </Typography>
+                    <Typography variant="h6">{data.counts.total}</Typography>
+                  </Box>
+                </Card>
+                <Card className="ionx-summary-info-card">
+                  <Box>
+                    <CheckCircleOutlined />
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Retained Proteins
+                    </Typography>
+                    <Typography variant="h6">{data.counts.retained}</Typography>
+                  </Box>
+                </Card>
+                <Card className="ionx-summary-info-card">
+                  <Box>
+                    <WashOutlined />
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Wash Proteins
+                    </Typography>
+                    <Typography variant="h6">{data.counts.wash}</Typography>
+                  </Box>
+                </Card>
+                <Card className="ionx-summary-info-card">
+                  {data.params.exchanger === "anion" ? (
+                    <Box>
+                      <ControlPointOutlined />
+                    </Box>
+                  ) : (
+                    <Box>
+                      <RemoveOutlined />
+                    </Box>
+                  )}
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Exchanger
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{ textTransform: "capitalize" }}
+                    >
+                      {data.params.exchanger}
+                    </Typography>
+                  </Box>
+                </Card>
+              </Box>
             </CardContent>
           </Card>
 

@@ -106,6 +106,16 @@
   padding-right: 0.25rem;
 }
 
+.ionx-summary-info-card {
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--background) !important;
+  border: 0.1rem solid var(--accent);
+}
+
 * {
   color: var(--text) !important;
-}
+} 
+
