@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   TextField,
   Button,
@@ -21,7 +21,6 @@ import {
   styled,
   tooltipClasses,
   TooltipProps,
-  Icon,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ContentCopy from "@mui/icons-material/ContentCopy";
@@ -35,7 +34,6 @@ import {
   Title,
   Legend,
 } from "chart.js";
-import zoomPlugin, { zoom } from "chartjs-plugin-zoom";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { API_URL } from "../config";
 import "./PeptideRetention.css";
@@ -47,11 +45,8 @@ import {
   StopCircle,
   Timer,
   Info,
-  ZoomOutOutlined,
-  RestartAlt,
-  ZoomInOutlined,
 } from "@mui/icons-material";
-import { ImageHoverPreview } from "../components/ImageHoverPreview";
+import { useLocation } from "react-router-dom";
 
 ChartJS.register(
   CategoryScale,
@@ -61,7 +56,6 @@ ChartJS.register(
   Title,
   Legend,
   annotationPlugin,
-  zoomPlugin,
 );
 
 type PredictionSuccess = {
@@ -96,7 +90,9 @@ export type PredictionResult = PredictionSuccess | PredictionError;
 
 const PeptideRetention: React.FC = () => {
   const [newPeptide, setNewPeptide] = useState<string>("");
-  const [peptides, setPeptides] = useState<string[]>([]);
+  const location = useLocation();
+
+  const [peptides, setPeptides] = useState<string[]>(location?.state?.aminoAcids ?? []);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [results, setResults] = useState<PredictionResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -107,12 +103,6 @@ const PeptideRetention: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const chartRef = useRef<any>(null);
-
-  const [colors, setColors] = useState({
-    text: "#000000",
-    background: "#ffffff",
-    line: "#000000",
-  });
 
   const getCache = (): Record<string, CachedPrediction> => {
     try {
@@ -267,6 +257,7 @@ const PeptideRetention: React.FC = () => {
         peptides.forEach((peptide) => {
           if (cache[peptide]) {
             cachedResults.push({ ...cache[peptide], fromCache: true });
+            // console.log("found a peptide in cache: " + peptide);
           }
         });
         peptidesToPredict = peptides.filter((p) => !cache[p]);
@@ -358,23 +349,14 @@ const PeptideRetention: React.FC = () => {
     setResults([]);
   };
 
-  const generateChromatogramData = (textColor: string) => {
+  const generateChromatogramData = () => {
     const scalingFactor = 6.5;
-    const numPoints = 1000;
-    const xVals = Array.from(
-      { length: numPoints },
-      (_, i) => (i / (numPoints - 1)) * 100,
-    );
-    const chromatogram = new Array(numPoints).fill(0);
-    const noise = Array.from({ length: numPoints }, () => Math.random());
+    const xVals = Array.from({ length: 1000 }, (_, i) => (i / 999) * 100);
+    const chromatogram = new Array(xVals.length).fill(0);
+    const noise = Array.from({ length: xVals.length }, () => Math.random());
     const annotations: any = {};
-    let maxChrom = 0;
 
-    const step = 100 / (numPoints - 1);
-    const sigma = 0.35;
-    const sigmaSq2 = 2 * sigma ** 2;
-    const rangeDist = 5 * sigma;
-    const rangeIdx = Math.ceil(rangeDist / step);
+    let maxChrom = 0;
 
     results.forEach((result, index) => {
       if ("error" in result) return;
@@ -384,39 +366,26 @@ const PeptideRetention: React.FC = () => {
       const rt = result.predicted_tr * scalingFactor;
       const height = aaCount * 10;
 
-      const centerIdx = Math.round((rt / 100) * (numPoints - 1));
-      const startIdx = Math.max(0, centerIdx - rangeIdx);
-      const endIdx = Math.min(numPoints - 1, centerIdx + rangeIdx);
-
-      for (let j = startIdx; j <= endIdx; j++) {
-        const x = j * step;
-        chromatogram[j] += height * Math.exp(-((x - rt) ** 2) / sigmaSq2);
-      }
-
-      annotations[`peak-label-${index}`] = {
-        type: "label",
-        xValue: rt * 10 - 0.5,
-        yValue: height + peptide.length + 10,
-        content: peptide,
-        font: { size: 13, weight: "bold", color: textColor },
-        rotation: -90,
-        xAdjust: 0,
-        yAdjust: 0,
-        backgroundColor: "rgb(255, 255, 255)",
-        color: textColor,
-        borderRadius: 4,
-        padding: 4,
-      };
-
-      annotations[`peak-point-${index}`] = {
-        type: "point",
-        xValue: rt * 10 - 0.5,
-        yValue: height,
-        radius: 6,
-        backgroundColor: "#1976d2",
-        borderWidth: 2,
-        borderColor: "#fff",
-      };
+      xVals.forEach((x, i) => {
+        chromatogram[i] +=
+          height * Math.exp(-Math.pow(x - rt, 2) / (2 * Math.pow(0.35, 2)));
+        if (height > 20) {
+          annotations[`peak-label-${index}`] = {
+            type: "label",
+            xValue: rt * 10,
+            yValue: height + 10,
+            content: peptide,
+            font: { size: 10, weight: "bold", color: "var(--text)" },
+            rotation: -30,
+          };
+          annotations[`peak-point-${index}`] = {
+            type: "point",
+            xValue: rt * 10,
+            yValue: height,
+            radius: 5,
+          };
+        }
+      });
     });
 
     chromatogram.forEach((val, i) => {
@@ -430,53 +399,22 @@ const PeptideRetention: React.FC = () => {
         {
           label: "Chromatogram",
           data: chromatogram,
-          borderColor: results.length === 0 ? "transparent" : colors.line,
+          borderColor: results.length === 0 ? "transparent" : "black",
           borderWidth: 2,
-          backgroundColor: colors.background,
-          fill: true,
         },
       ],
       max: maxChrom,
-      annotations,
+      annotations: annotations,
     };
   };
 
   const exportChromatogram = () => {
-    if (!chartRef.current) return;
-
-    const bgColor =
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--sub-background")
-        .trim() || "#ffffff";
-
-    const canvas = chartRef.current.canvas;
-    const ctx = canvas.getContext("2d");
-
-    ctx.save();
-
-    ctx.globalCompositeOperation = "destination-over";
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const base64Image = canvas.toDataURL("image/png");
-
-    ctx.restore();
-
-    const a = document.createElement("a");
-    a.href = base64Image;
-    a.download = "chromatogram.png";
-    a.click();
-  };
-
-  const getPeptideImage = (smiles: string) => {
-    return `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(
-      smiles,
-    )}/PNG?image_size=500x500`;
-  };
-
-  const resetZoom = () => {
     if (chartRef.current) {
-      chartRef.current.resetZoom();
+      const base64Image = chartRef.current.toBase64Image();
+      const a = document.createElement("a");
+      a.href = base64Image;
+      a.download = "chromatogram.png";
+      a.click();
     }
   };
 
@@ -724,15 +662,6 @@ const PeptideRetention: React.FC = () => {
                                 <ContentCopy />
                               </IconButton>
                             </BTooltip>
-                            <BTooltip
-                              title="View Peptide"
-                              arrow
-                              placement="top"
-                            >
-                              <ImageHoverPreview
-                                url={getPeptideImage(item.result.smiles)}
-                              />
-                            </BTooltip>
                           </TableCell>
                         </>
                       )
@@ -767,158 +696,97 @@ const PeptideRetention: React.FC = () => {
         <CardHeader
           title="Chromatogram"
           action={
-            <div>
-              <Button
-                variant="contained"
-                startIcon={<DownloadOutlined />}
-                className="predict-button"
-                onClick={exportChromatogram}
-                disabled={results.length === 0}
-              >
-                Export As Image
-              </Button>
-            </div>
+            <Button
+              variant="contained"
+              startIcon={<DownloadOutlined />}
+              className="predict-button"
+              onClick={exportChromatogram}
+              disabled={results.length === 0}
+            >
+              Export As Image
+            </Button>
           }
         />
         <CardContent>
           <div
-            className={`chromatogram-section ${results.length === 0 ? "disabled" : ""}`}
+            className={`chromatogram-section ${
+              results.length === 0 ? "disabled" : ""
+            }`}
           >
             {isLoading && (
               <CircularProgress className="chromatogram-loading-overlay" />
             )}
             {(() => {
-              const chromatogramData = generateChromatogramData(colors.text);
+              const chromatogramData = generateChromatogramData();
+              var textColor = "#000";
               return (
-                <div
-                  style={{
-                    position: "relative",
-                    width: "100%",
-                    height: "500px",
+                <Line
+                  ref={(chart) => {
+                    if (chart) {
+                      chartRef.current = chart;
+                    }
                   }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 10,
-                      left: 10,
-                      zIndex: 20,
-                      display: "flex",
-                      gap: "8px",
-                      background: "rgba(0,0,0,0)",
-                      padding: "6px 10px",
-                      borderRadius: "6px",
-                      alignItems: "center",
-                      color: "var(--text)",
-                      fontSize: "0.85rem",
-                    }}
-                  >
-                    <Tooltip title="Zoom in" arrow>
-                      <IconButton
-                        size="small"
-                        onClick={() => chartRef.current?.zoom(1.05)}
-                        sx={{ color: colors.text }}
-                      >
-                        <ZoomInOutlined fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-
-                    <Tooltip title="Zoom out" arrow>
-                      <IconButton
-                        size="small"
-                        onClick={() => chartRef.current?.zoom(0.95)}
-                        sx={{ color: colors.text }}
-                      >
-                        <ZoomOutOutlined fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-
-                    <Tooltip title="Reset zoom & pan" arrow>
-                      <IconButton
-                        size="small"
-                        onClick={resetZoom}
-                        sx={{ color: colors.text }}
-                      >
-                        <RestartAlt fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-
-                    <div
-                      style={{
-                        marginLeft: "8px",
-                        color: colors.text,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Ctrl + drag / wheel / pinch to zoom. Drag to pan.
-                    </div>
-                  </div>
-                  <Line
-                    ref={(chart) => {
-                      if (chart) {
-                        chartRef.current = chart;
-                      }
-                    }}
-                    style={{
-                      backgroundColor: colors.background,
-                      padding: "30px",
-                      borderRadius: "8px",
-                      minHeight: "450px",
-                      width: "100%",
-                    }}
-                    data={chromatogramData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: { display: false },
-                        annotation: {
-                          annotations: chromatogramData.annotations,
+                  style={{
+                    backgroundColor: "#fff",
+                    padding: "30px",
+                    borderRadius: "8px",
+                    minHeight: "450px",
+                    width: "100%",
+                  }}
+                  data={chromatogramData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      annotation: {
+                        annotations: chromatogramData.annotations,
+                      },
+                    },
+                    elements: {
+                      point: {
+                        radius: 0,
+                      },
+                      line: {
+                        borderWidth: 1,
+                      },
+                    },
+                    scales: {
+                      x: {
+                        title: {
+                          display: true,
+                          text: "Retention Time (min)",
+                          color: textColor,
                         },
-                        zoom: {
-                          zoom: {
-                            wheel: { enabled: true },
-                            pinch: { enabled: true },
-                            drag: { enabled: true, modifierKey: "ctrl" },
-                            mode: "x",
-                          },
-                          pan: { enabled: true, mode: "x" },
+                        min: 0,
+                        max: 100,
+                        grid: {
+                          display: true,
+                        },
+                        ticks: {
+                          maxTicksLimit: 7,
+                          callback: (value) => (Number(value) / 65).toFixed(1),
+                          color: textColor,
                         },
                       },
-                      elements: {
-                        point: { radius: 0 },
-                        line: { borderWidth: 1 },
-                      },
-                      scales: {
-                        x: {
-                          min: 0,
-                          max: 100,
-                          title: {
-                            display: true,
-                            text: "Retention Time (min)",
-                            color: colors.text,
-                          },
-                          ticks: {
-                            maxTicksLimit: 7,
-                            callback: (value) =>
-                              (Number(value) / 65).toFixed(1),
-                            color: colors.text,
-                          },
+                      y: {
+                        title: {
+                          display: true,
+                          text: "Relative Intensity",
+                          color: textColor,
                         },
-                        y: {
-                          min: 0,
-                          max: Math.ceil(chromatogramData.max * 1.2),
-                          title: {
-                            display: true,
-                            text: "Relative Intensity",
-                            color: colors.text,
-                          },
-                          ticks: { color: colors.text },
+                        min: 0,
+                        max: Math.ceil(chromatogramData.max * 1.2),
+                        grid: {
+                          display: true,
+                        },
+                        ticks: {
+                          color: textColor,
                         },
                       },
-                    }}
-                  />
-                </div>
+                    },
+                  }}
+                />
               );
             })()}
           </div>
