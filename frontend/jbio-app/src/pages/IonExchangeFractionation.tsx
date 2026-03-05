@@ -316,7 +316,7 @@ const IonExchangeFractionation: React.FC = () => {
           data: proteinSeriesPoints,
           borderColor: "rgba(107, 224, 57, 1)",
           backgroundColor: "rgba(107, 224, 57, 0.8)",
-          pointRadius: 3,
+          pointRadius: 0,
           pointHoverRadius: 5,
           tension: 0.25,
           fill: false,
