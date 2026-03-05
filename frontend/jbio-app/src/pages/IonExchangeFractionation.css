@@ -1,0 +1,119 @@
+.ionx-page {
+  background: var(--background);
+  color: var(--text);
+  padding: 2rem;
+  min-height: 100vh;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ionx-card {
+  margin-bottom: 1.25rem;
+  background-color: var(--sub-background) !important;
+  border: 0.25rem solid var(--accent);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.ionx-card .MuiCardHeader-title {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.ionx-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.ionx-button {
+  background-color: var(--accent) !important;
+  color: white !important;
+}
+
+.ionx-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.ionx-chart-wrap {
+  width: 100%;
+  min-height: 320px;
+  height: 360px;
+}
+
+.ionx-card .MuiTableContainer-root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ionx-card .MuiTable-root {
+  width: 100%;
+}
+
+.ionx-card .MuiTableCell-root {
+  overflow-wrap: break-word;
+  word-break: normal;
+  vertical-align: top;
+}
+
+.ionx-card .MuiTableHead-root .MuiTableCell-root {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.ionx-fractions-table {
+  table-layout: fixed;
+}
+
+.ionx-fractions-table th:nth-child(1),
+.ionx-fractions-table td:nth-child(1) {
+  width: 160px;
+}
+
+.ionx-fractions-table th:nth-child(2),
+.ionx-fractions-table td:nth-child(2) {
+  width: 180px;
+}
+
+.ionx-fractions-table th:nth-child(3),
+.ionx-fractions-table td:nth-child(3) {
+  width: 150px;
+}
+
+.ionx-sort-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.ionx-hit-ids-cell {
+  max-width: 0;
+}
+
+.ionx-hit-ids-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  max-height: 8.5rem;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.ionx-summary-info-card {
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--background) !important;
+  border: 0.1rem solid var(--accent);
+}
+
+* {
+  color: var(--text) !important;
+} 
+
