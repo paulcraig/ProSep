@@ -52,7 +52,6 @@ import {
   FileUpload,
   PlayArrow,
   RemoveOutlined,
-  RemoveRedEyeOutlined,
   SettingsOutlined,
   WashOutlined,
 } from "@mui/icons-material";
