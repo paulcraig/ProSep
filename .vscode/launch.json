@@ -7,7 +7,7 @@
             "request": "launch",
             "module": "uvicorn",
             "args": ["backend.server:app", "--reload"],
-            "justMyCode": true
+            "justMyCode": false
         },
         {
             "name": "Start React",
