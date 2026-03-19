@@ -314,7 +314,7 @@ export default function OneDESim({
   const acrylamideSlab = useMemo(() => {
     const width = slabWidth;
     const height = slabHeight + BORDER / 2;
-    const wellHeight = getY(min / 2, min, max, slabHeight, false) * 2;
+    const wellHeight = getY(min / 2, min, max, slabHeight, false) * 2.75;
 
     const n = numTicks + 1 + numTicks * SUB_TICKS;
     const dotOffset = (1 / (2 * (SUB_TICKS + 1)));

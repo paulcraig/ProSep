@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
 import { API_URL } from '../config';
-import { standards } from '../components/1DE/standards';
-import GoogleScatterModal from '../components/1DE/GoogleScatterModal';
-import Toolbar from './1DE/Toolbar';
-import WellsUI from './1DE/WellsUI';
-import GelBackground from './1DE/GelBackground';
-import BandsLayer from './1DE/BandsLayer';
-import ProteinTooltip from './1DE/ProteinTooltip';
-import type { ElectrophoresisProps, UploadedProteinsMap, PositionsMap } from '../components/1DE/types';
+import { standards } from './1DE-alt/standards';
+import GoogleScatterModal from '../components/1DE-alt/GoogleScatterModal';
+import Toolbar from './1DE-alt/Toolbar';
+import WellsUI from './1DE-alt/WellsUI';
+import GelBackground from './1DE-alt/GelBackground';
+import BandsLayer from './1DE-alt/BandsLayer';
+import ProteinTooltip from './1DE-alt/ProteinTooltip';
+import type { ElectrophoresisProps, UploadedProteinsMap, PositionsMap } from './1DE-alt/types';
 import './1DESimulation.css'
 
 import blackWire from '../assets/electrophoresis/blackwire.png'
@@ -116,7 +116,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const isLarge = windowWidth > 1400;
   const baseW = isLarge ?  windowWidth * 0.3 : windowWidth * 0.5;
   const slabW = baseW + ((wellsCount - 3) / 7) * baseW;
-  const wellH = 45;
+  const wellH = 75;
   const wireH = 25;
   const wireW = 75;
   const wireO = 10;
