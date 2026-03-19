@@ -3,7 +3,7 @@ import Dashboard from './components/Dashboard';
 
 import About from './pages/About';
 
-import OneDESim from './components/1DE/1DESim';
+import OneDE from './pages/1DE';
 import TwoDE from './pages/legacy/2DElectrophoresis.js'
 
 import GitHubIcon from "@mui/icons-material/GitHub";
@@ -25,13 +25,6 @@ import IonExchangeFractionation from "./pages/IonExchangeFractionation";
 
 function App() {
   const pages = [
-<<<<<<< HEAD
-    { id: 1, icon: <HomeIcon />, component: <About />, label: 'Project Information' },
-    { id: 2, icon: <OneDEIcon />, component: <OneDESim />, label: '1D Electrophoresis' },
-    { id: 3, icon: <TwoDEIcon />, component: <TwoDE />, label: '2D Electrophoresis' },
-    { id: 4, icon: <InsightsIcon/>, component: <PeptideRetention />, label: 'Peptide Retention' },
-    { id: 4, icon: <GitHubIcon />, link: 'https://github.com/paulcraig/ProSep', label: 'GitHub Repository' },
-=======
     {
       id: 1,
       icon: <HomeIcon />,
@@ -81,7 +74,6 @@ function App() {
       link: "https://github.com/paulcraig/ProSep",
       label: "GitHub Repository",
     },
->>>>>>> main
   ];
 
   return <Dashboard pages={pages} homepage={1} darkmode={true} logo={logo} />;
