@@ -7,3 +7,6 @@ __pycache__/
 *.pyc
 
 backend/.DS_Store
+
+data/*
+!data/.gitkeep

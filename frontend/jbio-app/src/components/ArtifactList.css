@@ -1,0 +1,304 @@
+.artifact-container {
+  display: grid;
+  gap: 16px;
+  justify-content: flex-start;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.artifact-card {
+  min-width: 280px;
+  height: 240px;
+  background-color: var(--sub-background) !important;
+  color: var(--text) !important;
+  border: 4px solid var(--accent);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: grab;
+  transition: border 0.2s ease;
+}
+
+.artifact-card.drag-over {
+  border-color: var(--text);
+}
+
+.artifact-card:active {
+  cursor: grabbing;
+}
+
+.artifact-drag-icon {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  color: var(--accent);
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+
+.artifact-drag-icon:active {
+  cursor: grabbing;
+}
+
+.artifact-media-container {
+  height: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.artifact-media {
+  max-width: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.artifact-content {
+  height: 10%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-top: 3px solid var(--accent);
+  padding: 0.8rem !important;
+  padding-bottom: 1.4rem !important;
+}
+
+.artifact-info {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.artifact-name {
+  font-size: 14px !important;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artifact-size {
+  font-size: 12px !important;
+  opacity: 0.7;
+}
+
+.artifact-actions {
+  display: flex;
+  margin-top: -2px;
+}
+
+.artifact-icon {
+  color: var(--accent) !important;
+  transition: color 0.2s ease;
+}
+
+.artifact-icon:hover {
+  color: var(--text) !important;
+}
+
+.artifact-viewer-container {
+  background: var(--background) !important;
+  border: 4px solid var(--accent);
+  border-radius: 8px;
+  width: 50vw;
+  max-width: 50rem;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  outline: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+}
+
+.artifact-viewer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 3px solid var(--accent);
+  background: var(--sub-background);
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.artifact-viewer-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.artifact-viewer-nav {
+  color: var(--sub-text) !important;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.artifact-viewer-nav:hover {
+  color: var(--text) !important;
+}
+
+.artifact-viewer-title {
+  color: var(--text) !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  margin: 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifact-viewer-close {
+  color: var(--sub-text) !important;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 1rem;
+}
+
+.artifact-viewer-close:hover {
+  color: var(--text) !important;
+}
+
+.artifact-viewer-content {
+  padding: 0;
+  overflow: auto;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background: var(--background) !important;
+  flex: 1;
+}
+
+.artifact-viewer-content::-webkit-scrollbar {
+  width: 12px;
+}
+
+.artifact-viewer-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sub-background) var(--background);
+}
+
+.artifact-viewer-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  padding: 1.5rem;
+}
+
+.artifact-viewer-pdf {
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+  border: none;
+  background: white;
+}
+
+.artifact-viewer-text {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: var(--background);
+  color: var(--text);
+  padding: 1.5rem;
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.artifact-viewer-unsupported {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+}
+
+.artifact-viewer-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24rem;
+}
+
+/* Speed Dial */
+.artifact-speed-dial {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.speed-dial-trigger {
+  color: var(--accent) !important;
+  background: var(--sub-background) !important;
+  border-radius: 50% !important;
+  width: 4.875rem !important;
+  height: 4.875rem !important;
+  border: 2px solid var(--accent) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: color 0.2s ease, background 0.2s ease !important;
+}
+
+.speed-dial-trigger:hover {
+  color: var(--text) !important;
+  background: var(--background) !important;
+}
+
+.speed-dial-list {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: var(--sub-background);
+  border: 2px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  min-width: 14rem;
+  max-height: 20rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sub-accent) transparent;
+  z-index: 10;
+}
+
+.speed-dial-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.speed-dial-item:hover {
+  background: var(--highlight, var(--background));
+}
+
+.speed-dial-name {
+  font-size: 0.9rem !important;
+  color: var(--text) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
