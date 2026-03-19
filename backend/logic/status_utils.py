@@ -1,5 +1,6 @@
-import subprocess, re, json
-from threading import Timer
+import subprocess
+import re
+import json
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 
@@ -98,7 +99,8 @@ class StatusService:
     @classmethod
     def _get_git_tags(cls) -> list[str]:
         repo_dir = cls._get_repo_dir()
-        if not repo_dir: return []
+        if not repo_dir:
+            return []
         
         cls._run_command(["git", "fetch", "--tags"], cwd=repo_dir)
         
@@ -107,7 +109,8 @@ class StatusService:
             cwd=repo_dir
         )
         
-        if output: return [tag for tag in output.split('\n') if tag]
+        if output:
+            return [tag for tag in output.split('\n') if tag]
         return []
     
 
@@ -288,10 +291,12 @@ class StatusService:
     @classmethod
     def _get_build_age(cls) -> str:
         repo_dir = cls._get_repo_dir()
-        if not repo_dir: return "Unknown"
+        if not repo_dir:
+            return "Unknown"
         
         current_tag, _ = cls._get_deployed_tag()
-        if not current_tag: return "Unknown"
+        if not current_tag:
+            return "Unknown"
         
         try:
             result = subprocess.run(
@@ -411,7 +416,8 @@ class StatusService:
     @classmethod
     def _parse_github_repo(cls) -> Optional[Tuple[str, str]]:
         repo_dir = cls._get_repo_dir()
-        if not repo_dir: return None
+        if not repo_dir:
+            return None
         
         remote_url = cls._run_command(["git", "remote", "get-url", "origin"], cwd=repo_dir)
 
@@ -435,7 +441,8 @@ class StatusService:
     @classmethod
     def _fetch_prs_between_tags(cls, prev_tag: str, current_tag: str) -> list[dict]:
         repo_info = cls._parse_github_repo()
-        if not repo_info: return []
+        if not repo_info:
+            return []
         
         owner, repo = repo_info
         url = f"https://api.github.com/repos/{owner}/{repo}/compare/{prev_tag}...{current_tag}"
@@ -632,7 +639,8 @@ class StatusService:
                 content = f.read()
             
             match = re.search(r'OnUnitActiveSec=(\d+)m', content)
-            if match: return int(match.group(1))
+            if match:
+                return int(match.group(1))
         
         except Exception:
             pass

@@ -1,4 +1,7 @@
-import fitz, json, time, shutil
+import fitz
+import json
+import time
+import shutil
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -202,7 +205,8 @@ class PreviewGenerator:
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 12)
             title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
-        except:
+            
+        except Exception as _:
             font = ImageFont.load_default()
             title_font = ImageFont.load_default()
         
@@ -218,7 +222,7 @@ class PreviewGenerator:
                     y += 16
                     if y > PREVIEW_SIZE[1] - 20:
                         break
-        except:
+        except Exception as _:
             draw.text((10, 40), "Unable to read file", fill=(255, 100, 100), font=font)
         
         img.save(preview_path, "PNG")
@@ -233,7 +237,7 @@ class PreviewGenerator:
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
             small_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
-        except:
+        except Exception as _:
             font = ImageFont.load_default()
             small_font = ImageFont.load_default()
         
@@ -264,7 +268,7 @@ class PreviewGenerator:
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
             small_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
-        except:
+        except Exception as _:
             font = ImageFont.load_default()
             small_font = ImageFont.load_default()
         
