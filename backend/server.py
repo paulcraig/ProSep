@@ -6,6 +6,7 @@ import backend.api.one_de_routes as one_de_routes
 import backend.api.two_de_routes as two_de_routes
 import backend.api.peptide_retention_routes as peptide_retention_routes
 import backend.api.proteolytic_digestion_routes as proteolytic_digestion_routes
+import backend.api.ion_exchange_fractionation_routes as ion_exchange_fractionation_routes
 import backend.api.size_exclusion as size_exclustion
 
 """
@@ -55,7 +56,7 @@ app.include_router(one_de_routes.router)
 app.include_router(two_de_routes.router)
 app.include_router(peptide_retention_routes.router)
 app.include_router(proteolytic_digestion_routes.router)
-app.include_router(size_exclustion.router)
+
 """ 
 NOTE FOR FUTURE DEVELOPERS:
 In order to add additional files for the API, such as the addition of 2DE,
