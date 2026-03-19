@@ -351,7 +351,8 @@ const PeptideRetention: React.FC = () => {
 
   const generateChromatogramData = () => {
     const scalingFactor = 6.5;
-    const xVals = Array.from({ length: 1000 }, (_, i) => (i / 999) * 100);
+    const numPoints = 1000;
+    const xVals = Array.from({ length: numPoints },(_, i) => (i / (numPoints - 1)) * 100,);
     const chromatogram = new Array(xVals.length).fill(0);
     const noise = Array.from({ length: xVals.length }, () => Math.random());
     const annotations: any = {};
