@@ -66,7 +66,7 @@ const Hidden: React.FC = () => {
   const [updateServiceActive, setUpdateServiceActive] = useState(true);
   
   const [isLocked, setIsLocked] = useState(true);
-  const [checkoutVersion, setCheckoutVersion] = useState("v5.1.2");
+  const [checkoutVersion, setCheckoutVersion] = useState("v0.0.0");
 
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
@@ -81,17 +81,13 @@ const Hidden: React.FC = () => {
     title: string; 
     message: string; 
     action: () => void; 
-    isCheckout?: boolean; 
     isDanger?: boolean;
-    lockVersion?: boolean;
   }>({
     show: false, 
     title: "", 
     message: "", 
     action: () => {}, 
-    isCheckout: false, 
-    isDanger: false,
-    lockVersion: false
+    isDanger: false
   });
 
   const artifactRef = useRef<ArtifactListRef>(null);
@@ -333,15 +329,13 @@ const Hidden: React.FC = () => {
   };
 
 
-  const showConfirmation = (title: string, message: string, action: () => void, isCheckout = false, isDanger = false, initialLockState = false) => {
+  const showConfirmation = (title: string, message: string, action: () => void, isDanger = false) => {
     setConfirmModal({
       show: true,
       title,
       message,
       action,
-      isCheckout,
       isDanger,
-      lockVersion: initialLockState
     });
   };
 
@@ -352,9 +346,7 @@ const Hidden: React.FC = () => {
       title: "",
       message: "",
       action: () => {},
-      isCheckout: false,
       isDanger: false,
-      lockVersion: false
     });
   };
 
@@ -433,7 +425,7 @@ const Hidden: React.FC = () => {
       const res = await fetch(`${API_URL}/status/version/checkout`, {
         method: "POST",
         headers: getAuthJsonHeaders(),
-        body: JSON.stringify({ version: checkoutVersion, lock: confirmModalRef.current.lockVersion || false })
+        body: JSON.stringify({ version: checkoutVersion })
       });
       const data = await res.json();
       showToast(data.message || (res.ok ? `Deployment of ${checkoutVersion} initiated` : "Checkout failed"));
@@ -540,23 +532,6 @@ const Hidden: React.FC = () => {
           <div className={`modal-content ${confirmModal.isDanger ? "danger" : ""}`} onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">{confirmModal.title}</h3>
             <p className="modal-message">{confirmModal.message}</p>
-            
-            {confirmModal.isCheckout && (
-              <div className="modal-checkout-options">
-                <div className="modal-lock-toggle">
-                  <IconButton
-                    size="small"
-                    className="lock-toggle"
-                    onClick={() => setConfirmModal({...confirmModal, lockVersion: !confirmModal.lockVersion})}
-                  >
-                    {confirmModal.lockVersion ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
-                  </IconButton>
-                  <span className="modal-lock-label">
-                    {confirmModal.lockVersion ? "Lock to this version" : "Don\"t lock version"}
-                  </span>
-                </div>
-              </div>
-            )}
 
             <div className="modal-actions">
               <button className="modal-button cancel" onClick={closeModal}>
@@ -823,11 +798,9 @@ const Hidden: React.FC = () => {
                     disabled={!authed || checkoutVersion === versionInfo?.version}
                     onClick={() => showConfirmation(
                       "Checkout Version",
-                      `Are you sure you want to checkout version ${checkoutVersion}? This will restart the application.`,
+                      `Are you sure you want to checkout version ${checkoutVersion}? This will restart the application and lock to this version.`,
                       handleCheckoutVersion,
                       true,
-                      true,
-                      isLocked
                     )}
                   >
                     Checkout
@@ -845,7 +818,6 @@ const Hidden: React.FC = () => {
                     "Restart Apache",
                     "Are you sure you want to restart the Apache (Frontend) service? This may cause brief downtime.",
                     handleRestartApache,
-                    false,
                     true
                   )}
                 >
@@ -859,7 +831,6 @@ const Hidden: React.FC = () => {
                     "Restart Uvicorn",
                     "Are you sure you want to restart the Uvicorn (Backend) service? This may cause brief downtime.",
                     handleRestartUvicorn,
-                    false,
                     true
                   )}
                 >
@@ -873,7 +844,6 @@ const Hidden: React.FC = () => {
                     "Restart Application",
                     "Are you sure you want to restart BOTH services? This will cause downtime.",
                     handleRestartBoth,
-                    false,
                     true
                   )}
                 >
@@ -886,7 +856,6 @@ const Hidden: React.FC = () => {
                     "Delete ALL Document Uploads",
                     "Are you sure you want to delete ALL uploaded files? This action cannot be undone!",
                     handleDeleteUploads,
-                    false,
                     true
                   )}
                 >

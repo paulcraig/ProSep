@@ -652,27 +652,6 @@
   margin: 0;
 }
 
-.modal-checkout-options {
-  padding: 1rem;
-  background: var(--background);
-  border: 0.125rem solid var(--sub-accent);
-  border-radius: 0.5rem;
-}
-
-.modal-lock-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.modal-lock-label {
-  color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.modal-lock-toggle .lock-toggle:hover:not(:disabled) { color: #e74c3c !important; }
-
 .modal-actions {
   display: flex;
   gap: 1rem;

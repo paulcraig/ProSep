@@ -27,13 +27,11 @@ class VersionInfo(BaseModel):
 
 class CheckoutRequest(BaseModel):
     version: str
-    lock: bool = False
 
 
 class CheckoutResponse(BaseModel):
     success: bool
     version: str
-    locked: bool
     message: str
 
 
@@ -91,14 +89,12 @@ async def get_version():
 
 @router.post("/version/checkout", response_model=CheckoutResponse, status_code=202)
 async def checkout_version(request: CheckoutRequest, admin_hash: str = Depends(verify_admin_header)):
-    result = StatusService.checkout_version(request.version, request.lock)
-    return result
+    return StatusService.checkout_version(request.version)
 
 
 @router.post("/version/lock", response_model=LockResponse)
 async def set_version_lock(request: LockRequest, admin_hash: str = Depends(verify_admin_header)):
-    result = StatusService.set_version_lock(request.locked)
-    return result
+    return StatusService.set_version_lock(request.locked)
 
 
 @router.get("/performance", response_model=PerformanceMetrics)
@@ -113,14 +109,12 @@ async def get_auto_update_status():
 
 @router.post("/auto-update/activate", response_model=SuccessResponse)
 async def set_auto_update_active(request: ActivateRequest, admin_hash: str = Depends(verify_admin_header)):
-    result = StatusService.set_auto_update_active(request.active)
-    return result
+    return StatusService.set_auto_update_active(request.active)
 
 
 @router.post("/auto-update/interval", response_model=SuccessResponse)
 async def set_auto_update_interval(request: IntervalRequest, admin_hash: str = Depends(verify_admin_header)):
-    result = StatusService.set_auto_update_interval(request.interval_minutes)
-    return result
+    return StatusService.set_auto_update_interval(request.interval_minutes)
 
 
 @router.post("/restart/apache", response_model=SuccessResponse)

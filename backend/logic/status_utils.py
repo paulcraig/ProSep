@@ -641,19 +641,16 @@ class StatusService:
     
     
     @classmethod
-    def checkout_version(cls, version: str, lock: bool = False) -> dict:
+    def checkout_version(cls, version: str) -> dict:
         if not cls._is_server_environment():
             return {
                 "success": False,
                 "version": version,
-                "locked": lock,
                 "message": "Version checkout only available on server"
             }
         
         try:
-            cmd = ["/usr/local/bin/prosep-deploy.sh", "--force-rebuild", version]
-
-            if lock: cmd.extend(["--lock-version", version])
+            cmd = ["/usr/local/bin/prosep-deploy.sh", "--deploy", "-f", version]
             
             log_file = Path("/tmp/prosep-deploy.log")
 
@@ -673,7 +670,6 @@ class StatusService:
             return {
                 "success": True,
                 "version": version,
-                "locked": lock,
                 "message": f"Deployment of version {version} initiated"
             }
         
@@ -681,7 +677,6 @@ class StatusService:
             return {
                 "success": False,
                 "version": version,
-                "locked": lock,
                 "message": f"Deployment error: {str(e)}"
             }
     
@@ -697,9 +692,9 @@ class StatusService:
         
         try:
             if locked:
-                cmd = ["/usr/local/bin/prosep-deploy.sh", "--lock-version"]
+                cmd = ["/usr/local/bin/prosep-deploy.sh", "--lock"]
             else:
-                cmd = ["/usr/local/bin/prosep-deploy.sh", "--unlock-version"]
+                cmd = ["/usr/local/bin/prosep-deploy.sh", "--unlock"]
             
             result = subprocess.run(
                 cmd,
