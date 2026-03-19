@@ -2,8 +2,11 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import backend.api.auth_routes as auth_routes
+import backend.api.status_routes as status_routes
 import backend.api.one_de_routes as one_de_routes
 import backend.api.two_de_routes as two_de_routes
+import backend.api.artifact_routes as artifact_routes
 import backend.api.peptide_retention_routes as peptide_retention_routes
 import backend.api.proteolytic_digestion_routes as proteolytic_digestion_routes
 import backend.api.ion_exchange_fractionation_routes as ion_exchange_fractionation_routes
@@ -52,8 +55,11 @@ app.add_middleware(
 )
 
 # Routers
+app.include_router(auth_routes.router)
+app.include_router(status_routes.router)
 app.include_router(one_de_routes.router)
 app.include_router(two_de_routes.router)
+app.include_router(artifact_routes.router)
 app.include_router(peptide_retention_routes.router)
 app.include_router(proteolytic_digestion_routes.router)
 app.include_router(ion_exchange_fractionation_routes.router)
