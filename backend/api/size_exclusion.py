@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 
 from backend.logic.size_exclusion import SizeExclusionFractionation
-from ion_exchange_fractionation import IonExchangeFractionation
+from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
 
 router = APIRouter(prefix="/size_exclusion", tags=["size exclusion"])
 class SizeExclusionRequest(BaseModel):
