@@ -67,6 +67,7 @@ const Hidden: React.FC = () => {
   
   const [isLocked, setIsLocked] = useState(true);
   const [checkoutVersion, setCheckoutVersion] = useState("");
+  const [checkoutPending, setCheckoutPending] = useState(false);
 
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
@@ -430,7 +431,10 @@ const Hidden: React.FC = () => {
       });
       const data = await res.json();
       showToast(data.message || (res.ok ? `Deployment of ${checkoutVersion} initiated` : "Checkout failed"));
-      if (res.ok) await fetchData();
+      if (res.ok) {
+        setCheckoutPending(true);
+        await fetchData();
+      }
     } catch (err) {
       console.error("Failed to checkout version:", err);
       showToast("Checkout failed");
@@ -778,7 +782,7 @@ const Hidden: React.FC = () => {
 
         {/* Danger Zone Section */}
         <div className="admin-section danger-zone flex-section">
-          <div className={`admin-card danger-card ${!authed ? "disabled" : ""}`}>
+          <div className={`admin-card danger-card ${!authed || checkoutPending ? "disabled" : ""}`}>
             <h3 className="section-header-inside danger-header">Danger Zone</h3>
             
             <div className="danger-grid">
