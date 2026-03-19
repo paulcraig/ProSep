@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Start FastAPI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": ["backend.server:app", "--reload"],
+            "justMyCode": false
+        },
+        {
+            "name": "Start React",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["--prefix", "frontend/jbio-app", "start"],
+            "env": {"BROWSER": "none"},
+            "console": "integratedTerminal"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Full Stack",
+            "configurations": ["Start FastAPI", "Start React"]
+        }
+    ]
+}
