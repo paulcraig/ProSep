@@ -1,6 +1,6 @@
 import './Dashboard.css';
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, NavLink } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 
 import { IconButton } from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
@@ -8,14 +8,17 @@ import MenuOpenRoundedIcon from '@mui/icons-material/MenuOpenRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 
+import ArtifactList from './ArtifactList';
+
 
 type Page = {
-  id?: string | number; // string / int / null
+  id?: string | number;
   label?: string;
   icon: React.ReactNode;
   component?: React.ReactNode;
   onClick?: () => void;
   link?: string;
+  artifactGroup?: string;
 };
 
 
@@ -30,6 +33,26 @@ type DashboardProps = {
 const slugify = (text: string) => {
   return text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 }
+
+
+const PageArtifacts: React.FC<{ pages: (Page & { slug: string })[] }> = ({ pages }) => {
+  const { pathname } = useLocation();
+  const current = pages.find((p) => `/${p.slug}` === pathname);
+  if (!current?.artifactGroup) return null;
+
+  return (
+    <div className='page-artifact-overlay'>
+      <ArtifactList
+        group={current.artifactGroup}
+        speedDial
+        enableDownload
+        enableReplace={false}
+        enableDelete={false}
+        enableReorder={false}
+      />
+    </div>
+  );
+};
 
 
 const Dashboard: React.FC<DashboardProps> = ({ pages, homepage, darkmode = false, logo }) => {
@@ -137,6 +160,7 @@ const Dashboard: React.FC<DashboardProps> = ({ pages, homepage, darkmode = false
               )}
               <Route path='*' element={<Navigate to={`/${defaultHome}`} replace />} />
             </Routes>
+            <PageArtifacts pages={normPages} />
           </div>
         </div>
       </div>

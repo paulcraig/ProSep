@@ -6,8 +6,12 @@ uvicorn~=0.21.1
 python-multipart
 pre-commit>=4.3.0
 numpy
-pandas
+pandas>=2.3.3,<3.0
 scikit-learn
 rdkit
 matplotlib
 git+https://github.com/Boehringer-Ingelheim/pyPept.git
+Pillow~=10.4.0
+PyMuPDF~=1.26.4
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0

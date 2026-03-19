@@ -5,7 +5,7 @@ set -euo pipefail
 
 REPAIR=false
 
-# ---> Parse Flags <--- #
+# ---> Parse Flags:
 
 if [[ "${1:-}" == "--repair" ]]; then
   REPAIR=true
@@ -30,14 +30,14 @@ EOF
   exit 0
 fi
 
-# ---> Status Mode <--- #
+# ---> Status Mode:
 
 if ! $REPAIR; then
   echo
   echo "=== ProSep Deployment Status ==="
   echo
 
-  # ---> Git Tags <--- #
+  # ---> Git Tags:
   
   cd "$REPO_DIR"
   git fetch --tags >/dev/null 2>&1
@@ -57,7 +57,7 @@ if ! $REPAIR; then
 
   echo
   
-  # ---> Apache <--- #
+  # ---> Apache:
   
   if systemctl is-active --quiet "$APACHE_SERVICE"; then
     echo "Apache: RUNNING"
@@ -65,7 +65,7 @@ if ! $REPAIR; then
     echo "Apache: NOT RUNNING"
   fi
 
-  # ---> Backend <--- #
+  # ---> Backend:
   
   if systemctl is-active --quiet "$BACKEND_SERVICE"; then
     echo "Backend: RUNNING (systemd)"
@@ -73,7 +73,7 @@ if ! $REPAIR; then
     echo "Backend: NOT RUNNING"
   fi
 
-  # ---> Frontend <--- #
+  # ---> Frontend:
   
   HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL" || echo "000")
   
@@ -85,7 +85,7 @@ if ! $REPAIR; then
 
   echo
   
-  # ---> Deploy Timer <--- #
+  # ---> Deploy Timer:
   
   if systemctl is-active --quiet "$DEPLOY_TIMER"; then
     echo "$DEPLOY_TIMER: ACTIVE"
@@ -99,7 +99,7 @@ if ! $REPAIR; then
     echo "$DEPLOY_TIMER: DISABLED"
   fi
 
-  # ---> Deploy Service <--- #
+  # ---> Deploy Service:
   
   if systemctl is-active --quiet "$DEPLOY_SERVICE"; then
     echo "$DEPLOY_SERVICE: ACTIVE"
@@ -113,7 +113,7 @@ if ! $REPAIR; then
   exit 0
 fi
 
-# ---> Repair Mode <--- #
+# ---> Repair Mode:
 
 FAILED=false
 REPAIR_HEADER_SHOWN=false

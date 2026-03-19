@@ -3,170 +3,322 @@
 source "$(dirname "$0")/prosep-config.sh"
 set -euo pipefail
 
-FORCE_REBUILD=false
-FORCE_TAG=""
+# ---> Usage:
 
-LOCK_VERSION=false
-UNLOCK=false
-LOCK_TAG=""
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [COMMAND] [OPTIONS]
 
-# ---> Parse Flags <--- #
+Commands:
+  --deploy | (none)       Check for a newer tag and deploy if one is available.
+  --deploy -f [TAG]       Force deploy TAG (or latest). Locks the deployed version.
+  --deploy -b <BRANCH>    Deploy a branch at the latest commit. Locks as "b-<commit>-locked".
+  --unlock                Unlock the local deployed version.
+  --lock                  Lock the local deployed version.
+  --help                  Show this message.
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --force-rebuild)
-      FORCE_REBUILD=true
-      if [[ -n "${2:-}" && ! "${2:-}" =~ ^-- ]]; then
-        FORCE_TAG="$2"
-        shift
-      fi
-      ;;
-    --lock-version)
-      LOCK_VERSION=true
-      if [[ -n "${2:-}" && ! "${2:-}" =~ ^-- ]]; then
-        LOCK_TAG="$2"
-        shift
-      fi
-      ;;
-    --unlock-version)
-      UNLOCK=true
-      ;;
-    --help)
-      cat <<EOF
-Usage: $(basename "$0") [--force-rebuild [TAG]] [--lock-version [TAG]] [--unlock-version] [--help]
-
-Version locking:
-  --lock-version [TAG]  Lock current deployment to TAG. If TAG provided and not pre-deployed, lock and deploy.
-  --unlock-version      Remove lock. Future deployments follow the latest tag.
+Examples:
+  $(basename "$0")
+  $(basename "$0") --deploy
+  $(basename "$0") --deploy -f
+  $(basename "$0") --deploy -f v1.8.0
+  $(basename "$0") --deploy -b spike/hidden-dev-page
+  $(basename "$0") --lock
+  $(basename "$0") --unlock
 
 EOF
-      exit 0
-      ;;
-    *)
-      echo "Usage: $0 [--force-rebuild [TAG]] [--lock-version [TAG]] [--unlock-version] [--help]"
-      exit 1
-      ;;
-  esac
-  shift
-done
+}
+
+# ---> State Management:
+
+parse_state() { # Sets CURRENT_TAG and IS_LOCKED
+  local raw
+
+  raw="$(cat "$STATE_FILE" 2>/dev/null || echo "")"
+  IS_LOCKED=false
+  CURRENT_TAG=""
+
+  if [[ "$raw" =~ ^(.+)-locked$ ]]; then
+    CURRENT_TAG="${BASH_REMATCH[1]}"
+    IS_LOCKED=true
+
+  else
+    CURRENT_TAG="$raw"
+  fi
+}
+
+write_state() { echo "$1" | sudo tee "$STATE_FILE" >/dev/null; }
+
+lock_state() { write_state "${1}-locked"; }
+
+unlock_state() { write_state "$1"; }
 
 
-# ---> Get current state <--- #
+revert() {
+  local prev_ref="$1"
+  local prev_state="$2"
 
-CURRENT_STATE="$(cat "$STATE_FILE" 2>/dev/null || echo "")"
-CURRENT_TAG="$CURRENT_STATE"
+  echo "[REVERT] Deploy failed: Attempting to restore previous state..." >&2
 
-is_locked=false
+  if [[ -n "$prev_ref" ]]; then
+    git -C "$REPO_DIR" -c advice.detachedHead=false checkout -f "$prev_ref" 2>/dev/null \
+      || echo "[REVERT] Warning: Failed to checkout '$prev_ref'." >&2
+  fi
 
-if [[ "$CURRENT_STATE" =~ ^(.+)-locked$ ]]; then
-  CURRENT_TAG="${BASH_REMATCH[1]}"
-  is_locked=true
-fi
+  (
+    set -euo pipefail
+    cd "$REPO_DIR"
+
+    pushd frontend/jbio-app >/dev/null
+    rm -rf node_modules build
+    npm ci --force
+    npm run build
+    popd >/dev/null
+
+    TMP_DIR="$(mktemp -d)"
+    rsync -a --delete frontend/jbio-app/build/ "$TMP_DIR/"
+    sudo rsync -a --delete "$TMP_DIR/" "$WWW_DIR/"
+    rm -rf "$TMP_DIR"
+
+    python3 -m pip install -r requirements.txt
+  ) || echo "[REVERT] Restore failed: Manual intervention required." >&2
+
+  [[ -n "$prev_state" ]] && write_state "$prev_state" 2>/dev/null || true
+  sudo systemctl start   "$DEPLOY_TIMER"    2>/dev/null || true
+  echo "[REVERT] Done." >&2
+
+  sudo systemctl reload  "$APACHE_SERVICE"  2>/dev/null || true
+  sudo systemctl restart "$BACKEND_SERVICE" 2>/dev/null || true
+}
 
 
-# ---> Handle unlock-version <--- #
+check_version_base() { # Refuses deployment if <tag> sorts older than BASE_VERSION.
+  local candidate="$1"
+  local floor_check
 
-if [[ "$UNLOCK" == true ]]; then
-  if [[ "$is_locked" == false ]]; then
-    echo "Nothing to unlock."
+  floor_check="$(printf '%s\n%s\n' "$BASE_VERSION" "$candidate" | sort -V | head -n1)"
+
+  if [[ "$floor_check" != "$BASE_VERSION" ]]; then
+    echo "[BUILD] Error: '$candidate' is older than the minimum allowed version '$BASE_VERSION'."
+    exit 1
+  fi
+}
+
+
+do_deploy() { # Requires <git_ref> <new_state_string>
+  local ref="$1"
+  local new_state="$2"
+  local prev_state prev_ref deploy_ok=true
+
+  prev_state="$(cat "$STATE_FILE" 2>/dev/null || echo "")"
+  prev_ref="$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || echo "")"
+
+  if [[ ! "$new_state" =~ ^b- ]]; then
+    check_version_base "$ref"
+  else
+    echo "[BUILD] Warning: Branch deploy may overwrite maintenance script functionality." >&2
+  fi
+
+  echo "[BUILD] Deploying: $ref"
+  sudo systemctl stop "$DEPLOY_TIMER"
+
+  (
+    set -euo pipefail
+    cd "$REPO_DIR"
+    git -c advice.detachedHead=false checkout -f "$ref"
+
+    pushd frontend/jbio-app >/dev/null
+    rm -rf node_modules build
+    npm ci --force
+    npm run build
+    popd >/dev/null
+
+    TMP_DIR="$(mktemp -d)"
+    rsync -a --delete frontend/jbio-app/build/ "$TMP_DIR/"
+    sudo rsync -a --delete "$TMP_DIR/" "$WWW_DIR/"
+    rm -rf "$TMP_DIR"
+
+    python3 -m pip install -r requirements.txt
+  ) || deploy_ok=false
+
+  if [[ "$deploy_ok" == false ]]; then
+    revert "$prev_ref" "$prev_state"
+    return 1
+  fi
+
+  write_state "$new_state"
+  sudo systemctl start "$DEPLOY_TIMER"
+  echo "[BUILD] Done."
+
+  sudo systemctl reload  "$APACHE_SERVICE"
+  sudo systemctl restart "$BACKEND_SERVICE"
+}
+
+# ---> Commands:
+
+cmd_lock() { # --lock
+  parse_state
+
+  if [[ -z "$CURRENT_TAG" ]]; then
+    echo "[LOCK] Error: No version deployed."
+    exit 1
+  fi
+
+  if [[ "$IS_LOCKED" == true ]]; then
+    echo "[LOCK] Already locked '${CURRENT_TAG}'. Nothing to do."
     exit 0
   fi
 
-  echo "$CURRENT_TAG" | sudo tee "$STATE_FILE" >/dev/null
-  exit 0
-fi
+  lock_state "$CURRENT_TAG"
+  echo "[LOCK] Locked: '${CURRENT_TAG}'."
+}
 
 
-# ---> Handle lock-version <--- #
+cmd_unlock() { # --unlock
+  parse_state
 
-if [[ "$LOCK_VERSION" == true ]]; then
-  if [[ -z "$LOCK_TAG" ]]; then
-    if [[ -z "$CURRENT_TAG" ]]; then
-      echo "Cannot lock: Current tag does not exist."
-      exit 1
-    fi
-    LOCK_TAG=$CURRENT_TAG
-  else
-    if ! git -C "$REPO_DIR" rev-parse "$LOCK_TAG" >/dev/null 2>&1; then
-      echo "Cannot lock: Tag '$LOCK_TAG' does not exist."
-      exit 1
-    fi
-  fi
-
-  echo "${LOCK_TAG}-locked" | sudo tee "$STATE_FILE" >/dev/null
-  echo "Locked version: Tag '$LOCK_TAG'"
-
-  if [[ "$CURRENT_TAG" == "$LOCK_TAG" ]]; then
+  if [[ "$IS_LOCKED" == false ]]; then
+    echo "[LOCK] Already unlocked '${CURRENT_TAG}'. Nothing to do."
     exit 0
   fi
 
-  FORCE_REBUILD=true
-  FORCE_TAG=$LOCK_TAG
-fi
-
-# ---> Deployment path (normal or forced) <--- #
-
-cd "$REPO_DIR"
-git fetch origin --tags
-git checkout main
-git pull origin main
+  unlock_state "$CURRENT_TAG"
+  echo "[LOCK] Unlocked: '${CURRENT_TAG}'."
+}
 
 
-# ---> Determine target tag <--- #
+cmd_auto_deploy() { # Default latest pull: --deploy
+  parse_state
 
-if [[ "$is_locked" == true ]]; then
-  TARGET_TAG="$CURRENT_TAG"
-else
-  if [[ -n "$FORCE_TAG" ]]; then
-    if git rev-parse "$FORCE_TAG" >/dev/null 2>&1; then
-      TARGET_TAG="$FORCE_TAG"
-      echo "Using specified tag: $TARGET_TAG"
-    else
-      echo "Tag '$FORCE_TAG' not found. Aborting."
+  if [[ "$IS_LOCKED" == true ]]; then
+    echo "[DEPLOY] Version locked at '${CURRENT_TAG}'. Use --unlock to re-enable auto-updates."
+    exit 0
+  fi
+
+  cd "$REPO_DIR"
+  git fetch origin --tags
+
+  local latest_tag
+  latest_tag="$(git tag --merged origin/main --sort=version:refname | tail -n1 || true)"
+  [[ -z "$latest_tag" ]] && latest_tag="$(git rev-parse origin/main)"
+
+  if [[ "$latest_tag" == "$CURRENT_TAG" ]]; then
+    echo "[DEPLOY] Already latest '$CURRENT_TAG'. Nothing to do."
+    exit 0
+  fi
+
+  # Verify new remote:
+  if [[ -n "$CURRENT_TAG" ]]; then
+    local newer
+    newer="$(printf '%s\n%s\n' "$CURRENT_TAG" "$latest_tag" | sort -V | tail -n1)"
+
+    if [[ "$newer" != "$latest_tag" ]]; then
+      echo "[DEPLOY] Remote tag '$latest_tag' is older than the local '$CURRENT_TAG'. Skipping."
       exit 0
     fi
+  fi
+
+  do_deploy "$latest_tag" "$latest_tag"
+  echo "[DEPLOY] Deploy complete: '$latest_tag'."
+}
+
+
+cmd_force_deploy() { # Force: --deploy -f [TAG]; deploys TAG (or latest if none) regardless of lock state.
+  local tag="${1:-}"
+
+  cd "$REPO_DIR"
+  git fetch origin --tags
+
+  if [[ -z "$tag" ]]; then
+    tag="$(git tag --merged origin/main --sort=version:refname | tail -n1 || true)"
+    [[ -z "$tag" ]] && tag="$(git rev-parse origin/main)"
+    echo "[DEPLOY] No tag specified. Using latest: '$tag'."
+
   else
-    TARGET_TAG="$(git tag --merged origin/main --sort=version:refname | tail -n1 || true)"
-    if [[ -z "$TARGET_TAG" ]]; then
-      TARGET_TAG="$(git rev-parse origin/main)"
+    if ! git rev-parse "$tag" >/dev/null 2>&1; then
+      echo "[DEPLOY] Error: Tag '$tag' not found on remote."
+      exit 1
     fi
   fi
-fi
 
-# ---> Skip if up to date and not forced <--- #
+  do_deploy "$tag" "${tag}-locked"
+  echo "[DEPLOY] Force deploy complete: '$tag' (locked)."
+}
 
-if [[ "$FORCE_REBUILD" == false && "$TARGET_TAG" == "$CURRENT_TAG" ]]; then
-  echo "Already latest: ($TARGET_TAG). Nothing to do."
-  exit 0
-fi
 
-# ---> Deploy <--- #
+cmd_branch_deploy() { # Branch: --deploy -b <BRANCH>; deploys its latest regardless of lock state.
+  local branch="$1"
 
-echo "Deploying $TARGET_TAG"
-git -c advice.detachedHead=false checkout -f "$TARGET_TAG"
+  cd "$REPO_DIR"
+  git fetch origin --tags
 
-pushd frontend/jbio-app >/dev/null
-rm -rf node_modules build || true
-npm ci --force
-npm run build
-popd >/dev/null
+  if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+    echo "[DEPLOY] Error: Branch '$branch' not found on remote."
+    exit 1
+  fi
 
-TMP_DIR="$(mktemp -d)"
-rsync -a --delete frontend/jbio-app/build/ "$TMP_DIR/"
-sudo rsync -a --delete "$TMP_DIR/" "$WWW_DIR/"
-rm -rf "$TMP_DIR"
+  local commit
+  local base_commit
 
-echo "Installing Python requirements..."
-python3 -m pip install -r requirements.txt
+  commit="$(git rev-parse --short "origin/$branch")"
 
-echo "Starting backend..."
-sudo systemctl restart "$BACKEND_SERVICE"
+  if ! base_commit="$(git rev-parse "$BASE_VERSION" 2>/dev/null)"; then
+    echo "[DEPLOY] Error: BASE_VERSION tag '$BASE_VERSION' not found in the repo."
+    exit 1
+  fi
 
-# ---> Finalize <--- #
+  if ! git merge-base --is-ancestor "$base_commit" "origin/$branch" 2>/dev/null; then
+    echo "[DEPLOY] Error: Branch '$branch' doesn't contain the base version in its history."
+    echo "         Merge or rebase from main at >= '$BASE_VERSION' before deploying."
+    exit 1
+  fi
 
-if [[ "$is_locked" == false ]]; then
-  echo "$TARGET_TAG" | sudo tee "$STATE_FILE" >/dev/null
-fi
-sudo systemctl reload "$APACHE_SERVICE"
+  do_deploy "origin/$branch" "b-${commit}-locked"
+  echo "[DEPLOY] Branch deploy complete: $branch @ $commit (locked)."
+}
 
-echo "Deployed: ($TARGET_TAG)."
+# ---> Main:
+
+CMD="${1:-}"
+SUB="${2:-}"
+
+case "$CMD" in
+  ""|--deploy)
+    case "$SUB" in
+      "")
+        cmd_auto_deploy
+        ;;
+      -f)
+        cmd_force_deploy "${3:-}"
+        ;;
+      -b)
+        if [[ -z "${3:-}" ]]; then
+          echo "[DEPLOY] Error: Branch name required."
+          echo "[DEPLOY] Usage: $(basename "$0") --deploy -b <BRANCH>"
+          exit 1
+        fi
+        cmd_branch_deploy "$3"
+        ;;
+      *)
+        echo "[DEPLOY] Error: Unknown option '$SUB'."
+        usage
+        exit 1
+        ;;
+    esac
+    ;;
+  --lock)
+    cmd_lock
+    ;;
+  --unlock)
+    cmd_unlock
+    ;;
+  --help|-h)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "[MAIN] Error: Unknown command '$CMD'."
+    usage
+    exit 1
+    ;;
+esac
