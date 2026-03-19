@@ -92,7 +92,20 @@ revert() {
 }
 
 
-do_deploy() { # Requires <git_ref> <new_state_string>; doesn't pause the update timer.
+check_version_base() { # Refuses deployment if <tag> sorts older than BASE_VERSION.
+  local candidate="$1"
+  local floor_check
+
+  floor_check="$(printf '%s\n%s\n' "$BASE_VERSION" "$candidate" | sort -V | head -n1)"
+
+  if [[ "$floor_check" != "$BASE_VERSION" ]]; then
+    echo "[BUILD] Error: '$candidate' is older than the minimum allowed version '$BASE_VERSION'."
+    exit 1
+  fi
+}
+
+
+do_deploy() { # Requires <git_ref> <new_state_string>
   local ref="$1"
   local new_state="$2"
   local prev_state prev_ref deploy_ok=true
@@ -100,7 +113,14 @@ do_deploy() { # Requires <git_ref> <new_state_string>; doesn't pause the update 
   prev_state="$(cat "$STATE_FILE" 2>/dev/null || echo "")"
   prev_ref="$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || echo "")"
 
+  if [[ ! "$new_state" =~ ^b- ]]; then
+    check_version_base "$ref"
+  else
+    echo "[BUILD] Warning: Branch deploy may overwrite maintenance script functionality." >&2
+  fi
+
   echo "[BUILD] Deploying: $ref"
+  sudo systemctl stop "$DEPLOY_TIMER"
 
   (
     set -euo pipefail
@@ -130,6 +150,7 @@ do_deploy() { # Requires <git_ref> <new_state_string>; doesn't pause the update 
   fi
 
   write_state "$new_state"
+  sudo systemctl start "$DEPLOY_TIMER"
   echo "[BUILD] Done."
 }
 
@@ -190,17 +211,15 @@ cmd_auto_deploy() { # Default latest pull: --deploy
   if [[ -n "$CURRENT_TAG" ]]; then
     local newer
     newer="$(printf '%s\n%s\n' "$CURRENT_TAG" "$latest_tag" | sort -V | tail -n1)"
+
     if [[ "$newer" != "$latest_tag" ]]; then
-      echo "Remote tag ($latest_tag) is not newer than deployed ($CURRENT_TAG). Skipping."
+      echo "[DEPLOY] Remote tag '$latest_tag' is older than the local '$CURRENT_TAG'. Skipping."
       exit 0
     fi
   fi
 
-  sudo systemctl stop "$DEPLOY_TIMER"
   do_deploy "$latest_tag" "$latest_tag"
-  sudo systemctl start "$DEPLOY_TIMER"
-
-  echo "[DEPLOY] Deploy complete: '$tag'."
+  echo "[DEPLOY] Deploy complete: '$latest_tag'."
 }
 
 
@@ -222,10 +241,7 @@ cmd_force_deploy() { # Force: --deploy -f [TAG]; deploys TAG (or latest if none)
     fi
   fi
 
-  sudo systemctl stop "$DEPLOY_TIMER"
   do_deploy "$tag" "${tag}-locked"
-  sudo systemctl start "$DEPLOY_TIMER"
-
   echo "[DEPLOY] Force deploy complete: '$tag' (locked)."
 }
 
@@ -242,12 +258,22 @@ cmd_branch_deploy() { # Branch: --deploy -b <BRANCH>; deploys its latest regardl
   fi
 
   local commit
+  local base_commit
+
   commit="$(git rev-parse --short "origin/$branch")"
 
-  sudo systemctl stop "$DEPLOY_TIMER"
-  do_deploy "origin/$branch" "b-${commit}-locked"
-  sudo systemctl start "$DEPLOY_TIMER"
+  if ! base_commit="$(git rev-parse "$BASE_VERSION" 2>/dev/null)"; then
+    echo "[DEPLOY] Error: BASE_VERSION tag '$BASE_VERSION' not found in the repo."
+    exit 1
+  fi
 
+  if ! git merge-base --is-ancestor "$base_commit" "origin/$branch" 2>/dev/null; then
+    echo "[DEPLOY] Error: Branch '$branch' doesn't contain the base version in its history."
+    echo "         Merge or rebase from main at >= '$BASE_VERSION' before deploying."
+    exit 1
+  fi
+
+  do_deploy "origin/$branch" "b-${commit}-locked"
   echo "[DEPLOY] Branch deploy complete: $branch @ $commit (locked)."
 }
 
