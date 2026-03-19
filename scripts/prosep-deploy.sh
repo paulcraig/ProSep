@@ -46,11 +46,11 @@ parse_state() { # Sets CURRENT_TAG and IS_LOCKED
   fi
 }
 
-write_state() { echo "$1" | sudo tee "$STATE_FILE" >/dev/null }
+write_state() { echo "$1" | sudo tee "$STATE_FILE" >/dev/null; }
 
-lock_state() { write_state "${1}-locked" }
+lock_state() { write_state "${1}-locked"; }
 
-unlock_state() { write_state "$1" }
+unlock_state() { write_state "$1"; }
 
 # ---> Deployment:
 
