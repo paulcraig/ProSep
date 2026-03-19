@@ -84,11 +84,11 @@ revert() {
   ) || echo "[REVERT] Restore failed: Manual intervention required." >&2
 
   [[ -n "$prev_state" ]] && write_state "$prev_state" 2>/dev/null || true
-  sudo systemctl restart "$BACKEND_SERVICE" 2>/dev/null || true
-  sudo systemctl reload  "$APACHE_SERVICE"  2>/dev/null || true
   sudo systemctl start   "$DEPLOY_TIMER"    2>/dev/null || true
-
   echo "[REVERT] Done." >&2
+
+  sudo systemctl reload  "$APACHE_SERVICE"  2>/dev/null || true
+  sudo systemctl restart "$BACKEND_SERVICE" 2>/dev/null || true
 }
 
 
@@ -139,9 +139,6 @@ do_deploy() { # Requires <git_ref> <new_state_string>
     rm -rf "$TMP_DIR"
 
     python3 -m pip install -r requirements.txt
-
-    sudo systemctl restart "$BACKEND_SERVICE"
-    sudo systemctl reload  "$APACHE_SERVICE"
   ) || deploy_ok=false
 
   if [[ "$deploy_ok" == false ]]; then
@@ -152,6 +149,9 @@ do_deploy() { # Requires <git_ref> <new_state_string>
   write_state "$new_state"
   sudo systemctl start "$DEPLOY_TIMER"
   echo "[BUILD] Done."
+
+  sudo systemctl reload  "$APACHE_SERVICE"
+  sudo systemctl restart "$BACKEND_SERVICE"
 }
 
 # ---> Commands:
