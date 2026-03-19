@@ -57,7 +57,7 @@ app.include_router(two_de_routes.router)
 app.include_router(peptide_retention_routes.router)
 app.include_router(proteolytic_digestion_routes.router)
 app.include_router(ion_exchange_fractionation_routes.router)
-app.include_router(size_exclustion_routes.router)
+app.include_router(size_exclusion_routes.router)
 """ 
 NOTE FOR FUTURE DEVELOPERS:
 In order to add additional files for the API, such as the addition of 2DE,
