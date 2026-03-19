@@ -1,8 +1,6 @@
 from typing import Any, Dict, List
 
-from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis as PA
-from fastapi import UploadFile
 from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
 class SizeExclusionFractionation:
   def _set_protien_list(fasta_content,proteins:IonExchangeFractionation.ProteinEntry) -> List[IonExchangeFractionation.ProteinEntry]:
@@ -25,7 +23,16 @@ class SizeExclusionFractionation:
         except Exception:
             skipped += 1
             continue
+        entries.append(
+                IonExchangeFractionation.ProteinEntry(
+                    seq_id=record.id,
+                    description=record.description,
+                    sequence=sequence,
+                    charge="n/a",
+                    molecular_weight=molecular_weight,
+                ))
         return entries
+    
   def process(
          
         fasta_content: str,
