@@ -66,7 +66,7 @@ const Hidden: React.FC = () => {
   const [updateServiceActive, setUpdateServiceActive] = useState(true);
   
   const [isLocked, setIsLocked] = useState(true);
-  const [checkoutVersion, setCheckoutVersion] = useState("v0.0.0");
+  const [checkoutVersion, setCheckoutVersion] = useState("");
 
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
@@ -148,6 +148,7 @@ const Hidden: React.FC = () => {
         });
         setAvailableVersions(data.available_versions);
         setIsLocked(data.locked);
+        setCheckoutVersion((prev) => prev || (data.available_versions[0] ?? ""));
       }
 
       if (perfRes.ok) {
@@ -654,7 +655,11 @@ const Hidden: React.FC = () => {
               {/* Version Info Box */}
               <div className="metric-section version-box">
                 <div className="version-header-row">
-                  <span className="metric-section-title">Tag {versionInfo?.version || "Loading..."}</span>
+                  <span className="metric-section-title">
+                    {versionInfo?.version?.startsWith("b-")
+                      ? `Commit ${versionInfo.version.slice(2)}`
+                      : `Tag ${versionInfo?.version || "Loading..."}`}
+                  </span>
                   <IconButton
                     size="small"
                     className="lock-toggle"
