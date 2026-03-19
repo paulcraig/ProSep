@@ -10,12 +10,12 @@ usage() {
 Usage: $(basename "$0") [COMMAND] [OPTIONS]
 
 Commands:
-  --deploy | (none)           Check for a newer tag and deploy if one is available.
-  --deploy -f [TAG]           Force deploy TAG (or latest). Locks the deployed version.
-  --deploy -b <BRANCH>        Deploy a branch at the latest commit. Locks as "b-<commit>-locked".
-  --unlock                    Unlock the local deployed version.
-  --lock                      Lock the local deployed version.
-  --help                      Show this message.
+  --deploy | (none)       Check for a newer tag and deploy if one is available.
+  --deploy -f [TAG]       Force deploy TAG (or latest). Locks the deployed version.
+  --deploy -b <BRANCH>    Deploy a branch at the latest commit. Locks as "b-<commit>-locked".
+  --unlock                Unlock the local deployed version.
+  --lock                  Lock the local deployed version.
+  --help                  Show this message.
 
 Examples:
   $(basename "$0")
@@ -25,6 +25,7 @@ Examples:
   $(basename "$0") --deploy -b spike/hidden-dev-page
   $(basename "$0") --lock
   $(basename "$0") --unlock
+
 EOF
 }
 
