@@ -322,6 +322,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     tension: 0,
                     borderWidth: 3,
                     pointRadius: 0,
+                    pointHoverRadius: 5,
                     fill: false as const,
                 },
                 {
@@ -334,6 +335,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     tension: 0,
                     borderWidth: 2,
                     pointRadius: 0,
+                    pointHoverRadius: 5,
                     borderDash: [6, 6],
                     fill: false as const,
                 },
