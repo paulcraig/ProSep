@@ -69,6 +69,8 @@
 
 .hic-chart-box {
   height: 320px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .hic-stats {

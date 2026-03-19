@@ -83,6 +83,11 @@ type CountsDto = {
     skipped: number;
 };
 
+type XYPoint = { 
+    x: number; 
+    y: number; 
+};
+
 type HICResponse = {
     ok: boolean;
     params: ParamsDto;
@@ -109,7 +114,9 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 
     const [fractionPage, setFractionPage] = useState<number>(0);
     const [fractionRowsPerPage, setFractionRowsPerPage] = useState<number>(10);
-
+    
+    const [timeLength, setTimeLength] = useState<number>(16);
+    
     const handleLoadFasta = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -215,15 +222,15 @@ const HydrophobicInteractionFractionation: React.FC = () => {
             x: {
                 type: "linear" as const,
                 title: {
-                display: true,
-                text: "Fraction",
-                color: "#ffffff",
+                    display: true,
+                    text: "Fraction",
+                    color: "#ffffff",
                 },
                 ticks: {
-                color: "#ffffff",
+                    color: "#ffffff",
                 },
                 grid: {
-                color: "rgba(255,255,255,0.15)",
+                    color: "rgba(255,255,255,0.15)",
                 },
             },
             y: {
@@ -249,6 +256,161 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         const end = start + fractionRowsPerPage;
         return fractionRows.slice(start, end);
     }, [fractionRows, fractionPage, fractionRowsPerPage]);
+
+    const chromatogramSignalPoints = useMemo(() => {
+        if (!data) return [];
+
+        const fractions = data.fractions ?? [];
+        const points: XYPoint[] = [];
+        const totalFractions = Math.max(1, fractions.length);
+        const maxTime = Math.max(1, timeLength);
+
+        fractions.forEach((f, index) => {
+            const proteins = f.proteins ?? [];
+            const avgBindingStrength =
+                proteins.length > 0
+                    ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length
+                    : 0;
+
+            const center = 1 + (index / (totalFractions - 1 || 1)) * (maxTime - 1);
+            const height = avgBindingStrength;
+            const width = Math.max(0.2, maxTime / 45);
+
+            for (let offset = -width * 2; offset <= width * 2; offset += width / 4) {
+                const x = center + offset;
+                const y = height * Math.exp(-(offset * offset) / (2 * width * width));
+                points.push({ x, y });
+            }
+        });
+
+        return points.sort((a, b) => a.x - b.x);
+    }, [data, timeLength]);
+
+    const saltGradientPoints = useMemo(() => {
+        if (!data) return [];
+
+        const fractions = data.fractions ?? [];
+        const totalFractions = Math.max(1, fractions.length);
+        const gradientStartFraction = Math.max(2, Math.floor(totalFractions * 0.18));
+        const maxTime = Math.max(1, timeLength);
+
+        return Array.from({ length: totalFractions }, (_, i) => {
+            const x = 1 + (i / (totalFractions - 1 || 1)) * (maxTime - 1);
+
+            let y = data.params.saltStart;
+            if (i + 1 > gradientStartFraction) {
+                const progress =
+                    ((i + 1) - gradientStartFraction) /
+                    Math.max(1, totalFractions - gradientStartFraction);
+                y = data.params.saltStart + (data.params.saltEnd - data.params.saltStart) * progress;
+            }
+
+            return { x, y };
+        });
+    }, [data, timeLength]);
+
+    const saltChartData = useMemo(() => {
+        return {
+            datasets: [
+                {
+                    label: "Protein Signal",
+                    data: chromatogramSignalPoints,
+                    parsing: false as const,
+                    borderColor: "#66d1b2",
+                    backgroundColor: "#66d1b2",
+                    yAxisID: "y",
+                    tension: 0,
+                    borderWidth: 3,
+                    pointRadius: 0,
+                    fill: false as const,
+                },
+                {
+                    label: "Salt Gradient",
+                    data: saltGradientPoints,
+                    parsing: false as const,
+                    borderColor: "#ff6b6b",
+                    backgroundColor: "#ff6b6b",
+                    yAxisID: "y1",
+                    tension: 0,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    borderDash: [6, 6],
+                    fill: false as const,
+                },
+            ],
+        };
+    }, [chromatogramSignalPoints, saltGradientPoints]);
+
+    const saltChartOptions = useMemo(() => {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false as const,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "#ffffff",
+                    },
+                },
+            },
+            elements: {
+                line: {
+                    tension: 0,
+                },
+                point: {
+                    radius: 0,
+                },
+            },
+            scales: {
+                x: {
+                    type: "linear" as const,
+                    min: 0,
+                    max: timeLength,
+                    title: {
+                        display: true,
+                        text: "Time",
+                        color: "#ffffff",
+                    },
+                    ticks: {
+                        color: "#ffffff",
+                    },
+                    grid: {
+                        color: "rgba(255,255,255,0.12)",
+                    },
+                },
+                y: {
+                    type: "linear" as const,
+                    position: "left" as const,
+                    title: {
+                        display: true,
+                        text: "Protein Signal",
+                        color: "#66d1b2",
+                    },
+                    ticks: {
+                        color: "#ffffff",
+                    },
+                    grid: {
+                        color: "rgba(255,255,255,0.12)",
+                    },
+                },
+                y1: {
+                    type: "linear" as const,
+                    position: "right" as const,
+                    title: {
+                        display: true,
+                        text: "Salt Concentration",
+                        color: "#ff6b6b",
+                    },
+                    ticks: {
+                        color: "#ffffff",
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                },
+            },
+        };
+    }, [timeLength]);
 
     return (
         <Box className="hic-container">
@@ -315,6 +477,14 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             value={deadband}
                             onChange={(e) => setDeadband(parseFloat(e.target.value))}
                         />
+
+                        <TextField
+                            className="hic-field"
+                            label="Duration(sec)"
+                            type="number"
+                            value={timeLength}
+                            onChange={(e) => setTimeLength(parseFloat(e.target.value))}
+                        />
                     </Box>
 
                     <Box className="hic-slider">
@@ -361,6 +531,15 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                                 <Typography variant="body2">
                                     Total: {data.counts.total} | Wash: {data.counts.wash} | Retained: {data.counts.retained} | Skipped: {data.counts.skipped}
                                 </Typography>
+                            </Box>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="hic-card">
+                        <CardHeader title="Chromatogram (Signal + Salt Gradient)" />
+                        <CardContent>
+                            <Box className="hic-chart-box">
+                                <Line data={saltChartData} options={saltChartOptions}/>
                             </Box>
                         </CardContent>
                     </Card>
