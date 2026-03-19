@@ -7,7 +7,7 @@ import backend.api.two_de_routes as two_de_routes
 import backend.api.peptide_retention_routes as peptide_retention_routes
 import backend.api.proteolytic_digestion_routes as proteolytic_digestion_routes
 import backend.api.ion_exchange_fractionation_routes as ion_exchange_fractionation_routes
-import backend.api.size_exclusion as size_exclustion_routes
+import backend.api.size_exclusion as size_exclusion_routes
 
 """
 HOW TO START UP API SERVER:
