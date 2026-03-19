@@ -4,7 +4,7 @@ set -euo pipefail
 BASE_DIR="$(dirname "$0")"
 source "$BASE_DIR/prosep-config.sh"
 
-# ---> Sub-commands <--- #
+# ---> Sub-commands:
 
 stop_app() {
   echo "Stopping webapp..."
@@ -62,7 +62,7 @@ to see subcommand-specific options.
 EOF
 }
 
-# ---> Dispatcher <--- #
+# ---> Main:
 
 CMD="${1:-}"
 
