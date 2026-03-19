@@ -1,7 +1,7 @@
 .peptide-retention-page {
     background: var(--background);
     color: var(--text);
-    padding: 1rem;
+    padding: 2rem;
     min-height: 100vh;
 }
 
@@ -16,12 +16,10 @@
     flex-grow: 1;
 }
 
-.peptide-input .MuiInputBase-input {
-    color: var(--text) !important;
-}
-
 .peptides-list {
-    margin-bottom: 1rem;
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
 }
 
 .peptides-list div:first-child {
@@ -31,9 +29,18 @@
 }
 
 .predict-button {
-    margin-bottom: 1rem;
+    height: 3rem;
     background-color: var(--accent) !important;
-    color: var(--text) !important;
+    color: "white" !important;
+}
+
+.pr-label {
+    color: "white" !important;
+    margin: 0 !important;
+    max-width: 140px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-weight: 600 !important;
 }
 
 .predict-button:disabled {
@@ -71,6 +78,7 @@
     background-color: var(--sub-background) !important;
     border: 0.25rem solid var(--accent);
     color: var(--text);
+    width: 99%;
 }
 
 .results-card .MuiCardHeader-title {
@@ -87,11 +95,44 @@ border: 0.125rem solid var(--accent);
 }
 
 .peptide-chip {
-    margin: 0.25rem;
-    color: var(--text) !important;
-    background-color: var(--accent) !important;
+    margin: 0.25rem !important;;
+    background-color: var(--sub-accent) !important;
 }
 
 .loading-spinner {
     margin-left: 1rem;
+}
+
+.chromatogram-loading-overlay .MuiCircularProgress-circle {
+    stroke: var(--accent) !important;
+}
+
+.chromatogram-section {
+    background-color: var(--sub-background);
+    margin-top: 20px;
+    width: 100%;
+}
+    
+.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.table-container {
+    position: relative;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.chromatogram-loading-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
 }

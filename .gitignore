@@ -1,8 +1,12 @@
 .venv/
 .idea/
-.vscode/
 .DS_Store
 /data
 
 __pycache__/
 *.pyc
+
+backend/.DS_Store
+
+data/*
+!data/.gitkeep

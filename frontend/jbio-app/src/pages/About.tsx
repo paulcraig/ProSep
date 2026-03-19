@@ -3,6 +3,7 @@ import "./About.css";
 
 import Profile from "../components/Profile";
 import profiles from "../assets/profiles/profiles.json";
+import ArtifactList from '../components/ArtifactList';
 
 type Person = {
   photo?: string;
@@ -49,9 +50,9 @@ const About: React.FC = () => {
   return (
     <div className="about-page">
       <div className="about-intro">
-        <section className="sponsor-section">
+        <section className="sp-section">
           <h2 className="section-header">Project Sponsor</h2>
-          <div className="dev-grid sponsor-block">
+          <div className="dev-grid">
             {sponsors.map((s) => (
               <Profile
                 key={s.name}
@@ -76,18 +77,12 @@ const About: React.FC = () => {
             modern web application with a JavaScript front-end and Python back-end.
             It is used in biochemistry, bioinformatics, and chemistry education at
             RIT and beyond.
-          </p><br/>
+          </p>
+          <br/>
           <h2 className="section-header">Commercial Use</h2>
           <p>
             Use by individual <strong>students and teachers</strong> is{" "}
-            <strong>free of charge</strong>. Educational presentations with{" "}
-            <strong>fewer than 50 attendees</strong> are also free, while those with{" "}
-            <strong>50 to 200 attendees</strong> require a{" "}
-            <strong>$100 license fee</strong>. Presentations with{" "}
-            <strong>more than 200 attendees</strong> require a{" "}
-            <strong>$500 license fee</strong>. <strong>Online publication</strong>{" "}
-            requires a <strong>negotiated commercial license</strong>.{" "}
-            <strong>Unauthorized use or distribution</strong> constitutes{" "}
+            <strong>free of charge</strong>. <strong>Unauthorized use or distribution</strong> constitutes{" "}
             <strong>piracy</strong> and may result in legal action.
           </p>
           <p>

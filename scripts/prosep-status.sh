@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
-REPO_DIR="/shared/ProSep"
-STATE_FILE="/var/www/.deployed_tag"
-FRONTEND_URL="http://protein-separation-sim.se.rit.edu/"
-WWW_DIR="/var/www/html"
+source "$(dirname "$0")/prosep-config.sh"
+set -euo pipefail
 
 REPAIR=false
 
+# ---> Parse Flags:
 
 if [[ "${1:-}" == "--repair" ]]; then
   REPAIR=true
@@ -32,13 +30,14 @@ EOF
   exit 0
 fi
 
+# ---> Status Mode:
 
 if ! $REPAIR; then
   echo
   echo "=== ProSep Deployment Status ==="
   echo
 
-  # ---> Git Tags <--- #
+  # ---> Git Tags:
   
   cd "$REPO_DIR"
   git fetch --tags >/dev/null 2>&1
@@ -58,23 +57,23 @@ if ! $REPAIR; then
 
   echo
   
-  # ---> Apache <--- #
+  # ---> Apache:
   
-  if systemctl is-active --quiet apache2; then
+  if systemctl is-active --quiet "$APACHE_SERVICE"; then
     echo "Apache: RUNNING"
   else
     echo "Apache: NOT RUNNING"
   fi
 
-  # ---> Backend <--- #
+  # ---> Backend:
   
-  if systemctl is-active --quiet prosep-backend.service; then
+  if systemctl is-active --quiet "$BACKEND_SERVICE"; then
     echo "Backend: RUNNING (systemd)"
   else
     echo "Backend: NOT RUNNING"
   fi
 
-  # ---> Frontend <--- #
+  # ---> Frontend:
   
   HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL" || echo "000")
   
@@ -86,26 +85,26 @@ if ! $REPAIR; then
 
   echo
   
-  # ---> Deploy Timer <--- #
+  # ---> Deploy Timer:
   
-  if systemctl is-active --quiet prosep-deploy.timer; then
-    echo "prosep-deploy.timer: ACTIVE"
+  if systemctl is-active --quiet "$DEPLOY_TIMER"; then
+    echo "$DEPLOY_TIMER: ACTIVE"
   else
-    echo "prosep-deploy.timer: INACTIVE"
+    echo "$DEPLOY_TIMER: INACTIVE"
   fi
   
-  if systemctl is-enabled --quiet prosep-deploy.timer; then
-    echo "prosep-deploy.timer: ENABLED"
+  if systemctl is-enabled --quiet "$DEPLOY_TIMER"; then
+    echo "$DEPLOY_TIMER: ENABLED"
   else
-    echo "prosep-deploy.timer: DISABLED"
+    echo "$DEPLOY_TIMER: DISABLED"
   fi
 
-  # ---> Deploy Service <--- #
+  # ---> Deploy Service:
   
-  if systemctl is-active --quiet prosep-deploy.service; then
-    echo "prosep-deploy.service: ACTIVE"
+  if systemctl is-active --quiet "$DEPLOY_SERVICE"; then
+    echo "$DEPLOY_SERVICE: ACTIVE"
   else
-    echo "prosep-deploy.service: INACTIVE"
+    echo "$DEPLOY_SERVICE: INACTIVE"
   fi
 
   echo
@@ -114,7 +113,7 @@ if ! $REPAIR; then
   exit 0
 fi
 
-# ---> Repair Mode <--- #
+# ---> Repair Mode:
 
 FAILED=false
 REPAIR_HEADER_SHOWN=false
@@ -128,11 +127,11 @@ show_repair_header() {
 }
 
 # Apache:
-if ! systemctl is-active --quiet apache2; then
+if ! systemctl is-active --quiet "$APACHE_SERVICE"; then
   show_repair_header
   echo "Attempting Apache restart..."
   
-  if sudo systemctl restart apache2 && systemctl is-active --quiet apache2; then
+  if sudo systemctl restart "$APACHE_SERVICE" && systemctl is-active --quiet "$APACHE_SERVICE"; then
     echo "Apache restart: SUCCESS"
   else
     echo "Apache restart: FAILED"
@@ -141,14 +140,14 @@ if ! systemctl is-active --quiet apache2; then
 fi
 
 # Backend:
-if systemctl is-active --quiet prosep-backend.service; then
+if ! systemctl is-active --quiet "$BACKEND_SERVICE"; then
   show_repair_header
   echo "Attempting Backend restart..."
   
-  sudo systemctl restart prosep-backend.service
+  sudo systemctl restart "$BACKEND_SERVICE"
   sleep 2
   
-  if systemctl is-active --quiet prosep-backend.service; then
+  if systemctl is-active --quiet "$BACKEND_SERVICE"; then
     echo "Backend restart: SUCCESS"
   else
     echo "Backend restart: FAILED"
@@ -186,11 +185,11 @@ if [[ "$HTTP_CODE" != "200" ]]; then
 fi
 
 # Timer:
-if ! systemctl is-enabled --quiet prosep-deploy.timer; then
+if ! systemctl is-enabled --quiet "$DEPLOY_TIMER"; then
   show_repair_header
   echo "Enabling timer..."
   
-  if sudo systemctl enable prosep-deploy.timer; then
+  if sudo systemctl enable "$DEPLOY_TIMER"; then
     echo "Timer enable: SUCCESS"
   else
     echo "Timer enable: FAILED"
@@ -198,11 +197,11 @@ if ! systemctl is-enabled --quiet prosep-deploy.timer; then
   fi
 fi
 
-if ! systemctl is-active --quiet prosep-deploy.timer; then
+if ! systemctl is-active --quiet "$DEPLOY_TIMER"; then
   show_repair_header
   echo "Starting inactive timer..."
   
-  if sudo systemctl start prosep-deploy.timer && systemctl is-active --quiet prosep-deploy.timer; then
+  if sudo systemctl start "$DEPLOY_TIMER" && systemctl is-active --quiet "$DEPLOY_TIMER"; then
     echo "Timer start: SUCCESS"
   else
     echo "Timer start: FAILED"
