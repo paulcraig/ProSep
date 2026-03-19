@@ -10,7 +10,7 @@ import backend.api.artifact_routes as artifact_routes
 import backend.api.peptide_retention_routes as peptide_retention_routes
 import backend.api.proteolytic_digestion_routes as proteolytic_digestion_routes
 import backend.api.ion_exchange_fractionation_routes as ion_exchange_fractionation_routes
-
+import backend.api.size_exclusion as size_exclusion_routes
 
 """
 HOW TO START UP API SERVER:
@@ -63,7 +63,7 @@ app.include_router(artifact_routes.router)
 app.include_router(peptide_retention_routes.router)
 app.include_router(proteolytic_digestion_routes.router)
 app.include_router(ion_exchange_fractionation_routes.router)
-
+app.include_router(size_exclusion_routes.router)
 """ 
 NOTE FOR FUTURE DEVELOPERS:
 In order to add additional files for the API, such as the addition of 2DE,
