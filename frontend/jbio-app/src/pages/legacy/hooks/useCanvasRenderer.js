@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   drawBackground, drawLoadingZone, drawLoadingSpinner,
   drawIEFBandAndGradient, drawSDSBackground,
@@ -18,6 +18,7 @@ export function useCanvasRenderer({
 }) {
   const MIN_PH = phRange.min;
   const MAX_PH = phRange.max;
+  const sdsStartTimeRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -36,10 +37,13 @@ export function useCanvasRenderer({
 
       // Loading spinner replaces everything during SDS computation
       if (simulationState === 'sds-running') {
-        drawLoadingSpinner(ctx);
+        if (!sdsStartTimeRef.current) sdsStartTimeRef.current = Date.now();
+        const elapsedMs = Date.now() - sdsStartTimeRef.current;
+        drawLoadingSpinner(ctx, 'RUNNING SECOND DIMENSION', elapsedMs);
         animId = requestAnimationFrame(draw);
         return;
       }
+      sdsStartTimeRef.current = null;
 
       ctx.textAlign = 'left';
 
