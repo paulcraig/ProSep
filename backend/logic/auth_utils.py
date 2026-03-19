@@ -1,10 +1,12 @@
-import os, hashlib, base64
+import os
+import hashlib
+import base64
 
 from pathlib import Path
 from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
@@ -60,10 +62,10 @@ class AuthService:
                 format=serialization.PublicFormat.SubjectPublicKeyInfo
             ))
         
-        print(f"Generated new RSA key pair:")
+        print("Generated new RSA key pair:")
         print(f"> Private key: {cls.PRIVATE_KEY_FILE}")
         print(f"> Public key: {cls.PUBLIC_KEY_FILE}")
-        print(f"Fetch public key from GET /admin/public-key")
+        print("Fetch public key from GET /admin/public-key")
         
         return private_key
 
