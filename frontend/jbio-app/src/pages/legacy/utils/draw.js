@@ -29,7 +29,7 @@ export function drawLoadingZone(ctx) {
   ctx.fillText('LOAD', LOADING_ZONE_X + 4, LOADING_ZONE_Y - 6);
 }
 
-export function drawLoadingSpinner(ctx, label = 'RUNNING SECOND DIMENSION') {
+export function drawLoadingSpinner(ctx, label = 'RUNNING SECOND DIMENSION', elapsedMs = 0) {
   const cx = CANVAS_WIDTH / 2;
   const cy = CANVAS_HEIGHT / 2;
   const rot = (Date.now() % 2000) / 2000 * Math.PI * 2;
@@ -46,6 +46,15 @@ export function drawLoadingSpinner(ctx, label = 'RUNNING SECOND DIMENSION') {
   ctx.font = '11px "DM Mono", monospace';
   ctx.fillStyle = '#565870';
   ctx.fillText('computing protein positions...', cx, cy + 72);
+
+  if (typeof elapsedMs === 'number' && elapsedMs >= 0) {
+    const totalSeconds = Math.floor(elapsedMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const timerText = `elapsed: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    ctx.fillText(timerText, cx, cy + 92);
+  }
+
   ctx.textAlign = 'left';
 }
 
