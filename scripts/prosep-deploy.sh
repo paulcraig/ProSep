@@ -53,7 +53,6 @@ lock_state() { write_state "${1}-locked"; }
 
 unlock_state() { write_state "$1"; }
 
-# ---> Deployment:
 
 revert() {
   local prev_ref="$1"
@@ -89,7 +88,7 @@ revert() {
   sudo systemctl reload  "$APACHE_SERVICE"  2>/dev/null || true
   sudo systemctl start   "$DEPLOY_TIMER"    2>/dev/null || true
 
-  echo "[REVERT] Restore Success: Manually verify service status." >&2
+  echo "[REVERT] Done." >&2
 }
 
 
@@ -131,10 +130,41 @@ do_deploy() { # Requires <git_ref> <new_state_string>; doesn't pause the update 
   fi
 
   write_state "$new_state"
-  echo "[BUILD] Deploy Success: $ref -> State: $new_state"
+  echo "[BUILD] Done."
 }
 
 # ---> Commands:
+
+cmd_lock() { # --lock
+  parse_state
+
+  if [[ -z "$CURRENT_TAG" ]]; then
+    echo "[LOCK] Error: No version deployed."
+    exit 1
+  fi
+
+  if [[ "$IS_LOCKED" == true ]]; then
+    echo "[LOCK] Already locked '${CURRENT_TAG}'. Nothing to do."
+    exit 0
+  fi
+
+  lock_state "$CURRENT_TAG"
+  echo "[LOCK] Locked: '${CURRENT_TAG}'."
+}
+
+
+cmd_unlock() { # --unlock
+  parse_state
+
+  if [[ "$IS_LOCKED" == false ]]; then
+    echo "[LOCK] Already unlocked '${CURRENT_TAG}'. Nothing to do."
+    exit 0
+  fi
+
+  unlock_state "$CURRENT_TAG"
+  echo "[LOCK] Unlocked: '${CURRENT_TAG}'."
+}
+
 
 cmd_auto_deploy() { # Default latest pull: --deploy
   parse_state
@@ -170,42 +200,11 @@ cmd_auto_deploy() { # Default latest pull: --deploy
   do_deploy "$latest_tag" "$latest_tag"
   sudo systemctl start "$DEPLOY_TIMER"
 
-  echo "[DEPLOY] Done."
+  echo "[DEPLOY] Deploy complete: '$tag'."
 }
 
 
-cmd_lock() { # --lock
-  parse_state
-
-  if [[ -z "$CURRENT_TAG" ]]; then
-    echo "[LOCK] Error: No version deployed."
-    exit 1
-  fi
-
-  if [[ "$IS_LOCKED" == true ]]; then
-    echo "[LOCK] Already locked '${CURRENT_TAG}'. Nothing to do."
-    exit 0
-  fi
-
-  lock_state "$CURRENT_TAG"
-  echo "[LOCK] Locked: '${CURRENT_TAG}'."
-}
-
-
-cmd_unlock() { # --unlock
-  parse_state
-
-  if [[ "$IS_LOCKED" == false ]]; then
-    echo "[LOCK] Already unlocked '${CURRENT_TAG}'. Nothing to do."
-    exit 0
-  fi
-
-  unlock_state "$CURRENT_TAG"
-  echo "[LOCK] Unlocked: '${CURRENT_TAG}'."
-}
-
-
-cmd_force_deploy() { # --deploy -f [TAG]; deploys TAG (or latest if none) regardless of lock state.
+cmd_force_deploy() { # Force: --deploy -f [TAG]; deploys TAG (or latest if none) regardless of lock state.
   local tag="${1:-}"
 
   cd "$REPO_DIR"
@@ -231,7 +230,7 @@ cmd_force_deploy() { # --deploy -f [TAG]; deploys TAG (or latest if none) regard
 }
 
 
-cmd_branch_deploy() { # --deploy -b <BRANCH>; deploys latest <BRANCH> from remote regardless of lock state.
+cmd_branch_deploy() { # Branch: --deploy -b <BRANCH>; deploys its latest regardless of lock state.
   local branch="$1"
 
   cd "$REPO_DIR"
