@@ -5,12 +5,16 @@ import { pdfjs } from 'react-pdf';
 import { API_URL } from '../config';
 import './ArtifactList.css';
 
-import { Box, Card, CardContent, CardMedia, Typography, IconButton, Stack, Button } from '@mui/material';
+import { Box, Card, CardContent, CardMedia, Typography, IconButton, Stack, Button, CircularProgress } from '@mui/material';
 import ReplaceIcon from '@mui/icons-material/SwapHorizRounded';
 import DownloadIcon from '@mui/icons-material/DownloadRounded';
 import DeleteIcon from '@mui/icons-material/DeleteRounded';
 import DragIndictor from '@mui/icons-material/DragIndicator';
 import CloseIcon from '@mui/icons-material/Close';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import FolderIcon from '@mui/icons-material/Folder';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 
 
 interface Artifact {
@@ -29,6 +33,7 @@ interface ArtifactListProps {
   visibleRows?: number;
   artifactsPerRow?: number;
   encryptedPassword?: string;
+  speedDial?: boolean;
 }
 
 export interface ArtifactListRef {
@@ -47,7 +52,8 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   enableReorder = true,
   visibleRows,
   artifactsPerRow,
-  encryptedPassword
+  encryptedPassword,
+  speedDial = false,
 }, ref) => {
 
   const GAP = 16;
@@ -55,6 +61,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   
   const fetchingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const speedDialRef = useRef<HTMLDivElement>(null);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -62,9 +69,13 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerLoading, setViewerLoading] = useState(false);
   const [textContent, setTextContent] = useState<string>('');
   const [numPages, setNumPages] = useState<number | null>(null);
-  const [viewerArtifact, setViewerArtifact] = useState<Artifact | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [speedDialOpen, setSpeedDialOpen] = useState(false);
+
+  const viewerArtifact = viewerIndex !== null ? (artifacts[viewerIndex] ?? null) : null;
   
   
   const gridTemplateColumns = useMemo(() =>
@@ -136,6 +147,18 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
       fetchingRef.current = false;
     }
   }
+
+
+  useEffect(() => {
+    if (!speedDialOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (speedDialRef.current && !speedDialRef.current.contains(e.target as Node)) {
+        setSpeedDialOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [speedDialOpen]);
 
 
   useEffect(() => {
@@ -315,26 +338,37 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
   }
 
 
-  async function handleCardClick(artifact: Artifact): Promise<void> {
-    if (!isDragging) {
-      setViewerArtifact(artifact);
-      setViewerOpen(true);
-      
-      if (getFileType(artifact.name) === 'text') {
-        try {
-          const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(artifact.name)}`);
+  async function openViewer(index: number): Promise<void> {
+    const artifact = artifacts[index];
+    setViewerIndex(index);
+    setViewerOpen(true);
+    setTextContent('');
+    setNumPages(null);
+    setViewerLoading(true);
 
-          if (res.ok) {
-            const text = await res.text();
-            setTextContent(text);
-          }
-          
-        } catch (err) {
-          console.error('Failed to load text content:', err);
-          setTextContent('Failed to load file content');
-        }
+    if (getFileType(artifact.name) === 'text') {
+      try {
+        const res = await fetch(`${API_URL}/artifacts/${group}/${encodeURIComponent(artifact.name)}`);
+        if (res.ok) setTextContent(await res.text());
+        else setTextContent('Failed to load file content');
+      } catch {
+        setTextContent('Failed to load file content');
       }
+      setViewerLoading(false);
+    } else if (getFileType(artifact.name) === 'other') {
+      setViewerLoading(false);
     }
+  }
+
+
+  function navigateViewer(delta: number): void {
+    if (viewerIndex === null) return;
+    openViewer((viewerIndex + delta + artifacts.length) % artifacts.length);
+  }
+
+
+  function handleCardClick(index: number): void {
+    if (!isDragging) openViewer(index);
   }
 
 
@@ -344,70 +378,156 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
     const fileType = getFileType(viewerArtifact.name);
     const fileUrl = `${API_URL}/artifacts/${group}/${encodeURIComponent(viewerArtifact.name)}`;
 
-    switch (fileType) {
-      case 'image':
-        return (
-          <img
-            src={fileUrl}
-            alt={viewerArtifact.name}
-            className='artifact-viewer-image'
-          />
-        );
-      
-      case 'pdf':
-        return (
-          <Box sx={{ overflow: 'auto', height: '100%' }}>
-            <Document
-              file={fileUrl}
-              loading="Loading PDF..."
-              onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-            >
-              {Array.from(new Array(numPages), (_, index) => (
-                <Page
-                  key={`page_${index + 1}`}
-                  pageNumber={index + 1}
-                  renderTextLayer
-                  renderAnnotationLayer
-                />
-              ))}
-            </Document>
+    return (
+      <Box sx={{ position: 'relative', width: '100%', minHeight: '24rem', display: 'flex', alignItems: 'stretch' }}>
+        {viewerLoading && (
+          <Box className='artifact-viewer-loading'>
+            <CircularProgress sx={{ color: 'var(--accent)' }} />
           </Box>
-        );
-      
-      case 'text':
-        return (
-          <pre className='artifact-viewer-text'>
-            {textContent}
-          </pre>
-        );
-      
-      default:
-        return (
-          <Box className='artifact-viewer-unsupported' sx={{ padding: '3rem' }}>
-            <Typography variant='body1' sx={{ mb: 2, color: 'var(--text)' }}>
-              Preview not available for this file type
-            </Typography>
-            <Button
-              variant='contained'
-              onClick={() => handleDownload(viewerArtifact.name)}
-              sx={{ 
-                backgroundColor: 'var(--accent)',
-                '&:hover': { backgroundColor: 'var(--text)' }
-              }}
-            >
-              Download File
-            </Button>
-          </Box>
-        );
-    }
+        )}
+        <Box sx={{ width: '100%', visibility: viewerLoading ? 'hidden' : 'visible', display: 'flex', alignItems: 'stretch' }}>
+          {fileType === 'image' && (
+            <img
+              src={fileUrl}
+              alt={viewerArtifact.name}
+              className='artifact-viewer-image'
+              onLoad={() => setViewerLoading(false)}
+              onError={() => setViewerLoading(false)}
+            />
+          )}
+          {fileType === 'pdf' && (
+            <Box sx={{ overflow: 'auto', width: '100%' }}>
+              <Document
+                file={fileUrl}
+                loading=""
+                onLoadSuccess={({ numPages }) => { setNumPages(numPages); setViewerLoading(false); }}
+                onLoadError={() => setViewerLoading(false)}
+              >
+                {Array.from(new Array(numPages), (_, index) => (
+                  <Page
+                    key={`page_${index + 1}`}
+                    pageNumber={index + 1}
+                    renderTextLayer
+                    renderAnnotationLayer
+                  />
+                ))}
+              </Document>
+            </Box>
+          )}
+          {fileType === 'text' && (
+            <pre className='artifact-viewer-text'>{textContent}</pre>
+          )}
+          {fileType === 'other' && (
+            <Box className='artifact-viewer-unsupported' sx={{ padding: '3rem' }}>
+              <Typography variant='body1' sx={{ mb: 2, color: 'var(--text)' }}>
+                Preview not available for this file type
+              </Typography>
+              <Button
+                variant='contained'
+                onClick={() => handleDownload(viewerArtifact.name)}
+                sx={{ backgroundColor: 'var(--accent)', '&:hover': { backgroundColor: 'var(--text)' } }}
+              >
+                Download File
+              </Button>
+            </Box>
+          )}
+        </Box>
+      </Box>
+    );
   }
 
+
+  const viewerModal = viewerOpen && (
+    <div
+      style={{
+        position: 'fixed',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      }}
+      onClick={() => { setViewerOpen(false); setTextContent(''); setViewerLoading(false); }}
+    >
+      <Box className='artifact-viewer-container' onClick={(e) => e.stopPropagation()}>
+        <Box className='artifact-viewer-header'>
+          <Box className='artifact-viewer-header-left'>
+            {artifacts.length > 1 && (
+              <IconButton size='small' className='artifact-viewer-nav' onClick={() => navigateViewer(-1)}>
+                <ChevronLeftIcon />
+              </IconButton>
+            )}
+            <Typography className='artifact-viewer-title'>
+              {viewerArtifact?.name}
+            </Typography>
+            {artifacts.length > 1 && (
+              <IconButton size='small' className='artifact-viewer-nav' onClick={() => navigateViewer(1)}>
+                <ChevronRightIcon />
+              </IconButton>
+            )}
+          </Box>
+          <IconButton
+            onClick={() => { setViewerOpen(false); setTextContent(''); setViewerLoading(false); }}
+            className='artifact-viewer-close'
+            size='small'
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Box className='artifact-viewer-content'>
+          {renderViewerContent()}
+        </Box>
+      </Box>
+    </div>
+  );
+
+  if (!artifacts.length) return null;
+
+  if (speedDial) {
+    return (
+      <Box className='artifact-speed-dial' ref={speedDialRef}>
+        <IconButton
+          className='speed-dial-trigger'
+          onClick={() => setSpeedDialOpen((o) => !o)}
+          title={speedDialOpen ? 'Close files' : 'Open files'}
+        >
+          {speedDialOpen ? <FolderOpenIcon /> : <FolderIcon />}
+        </IconButton>
+        {speedDialOpen && (
+          <Box className='speed-dial-list'>
+            {artifacts.map((file, index) => (
+              <Box
+                key={file.id}
+                className='speed-dial-item'
+                onClick={() => { openViewer(index); setSpeedDialOpen(false); }}
+              >
+                <Typography className='speed-dial-name' title={file.name}>
+                  {file.name}
+                </Typography>
+                {enableDownload && (
+                  <IconButton
+                    size='small'
+                    className='artifact-icon'
+                    title='Download'
+                    onClick={(e) => { e.stopPropagation(); handleDownload(file.name); }}
+                  >
+                    <DownloadIcon fontSize='small' />
+                  </IconButton>
+                )}
+              </Box>
+            ))}
+          </Box>
+        )}
+        {viewerModal}
+      </Box>
+    );
+  }
 
   return (
     <Box>
       <Box
         className='artifact-container'
-        ref={containerRef}  // Attach the ref
+        ref={containerRef}
         sx={{
           gridTemplateColumns,
           maxHeight: maxHeight ? `${maxHeight}px` : 'none',
@@ -423,7 +543,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
             onDragOver={(e) => handleDragOver(e, index)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, index)}
-            onClick={() => handleCardClick(file)}
+            onClick={() => handleCardClick(index)}
           >
             <Box className='artifact-media-container'>
               {enableReorder && (
@@ -469,47 +589,7 @@ const ArtifactList = forwardRef<ArtifactListRef, ArtifactListProps>(({
           </Card>
         ))}
       </Box>
-
-      {viewerOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-          }}
-          onClick={() => {
-            setViewerOpen(false);
-            setTextContent('');
-          }}
-        >
-          <Box
-            className='artifact-viewer-container'
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Box className='artifact-viewer-header'>
-              <Typography className='artifact-viewer-title'>
-                {viewerArtifact?.name}
-              </Typography>
-              <IconButton
-                onClick={() => {
-                  setViewerOpen(false);
-                  setTextContent('');
-                }}
-                className='artifact-viewer-close'
-                size='small'
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-            <Box className='artifact-viewer-content'>
-              {renderViewerContent()}
-            </Box>
-          </Box>
-        </div>
-      )}
+      {viewerModal}
     </Box>
   );
 });

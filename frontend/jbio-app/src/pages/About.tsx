@@ -82,29 +82,13 @@ const About: React.FC = () => {
           <h2 className="section-header">Commercial Use</h2>
           <p>
             Use by individual <strong>students and teachers</strong> is{" "}
-            <strong>free of charge</strong>. Educational presentations with{" "}
-            <strong>fewer than 50 attendees</strong> are also free, while those with{" "}
-            <strong>50 to 200 attendees</strong> require a{" "}
-            <strong>$100 license fee</strong>. Presentations with{" "}
-            <strong>more than 200 attendees</strong> require a{" "}
-            <strong>$500 license fee</strong>. <strong>Online publication</strong>{" "}
-            requires a <strong>negotiated commercial license</strong>.{" "}
-            <strong>Unauthorized use or distribution</strong> constitutes{" "}
+            <strong>free of charge</strong>. <strong>Unauthorized use or distribution</strong> constitutes{" "}
             <strong>piracy</strong> and may result in legal action.
           </p>
           <p>
             For any inquiries, please contact Dr. Paul Craig at{" "}
             <a href="mailto:pac8612@rit.edu">pac8612@rit.edu</a>.
           </p>
-          <br/>
-          <ArtifactList
-            group='about'
-            artifactsPerRow={4}
-            visibleRows={1}
-            enableReplace={false}
-            enableDelete={false}
-            enableReorder={false}
-          />
         </section>
       </div>
 

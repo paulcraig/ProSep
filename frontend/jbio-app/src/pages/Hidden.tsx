@@ -22,6 +22,15 @@ const KONAMI = [
   "b", "a"
 ];
 
+const ARTIFACT_GROUPS: { group: string; label: string }[] = [
+  { group: "about",                  label: "Project Information"       },
+  { group: "1de",                    label: "1D Electrophoresis"        },
+  { group: "2de",                    label: "2D Electrophoresis"        },
+  { group: "peptide_retention",      label: "Peptide Retention"         },
+  { group: "proteolytic_digestion",  label: "Proteolytic Digestion"     },
+  { group: "ion_exchange",           label: "Ion Exchange Fractionation"},
+];
+
 interface PRInfo {
   id: number;
   title: string;
@@ -91,7 +100,7 @@ const Hidden: React.FC = () => {
     isDanger: false
   });
 
-  const artifactRef = useRef<ArtifactListRef>(null);
+  const artifactRefs = useRef<Record<string, ArtifactListRef | null>>({});
   const confirmModalRef = useRef(confirmModal);
 
   useEffect(() => {
@@ -411,10 +420,7 @@ const Hidden: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         console.log(`Deleted ${data.groups_deleted} artifact group(s)`);
-
-        if (artifactRef.current) {
-          artifactRef.current.refresh();
-        }
+        Object.values(artifactRefs.current).forEach(ref => ref?.refresh());
       }
     } catch (err) {
       console.error("Failed to delete uploads:", err);
@@ -442,12 +448,13 @@ const Hidden: React.FC = () => {
   };
 
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, group: string) => {
     const files = e.target.files;
-    if (!files || !artifactRef.current) return;
+    const ref = artifactRefs.current[group];
+    if (!files || !ref) return;
 
     Array.from(files).forEach((file) => {
-      artifactRef.current!.uploadFile(file);
+      ref.uploadFile(file);
     });
 
     e.target.value = "";
@@ -875,40 +882,41 @@ const Hidden: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="admin-section full-width">
-        <div className={`admin-card ${!authed ? "disabled" : ""}`}>
-          <div className="section-header-with-upload">
-            <h3 className="section-header-inside">Home Page</h3>
-            <input
-              type="file"
-              id="document-upload"
-              className="hidden-file-input"
-              onChange={handleFileChange}
-              multiple
-              disabled={!authed}
+      {ARTIFACT_GROUPS.map(({ group, label }) => (
+        <div key={group} className="admin-section full-width">
+          <div className={`admin-card ${!authed ? "disabled" : ""}`}>
+            <div className="section-header-with-upload">
+              <h3 className="section-header-inside">{label}</h3>
+              <input
+                type="file"
+                id={`document-upload-${group}`}
+                className="hidden-file-input"
+                onChange={(e) => handleFileChange(e, group)}
+                multiple
+                disabled={!authed}
+              />
+              <IconButton
+                size="small"
+                className="upload-icon-button"
+                onClick={() => document.getElementById(`document-upload-${group}`)?.click()}
+                disabled={!authed}
+                title="Upload Documents"
+              >
+                <UploadFileIcon fontSize="small" />
+              </IconButton>
+            </div>
+            <ArtifactList
+              group={group}
+              ref={(el) => { artifactRefs.current[group] = el; }}
+              enableDownload={true}
+              enableReplace={true}
+              enableDelete={true}
+              enableReorder={true}
+              encryptedPassword={localStorage.getItem("admin-encrypted-password") || undefined}
             />
-            <IconButton
-              size="small"
-              className="upload-icon-button"
-              onClick={() => document.getElementById("document-upload")?.click()}
-              disabled={!authed}
-              title="Upload Documents"
-            >
-              <UploadFileIcon fontSize="small" />
-            </IconButton>
           </div>
-
-          <ArtifactList
-            group="about"
-            ref={artifactRef}
-            enableDownload={true}
-            enableReplace={true}
-            enableDelete={true}
-            enableReorder={true}
-            encryptedPassword={localStorage.getItem("admin-encrypted-password") || undefined}
-          />
         </div>
-      </div>
+      ))}
       {toast.message && (
         <div className={`admin-toast ${toast.visible ? "admin-toast-visible" : "admin-toast-hidden"}`}>
           {toast.message}

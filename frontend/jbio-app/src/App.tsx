@@ -30,6 +30,7 @@ function App() {
       icon: <HomeIcon />,
       component: <About />,
       label: "Project Information",
+      artifactGroup: "about"
     },
     ...(useHiddenUnlock() ? [{ id: 99, icon: <HiddenIcon />, component: <Hidden />, label: 'Team Information' }] : []),
     {
@@ -37,30 +38,35 @@ function App() {
       icon: <OneDEIcon />,
       component: <OneDE />,
       label: "1D Electrophoresis",
+      artifactGroup: "1de"
     },
     {
       id: 3,
       icon: <TwoDEIcon />,
       component: <TwoDE />,
       label: "2D Electrophoresis",
+      artifactGroup: "2de"
     },
     {
       id: 4,
       icon: <InsightsIcon />,
       component: <PeptideRetention />,
       label: "Peptide Retention",
+      artifactGroup: "peptide_retention"
     },
     {
       id: 5,
       icon: <AlignHorizontalCenterIcon />,
       component: <ProteolyticDigestion />,
       label: "Proteolytic Digestion",
+      artifactGroup: "proteolytic_digestion",
     },
     {
       id: 6,
       icon: <SwapVertIcon />,
       component: <IonExchangeFractionation />,
       label: "Ion Exchange Fractionation",
+      artifactGroup: "ion_exchange",
     },
     {
       id: 7,

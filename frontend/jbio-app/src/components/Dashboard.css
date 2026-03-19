@@ -179,3 +179,11 @@
   overflow-y: auto;
   background-color: var(--background);
 }
+
+/* Artifact speed dial */
+.page-artifact-overlay {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 100;
+}
