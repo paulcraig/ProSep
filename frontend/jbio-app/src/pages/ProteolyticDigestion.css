@@ -1,20 +1,368 @@
+/* ─── Fonts ──────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@600;700&display=swap');
 
-.selectedProtein {
-  color: aliceblue;
-  justify-content: center;
+/* ─── Variables ──────────────────────────────────────────────────────────────── */
+:root {
+  --pd-bg:          #0e0f14;
+  --pd-surface:     #15161d;
+  --pd-border:      #272836;
+  --pd-accent:      #5b6ef5;
+  --pd-accent-dim:  rgba(91, 110, 245, 0.15);
+  --pd-text:        #e8e9f0;
+  --pd-muted:       #5a5b72;
+  --pd-success:     #4fd1a5;
+  --pd-error:       #f56565;
+  --pd-mono:        'IBM Plex Mono', monospace;
+  --pd-display:     'Syne', sans-serif;
+  --pd-radius:      10px;
+  --pd-radius-sm:   6px;
+}
+
+/* ─── Standalone page mode ───────────────────────────────────────────────────── */
+.pd-page {
   display: flex;
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-  max-width:100vw;
-  
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
 }
-.proteinlist {
-  display: block;
+
+.pd-page-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
 }
-.word {
-  background-color: aliceblue;
+
+.pd-page-empty p {
+  font-family: var(--pd-mono);
+  font-size: 13px;
+  color: var(--pd-muted);
+  max-width: 300px;
+  line-height: 1.6;
+  margin: 0;
 }
-.graph {
-  height: auto;
+
+/* ─── Backdrop ───────────────────────────────────────────────────────────────── */
+.pd-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(5, 5, 10, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: pd-fade-in 0.18s ease;
+}
+
+@keyframes pd-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Modal shell ─────────────────────────────────────────────────────────────── */
+.pd-modal {
+  background: var(--pd-surface);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius);
   width: 100%;
+  max-width: 680px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+  animation: pd-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pd-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────── */
+.pd-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--pd-border);
+  flex-shrink: 0;
+}
+
+.pd-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pd-label {
+  font-family: var(--pd-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pd-accent);
+}
+
+.pd-protein-name {
+  font-family: var(--pd-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--pd-text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.pd-close {
+  background: none;
+  border: 1px solid var(--pd-border);
+  color: var(--pd-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--pd-radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.pd-close:hover {
+  color: var(--pd-text);
+  border-color: var(--pd-text);
+  background: rgba(255,255,255,0.04);
+}
+
+/* ─── Sections ───────────────────────────────────────────────────────────────── */
+.pd-section {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--pd-border);
+  flex-shrink: 0;
+}
+
+.pd-section-label {
+  font-family: var(--pd-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pd-muted);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Sequence box ───────────────────────────────────────────────────────────── */
+.pd-sequence-box {
+  font-family: var(--pd-mono);
+  font-size: 12px;
+  color: var(--pd-success);
+  background: rgba(79, 209, 165, 0.06);
+  border: 1px solid rgba(79, 209, 165, 0.15);
+  border-radius: var(--pd-radius-sm);
+  padding: 12px 14px;
+  word-break: break-all;
+  line-height: 1.7;
+  max-height: 90px;
+  overflow-y: auto;
+}
+
+/* ─── Protease grid ──────────────────────────────────────────────────────────── */
+.pd-protease-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.pd-protease-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--pd-bg);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+}
+
+.pd-protease-btn:hover {
+  border-color: var(--pd-accent);
+  background: var(--pd-accent-dim);
+}
+
+.pd-protease-btn.active {
+  border-color: var(--pd-accent);
+  background: var(--pd-accent-dim);
+  box-shadow: 0 0 0 1px var(--pd-accent);
+}
+
+.pd-protease-name {
+  font-family: var(--pd-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pd-text);
+}
+
+.pd-protease-aa {
+  font-family: var(--pd-mono);
+  font-size: 11px;
+  color: var(--pd-accent);
+}
+
+.pd-protease-desc {
+  font-family: var(--pd-mono);
+  font-size: 11px;
+  color: var(--pd-muted);
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--pd-bg);
+  border-radius: var(--pd-radius-sm);
+  border-left: 2px solid var(--pd-accent);
+}
+
+/* ─── Results ────────────────────────────────────────────────────────────────── */
+.pd-results-section {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-bottom: none;
+}
+
+.pd-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pd-results-header .pd-section-label {
+  margin-bottom: 0;
+}
+
+.pd-fragment-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pd-accent);
+  color: #fff;
+  font-family: var(--pd-mono);
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 20px;
+  padding: 1px 7px;
+  letter-spacing: 0;
+}
+
+.pd-export-btn {
+  font-family: var(--pd-mono);
+  font-size: 11px;
+  color: var(--pd-accent);
+  text-decoration: none;
+  padding: 6px 12px;
+  border: 1px solid var(--pd-accent);
+  border-radius: var(--pd-radius-sm);
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.pd-export-btn:hover {
+  background: var(--pd-accent-dim);
+}
+
+.pd-results-body {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pd-border) transparent;
+}
+
+/* ─── Status states ──────────────────────────────────────────────────────────── */
+.pd-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--pd-mono);
+  font-size: 13px;
+  color: var(--pd-muted);
+  padding: 24px 0;
+  justify-content: center;
+}
+
+.pd-muted {
+  color: var(--pd-muted);
+}
+
+.pd-error {
+  color: var(--pd-error);
+}
+
+.pd-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--pd-border);
+  border-top-color: var(--pd-accent);
+  border-radius: 50%;
+  animation: pd-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pd-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Fragment list ──────────────────────────────────────────────────────────── */
+.pd-fragment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pd-fragment-item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--pd-bg);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-sm);
+  transition: border-color 0.1s;
+}
+
+.pd-fragment-item:hover {
+  border-color: var(--pd-accent);
+}
+
+.pd-fragment-index {
+  font-family: var(--pd-mono);
+  font-size: 10px;
+  color: var(--pd-muted);
+  text-align: right;
+}
+
+.pd-fragment-seq {
+  font-family: var(--pd-mono);
+  font-size: 12px;
+  color: var(--pd-success);
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.pd-fragment-len {
+  font-family: var(--pd-mono);
+  font-size: 10px;
+  color: var(--pd-muted);
+  white-space: nowrap;
 }
