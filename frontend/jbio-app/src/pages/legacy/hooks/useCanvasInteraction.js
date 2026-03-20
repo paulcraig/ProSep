@@ -11,6 +11,7 @@ import {
  * - click to select
  * - click outside to deselect
  */
+
 export function useCanvasInteraction({
   canvasRef, zoomRef, offsetRef,
   dots, simulationState,
