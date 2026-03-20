@@ -34,6 +34,7 @@ import {
   Title,
   Legend,
 } from "chart.js";
+import zoomPlugin, { zoom } from "chartjs-plugin-zoom";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { API_URL } from "../config";
 import "./PeptideRetention.css";
@@ -56,6 +57,7 @@ ChartJS.register(
   Title,
   Legend,
   annotationPlugin,
+  zoomPlugin,
 );
 
 type PredictionSuccess = {
@@ -743,6 +745,15 @@ const PeptideRetention: React.FC = () => {
                       annotation: {
                         annotations: chromatogramData.annotations,
                       },
+                      zoom: {
+                          zoom: {
+                            wheel: { enabled: true },
+                            pinch: { enabled: true },
+                            drag: { enabled: true, modifierKey: "ctrl" },
+                            mode: "x",
+                          },
+                          pan: { enabled: true, mode: "x" },
+                        },
                     },
                     elements: {
                       point: {
