@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   TextField,
   Button,
@@ -95,6 +96,7 @@ const BTooltip = styled(({ className, ...props }: TooltipProps) => (
 export type PredictionResult = PredictionSuccess | PredictionError;
 
 const PeptideRetention: React.FC = () => {
+  const location = useLocation();
   const [newPeptide, setNewPeptide] = useState<string>("");
   const [peptides, setPeptides] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -113,6 +115,16 @@ const PeptideRetention: React.FC = () => {
     background: "#ffffff",
     line: "#000000",
   });
+
+  // Handle incoming peptides from navigation state
+  useEffect(() => {
+    const state = location.state as { aminoAcids?: string[] };
+    if (state?.aminoAcids) {
+      setPeptides(state.aminoAcids);
+      // Clear the state to avoid re-setting on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const getCache = (): Record<string, CachedPrediction> => {
     try {
