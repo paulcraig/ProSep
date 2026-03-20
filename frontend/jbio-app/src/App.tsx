@@ -54,13 +54,13 @@ function App() {
       label: "Peptide Retention",
       artifactGroup: "peptide_retention"
     },
-    {
-      id: 5,
-      icon: <AlignHorizontalCenterIcon />,
-      component: <ProteolyticDigestion />,
-      label: "Proteolytic Digestion",
-      artifactGroup: "proteolytic_digestion",
-    },
+    // {
+    //   id: 5,
+    //   icon: <AlignHorizontalCenterIcon />,
+    //   component: <ProteolyticDigestion />,
+    //   label: "Proteolytic Digestion",
+    //   artifactGroup: "proteolytic_digestion",
+    // },
     {
       id: 6,
       icon: <SwapVertIcon />,
