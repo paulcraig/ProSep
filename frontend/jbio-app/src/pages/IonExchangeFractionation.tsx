@@ -288,10 +288,13 @@ const IonExchangeFractionation: React.FC = () => {
     for (const fraction of fractionRows) {
       points.push({
         x: fraction.fractionIndex,
-        y: fraction.proteins.map((p) => p.amount).reduce((a, b) => a + b, 0) ?? fraction.proteinCount ?? fraction.proteins.length,
+        y: fraction.proteins.map((p) => p.amount).reduce((a, b) => a + b, 0),
       });
     }
-
+    const maxY = Math.max(...points.map((p) => p.y), 1);
+    for (const point of points) {
+      point.y = Math.round((point.y / maxY) * 100) / 100;
+    }
     return points;
   }, [data, fractionRows]);
 
@@ -594,7 +597,7 @@ const IonExchangeFractionation: React.FC = () => {
                           type: "linear",
                           title: {
                             display: true,
-                            text: "0 = Wash, 1..N = Fractions",
+                            text: "Fractions",
                           },
                           beginAtZero: true,
                           ticks: {
@@ -606,7 +609,7 @@ const IonExchangeFractionation: React.FC = () => {
                           type: useLogScale ? "logarithmic" : "linear",
                           title: {
                             display: true,
-                            text: "Protein Count",
+                            text: "Retained+Wash",
                           },
                           beginAtZero: !useLogScale,
                         },
@@ -623,7 +626,7 @@ const IonExchangeFractionation: React.FC = () => {
                         x: {
                           title: {
                             display: true,
-                            text: "0 = Wash, 1..N = Fractions",
+                            text: "Fractions",
                           },
                           beginAtZero: true,
                           ticks: {
@@ -635,7 +638,7 @@ const IonExchangeFractionation: React.FC = () => {
                           type: useLogScale ? "logarithmic" : "linear",
                           title: {
                             display: true,
-                            text: "Protein Count",
+                            text: "Retained+Wash",
                           },
                           beginAtZero: !useLogScale,
                         },
