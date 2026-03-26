@@ -602,7 +602,7 @@ const IonExchangeFractionation: React.FC = () => {
                           beginAtZero: true,
                           ticks: {
                             callback: (value) =>
-                              Number(value) === 0 ? "Wash" : String(value),
+                              Number(value) === 0 ? "Fraction" : String(value),
                           },
                         },
                         y: {
@@ -631,7 +631,7 @@ const IonExchangeFractionation: React.FC = () => {
                           beginAtZero: true,
                           ticks: {
                             callback: (value) =>
-                              Number(value) === 0 ? "Wash" : String(value),
+                              Number(value) === 0 ? "Fraction" : String(value),
                           },
                         },
                         y: {
