@@ -77,6 +77,7 @@ type ProteinDto = {
   molecularWeight: number;
   charge: number;
   color: string;
+  amount: number;
 };
 
 type FractionDto = {
@@ -287,7 +288,7 @@ const IonExchangeFractionation: React.FC = () => {
     for (const fraction of fractionRows) {
       points.push({
         x: fraction.fractionIndex,
-        y: fraction.proteinCount ?? fraction.proteins.length,
+        y: fraction.proteins.map((p) => p.amount).reduce((a, b) => a + b, 0) ?? fraction.proteinCount ?? fraction.proteins.length,
       });
     }
 
@@ -317,7 +318,7 @@ const IonExchangeFractionation: React.FC = () => {
           backgroundColor: "rgba(107, 224, 57, 0.8)",
           pointRadius: 0,
           pointHoverRadius: 5,
-          tension: 0.25,
+          tension: 0.1,
           fill: false,
         },
       ],
@@ -559,7 +560,7 @@ const IonExchangeFractionation: React.FC = () => {
           </Card>
 
           <Card className="ionx-card">
-            <CardHeader title="Proteins by Fraction" />
+            <CardHeader title="Fractionation" />
             <CardContent>
               <div className="ionx-chart-wrap">
                 <FormControlLabel
@@ -647,7 +648,7 @@ const IonExchangeFractionation: React.FC = () => {
           </Card>
 
           <Card className="ionx-card">
-            <CardHeader title="Fractions" />
+            <CardHeader title="Hits" />
             <CardContent>
               <TablePagination
                 component="div"
@@ -954,26 +955,28 @@ const IonExchangeFractionation: React.FC = () => {
                         <TableCell>{row.charge.toFixed(2)}</TableCell>
                         <TableCell>{row.molecularWeight.toFixed(2)}</TableCell>
                         <TableCell
+                          title={row.sequence}
                           sx={{
-                            maxWidth: 280,
-                            whiteSpace: "nowrap",
+                            maxWidth: "150px",
+                            height: "1.5em",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                           }}
-                          title={row.sequence}
                         >
-                          <span>{row.sequence}</span>
+                          {row.sequence}
                         </TableCell>
                         <TableCell
+                          title={row.description}
                           sx={{
-                            maxWidth: 320,
-                            whiteSpace: "nowrap",
+                            maxWidth: "150px",
+                            height: "1.5em",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                           }}
-                          title={row.description}
                         >
-                          <span>{row.description}</span>
+                          {row.description}
                         </TableCell>
                       </TableRow>
                     ))}

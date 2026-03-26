@@ -251,6 +251,7 @@ class IonExchangeFractionation:
                 "molecularWeight": round(entry.molecular_weight, 2),
                 "charge": round(entry.charge, 2),
                 "color": IonExchangeFractionation._stable_color(entry.seq_id),
+                "amount": random.uniform(1, 10),
             }
 
         return {
