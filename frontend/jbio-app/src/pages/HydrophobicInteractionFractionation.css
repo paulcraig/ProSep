@@ -82,6 +82,20 @@
   margin-bottom: 16px;
 }
 
+.hic-alert {
+  background-color: #2a1a1a !important;
+  color: #ff6b6b !important;
+  border: 1px solid #ff6b6b !important;
+}
+
+.hic-alert .MuiAlert-icon {
+  color: #ff6b6b !important;
+}
+
+.hic-alert .MuiAlert-message {
+  color: #ff6b6b !important;
+}
+
 .hic-pagination {
   margin-top: 8px;
   color: #ffffff;
