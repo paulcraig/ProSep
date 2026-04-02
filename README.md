@@ -1,4 +1,4 @@
-# JBioFramework Web Application 
+# JBioFramework Web Application
 
 [![Visit Website](https://img.shields.io/badge/Visit_Website-JBioFramework-blue?style=for-the-badge)](http://protein-separation-sim.se.rit.edu/)
 
@@ -49,6 +49,9 @@ python -m pip install -r requirements.txt
 ```bash
 pre-commit install
 ```
+
+When installed and committed in VSCode, a window may pop up with a complaint about UTF-8. Hit "close" or similar. The file
+will have been modified. Simply add the new changes, and commit again.
 
 This will install all the hooks. Any freshly committed files should have the hooks fix and apply.
 
