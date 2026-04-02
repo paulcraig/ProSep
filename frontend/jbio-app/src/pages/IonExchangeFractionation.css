@@ -44,6 +44,10 @@
   height: 360px;
 }
 
+.ionx-stacked-chart-wrap {
+  margin-top: 1rem;
+}
+
 .ionx-card .MuiTableContainer-root {
   width: 100%;
   max-width: 100%;

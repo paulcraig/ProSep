@@ -28,7 +28,7 @@ import {
   Chip,
   IconButton,
 } from "@mui/material";
-import { Line, Scatter } from "react-chartjs-2";
+import { Bar, Line, Scatter } from "react-chartjs-2";
 import {
   BarElement,
   CategoryScale,
@@ -117,6 +117,8 @@ type SortDirection = "asc" | "desc";
 
 type FractionSortKey = "fractionIndex" | "proteinCount" | "hitCount";
 type ProteinSortKey = "charge" | "molecularWeight";
+
+const MAX_STACKED_SERIES = 200;
 
 const IonExchangeFractionation: React.FC = () => {
   const [fastaText, setFastaText] = useState<string>("");
@@ -327,6 +329,109 @@ const IonExchangeFractionation: React.FC = () => {
       ],
     };
   }, [proteinSeriesPoints]);
+
+  const stackedHitAmounts = useMemo(() => {
+    const proteinColorById = new Map<string, string>();
+    const proteinTotals = new Map<string, number>();
+    const fractionAmountMaps: Array<Map<string, number>> = [];
+    const labels: string[] = [];
+    const baseOtherData: number[] = [];
+
+    const washAmountByProteinId = new Map<string, number>();
+    let washOtherTotal = 0;
+    for (const protein of data?.wash ?? []) {
+      washOtherTotal += protein.amount;
+    }
+
+    labels.push("Wash");
+    fractionAmountMaps.push(washAmountByProteinId);
+    baseOtherData.push(washOtherTotal);
+
+    for (const fraction of fractionRows) {
+      const amountByProteinId = new Map<string, number>();
+      const hitIdSet = new Set(fraction.hitProteinIds ?? []);
+      const hasHitFilter = hitIdSet.size > 0;
+      let fractionOtherTotal = 0;
+
+      labels.push(String(fraction.fractionIndex));
+
+      for (const protein of fraction.proteins) {
+        const isHitProtein = hasHitFilter && hitIdSet.has(protein.id);
+        if (!isHitProtein) {
+          fractionOtherTotal += protein.amount;
+          continue;
+        }
+
+        const previous = amountByProteinId.get(protein.id) ?? 0;
+        const next = previous + protein.amount;
+        amountByProteinId.set(protein.id, next);
+
+        proteinTotals.set(
+          protein.id,
+          (proteinTotals.get(protein.id) ?? 0) + protein.amount,
+        );
+
+        if (!proteinColorById.has(protein.id)) {
+          proteinColorById.set(protein.id, protein.color);
+        }
+      }
+
+      fractionAmountMaps.push(amountByProteinId);
+      baseOtherData.push(fractionOtherTotal);
+    }
+
+    const sortedProteinIds = Array.from(proteinTotals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([proteinId]) => proteinId);
+
+    const keptProteinIds = sortedProteinIds.slice(0, MAX_STACKED_SERIES);
+    const keptSet = new Set(keptProteinIds);
+
+    const datasets = keptProteinIds.map((proteinId) => ({
+      label: proteinId,
+      data: fractionAmountMaps.map(
+        (fractionMap) => fractionMap.get(proteinId) ?? 0,
+      ),
+      backgroundColor:
+        proteinColorById.get(proteinId) ?? "rgba(107, 224, 57, 0.8)",
+      stack: "hit-protein-amounts",
+      borderWidth: 0,
+      barPercentage: 1,
+      categoryPercentage: 1,
+    }));
+
+    const otherData = fractionAmountMaps.map((fractionMap, fractionIndex) => {
+      let otherTotal = baseOtherData[fractionIndex] ?? 0;
+      fractionMap.forEach((amount, proteinId) => {
+        if (!keptSet.has(proteinId)) {
+          otherTotal += amount;
+        }
+      });
+      return otherTotal;
+    });
+
+    const hasOther = otherData.some((value) => value > 0);
+    if (hasOther) {
+      datasets.push({
+        label: "Other/Wash",
+        data: otherData,
+        backgroundColor: "rgba(120, 120, 120, 0.85)",
+        stack: "hit-protein-amounts",
+        borderWidth: 0,
+        barPercentage: 1,
+        categoryPercentage: 1,
+      });
+    }
+
+    return {
+      labels,
+      datasets,
+      hiddenProteinCount: Math.max(
+        sortedProteinIds.length - MAX_STACKED_SERIES,
+        0,
+      ),
+    };
+  }, [data, fractionRows]);
 
   return (
     <div className="ionx-page">
@@ -646,6 +751,41 @@ const IonExchangeFractionation: React.FC = () => {
                     }}
                   />
                 )}
+              </div>
+
+              <div className="ionx-chart-wrap ionx-stacked-chart-wrap">
+                <Bar
+                  key={`stacked-hit-amounts-${fractionRows.length}-${stackedHitAmounts.datasets.length}`}
+                  data={stackedHitAmounts}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    normalized: true,
+                    scales: {
+                      x: {
+                        stacked: true,
+                        title: {
+                          display: true,
+                          text: "Wash / Fractions",
+                        },
+                      },
+                      y: {
+                        stacked: true,
+                        type: "logarithmic",
+                        title: {
+                          display: true,
+                          text: "Retained+Wash Amount",
+                        },
+                      },
+                    },
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
+                    },
+                  }}
+                />
               </div>
             </CardContent>
           </Card>
