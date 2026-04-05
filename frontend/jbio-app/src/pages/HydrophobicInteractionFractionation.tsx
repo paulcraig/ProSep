@@ -262,21 +262,20 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 
         const fractions = data.fractions ?? [];
         const points: XYPoint[] = [];
-        const totalFractions = Math.max(1, fractions.length);
-        const maxTime = Math.max(1, timeLength);
+        //const totalFractions = Math.max(1, fractions.length);
 
-        fractions.forEach((f, index) => {
+        fractions.forEach((f) => {
             const proteins = f.proteins ?? [];
             const avgBindingStrength =
                 proteins.length > 0
                     ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length
                     : 0;
 
-            const center = 1 + (index / (totalFractions - 1 || 1)) * (maxTime - 1);
+            const center = f.fractionIndex;
             const height = avgBindingStrength;
-            const width = Math.max(0.2, maxTime / 45);
+            const width = 0.35;
 
-            for (let offset = -width * 2; offset <= width * 2; offset += width / 4) {
+            for (let offset = -0.8; offset <= 0.8; offset += 0.1) {
                 const x = center + offset;
                 const y = height * Math.exp(-(offset * offset) / (2 * width * width));
                 points.push({ x, y });
@@ -284,7 +283,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         });
 
         return points.sort((a, b) => a.x - b.x);
-    }, [data, timeLength]);
+    }, [data]);
 
     const saltGradientPoints = useMemo(() => {
         if (!data) return [];
@@ -292,22 +291,24 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         const fractions = data.fractions ?? [];
         const totalFractions = Math.max(1, fractions.length);
         const gradientStartFraction = Math.max(2, Math.floor(totalFractions * 0.18));
-        const maxTime = Math.max(1, timeLength);
 
-        return Array.from({ length: totalFractions }, (_, i) => {
-            const x = 1 + (i / (totalFractions - 1 || 1)) * (maxTime - 1);
-
+        return fractions.map((f, index) => {
             let y = data.params.saltStart;
-            if (i + 1 > gradientStartFraction) {
+
+            if (index + 1 > gradientStartFraction) {
                 const progress =
-                    ((i + 1) - gradientStartFraction) /
+                    ((index + 1) - gradientStartFraction) /
                     Math.max(1, totalFractions - gradientStartFraction);
-                y = data.params.saltStart + (data.params.saltEnd - data.params.saltStart) * progress;
+                y = data.params.saltStart +
+                    (data.params.saltEnd - data.params.saltStart) * progress;
             }
 
-            return { x, y };
+            return {
+                x: f.fractionIndex,
+                y,
+            };
         });
-    }, [data, timeLength]);
+    }, [data]);
 
     const saltChartData = useMemo(() => {
         return {
@@ -346,9 +347,19 @@ const HydrophobicInteractionFractionation: React.FC = () => {
     const saltChartOptions = useMemo(() => {
         return {
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: true,
+            aspectRatio: 2.5,
             animation: false as const,
+            interaction: {
+                mode: "nearest" as const,
+                intersect: false,
+            },
             plugins: {
+                tooltip: {
+                    enabled: true,
+                    mode: "nearest" as const,
+                    intersect: false,
+                },
                 legend: {
                     labels: {
                         color: "#ffffff",
@@ -366,15 +377,16 @@ const HydrophobicInteractionFractionation: React.FC = () => {
             scales: {
                 x: {
                     type: "linear" as const,
-                    min: 0,
-                    max: timeLength,
+                    min: 1,
+                    max: data?.fractions.length ?? 1,
                     title: {
                         display: true,
-                        text: "Time",
+                        text: "Fraction",
                         color: "#ffffff",
                     },
                     ticks: {
                         color: "#ffffff",
+                        stepSize: 1,
                     },
                     grid: {
                         color: "rgba(255,255,255,0.12)",
@@ -412,7 +424,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                 },
             },
         };
-    }, [timeLength]);
+    }, [data]);
 
     return (
         <Box className="hic-container">
