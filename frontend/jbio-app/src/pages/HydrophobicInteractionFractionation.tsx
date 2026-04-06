@@ -115,8 +115,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
     const [fractionPage, setFractionPage] = useState<number>(0);
     const [fractionRowsPerPage, setFractionRowsPerPage] = useState<number>(10);
     
-    const [timeLength, setTimeLength] = useState<number>(16);
-    
     const handleLoadFasta = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -261,28 +259,35 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         if (!data) return [];
 
         const fractions = data.fractions ?? [];
+        if (fractions.length === 0) return [];
+
+        const minX = 1;
+        const maxX = fractions.length;
+        const step = 0.02;
+        const width = 0.18;
         const points: XYPoint[] = [];
-        //const totalFractions = Math.max(1, fractions.length);
 
-        fractions.forEach((f) => {
-            const proteins = f.proteins ?? [];
-            const avgBindingStrength =
-                proteins.length > 0
-                    ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length
-                    : 0;
+        for (let x = minX; x <= maxX; x += step) {
+            let y = 0;
 
-            const center = f.fractionIndex;
-            const height = avgBindingStrength;
-            const width = 0.35;
+            fractions.forEach((f) => {
+                const proteins = f.proteins ?? [];
+                const avgBindingStrength =
+                    proteins.length > 0
+                        ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length
+                        : 0;
+                
+                const center = f.fractionIndex;
+                y += avgBindingStrength * Math.exp(-((x - center) ** 2) / (2 * width * width));
+            });
 
-            for (let offset = -0.8; offset <= 0.8; offset += 0.1) {
-                const x = center + offset;
-                const y = height * Math.exp(-(offset * offset) / (2 * width * width));
-                points.push({ x, y });
-            }
-        });
+            points.push({
+                x: Number(x.toFixed(2)),
+                y,
+            });
+        }
 
-        return points.sort((a, b) => a.x - b.x);
+        return points;
     }, [data]);
 
     const saltGradientPoints = useMemo(() => {
@@ -320,7 +325,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     borderColor: "#66d1b2",
                     backgroundColor: "#66d1b2",
                     yAxisID: "y",
-                    tension: 0,
+                    tension: 0.35,
                     borderWidth: 3,
                     pointRadius: 0,
                     pointHoverRadius: 5,
@@ -490,14 +495,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             type="number"
                             value={deadband}
                             onChange={(e) => setDeadband(parseFloat(e.target.value))}
-                        />
-
-                        <TextField
-                            className="hic-field"
-                            label="Duration(sec)"
-                            type="number"
-                            value={timeLength}
-                            onChange={(e) => setTimeLength(parseFloat(e.target.value))}
                         />
                     </Box>
 
