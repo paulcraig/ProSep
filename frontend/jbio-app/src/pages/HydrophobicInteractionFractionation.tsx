@@ -36,6 +36,10 @@ import {
 import { API_URL } from "../config";
 import "./HydrophobicInteractionFractionation.css";
 
+/*
+ * Register the chart components we need for Chart.js.
+ * Without this, the Line chart and axes will not render properly.
+ */
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -47,8 +51,15 @@ ChartJS.register(
   Legend,
 );
 
+/*
+ * Allowed ligand types for the HIC stationary phase.
+ * These match the backend-supported values.
+ */
 type LigandType = "butyl" | "octyl" | "phenyl";
 
+/*
+ * Protein object returned by the backend for each protein in a fraction.
+ */
 type ProteinDto = {
     id: string;
     name: string;
@@ -60,12 +71,18 @@ type ProteinDto = {
     color: string;
 };
 
+/*
+ * One output fraction returned by the backend.
+ */
 type FractionDto = {
     fractionIndex: number;
     proteinCount?: number;
     proteins: ProteinDto[];
 };
 
+/*
+ * Parameter metadata returned by the backend for the completed run.
+ */
 type ParamsDto = {
     ligandType: LigandType;
     saltStart: number;
@@ -76,6 +93,9 @@ type ParamsDto = {
     deadband: number;
 };
 
+/*
+ * Summary counts returned by the backend.
+ */
 type CountsDto = {
     total: number;
     wash: number;
@@ -83,11 +103,17 @@ type CountsDto = {
     skipped: number;
 };
 
+/*
+ * Simple x/y point used to build chart datasets.
+ */
 type XYPoint = { 
     x: number; 
     y: number; 
 };
 
+/*
+ * Full API response shape for a successful HIC run.
+ */
 type HICResponse = {
     ok: boolean;
     params: ParamsDto;
@@ -98,31 +124,63 @@ type HICResponse = {
 };
 
 const HydrophobicInteractionFractionation: React.FC = () => {
+    /*
+     * Raw FASTA text loaded from the uploaded file.
+     * This is sent directly to the backend.
+     */
     const [fastaText, setFastaText] = useState<string>("");
+
+    /**
+     * User-selected HIC parameters.
+     */
     const [ligandType, setLigandType] = useState<LigandType>("butyl");
     const [saltStart, setSaltStart] = useState<number>(1.5);
     const [saltEnd, setSaltEnd] = useState<number>(0.0);
     const [saltAlpha, setSaltAlpha] = useState<number>(1.2);
 
+    /**
+     * Fractionation controls.
+     */
     const [fractionCount, setFractionCount] = useState<number>(80);
     const [noise, setNoise] = useState<number>(0.1);
     const [deadband, setDeadband] = useState<number>(0.15);
 
+    /*
+     * Stores the full backend response after a successful run.
+     * The graphs and table are derived from this object.
+     */
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
+
+    /*
+     * Stores the full backend response after a successful run.
+     * The graphs and table are derived from this object.
+     */
     const [data, setData] = useState<HICResponse | null>(null);
 
+    /*
+     * Pagination state for the fractions table.
+     */
     const [fractionPage, setFractionPage] = useState<number>(0);
     const [fractionRowsPerPage, setFractionRowsPerPage] = useState<number>(10);
     
+    /*
+     * Reads an uploaded FASTA file into text and stores it in state.
+     */
     const handleLoadFasta = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
         const text = await file.text();
         setFastaText(text);
+
+        // Clear the file input so the same file can be uploaded again if needed.
         event.target.value = "";
     };
 
+    /*
+     * Sends the current form values and FASTA content to the backend.
+     * On success, stores the returned HIC result in `data`.
+     */
     const handleRun = async () => {
         setLoading(true);
         setError("");
@@ -145,7 +203,8 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     }),
                 }
             );
-
+            
+            // Read raw text first so debugging bad responses is easier.
             const text = await response.text();
             console.log("HIC raw response:", text);
 
@@ -170,8 +229,17 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         }
     };
 
+    /*
+     * Convenience alias for the returned fractions.
+     * Used throughout the graphs and table.
+     */
     const fractionRows = useMemo(() => data?.fractions ?? [], [data]);
 
+    /*
+     * First graph:
+     * Plot average binding strength for each fraction.
+     * This gives a quick summary of retention strength across the run.
+     */
     const proteinSeriesPoints = useMemo(() => {
         return fractionRows.map((f) => {
             const proteins = f.proteins ?? [];
@@ -187,6 +255,9 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         });
     }, [fractionRows]);
 
+    /*
+     * Dataset for the first graph.
+     */
     const chartData = useMemo(() => {
         return {
             datasets: [
@@ -206,6 +277,9 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         };
     }, [proteinSeriesPoints]);
 
+    /*
+     * Display options for the first graph.
+     */
     const chartOptions = useMemo(() => {
         return {
             responsive: true,
@@ -249,12 +323,27 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         };
     }, []);
 
+    /*
+     * Slice the fractions list for table pagination.
+     */
     const pagedFractions = useMemo(() => {
         const start = fractionPage * fractionRowsPerPage;
         const end = start + fractionRowsPerPage;
         return fractionRows.slice(start, end);
     }, [fractionRows, fractionPage, fractionRowsPerPage]);
 
+    /*
+     * Second graph:
+     * Build a smooth chromatogram-style protein signal curve.
+     *
+     * For each fraction, we:
+     * - compute average binding strength
+     * - treat that as the peak height
+     * - place a gaussian-like peak centered on the fraction index
+     * - sum contributions across all fractions
+     *
+     * This creates a smooth signal trace similar to a chromatography plot.
+     */
     const chromatogramSignalPoints = useMemo(() => {
         if (!data) return [];
 
@@ -263,8 +352,9 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 
         const minX = 1;
         const maxX = fractions.length;
-        const step = 0.02;
-        const width = 0.18;
+        const step = 0.02; // Smaller step = smoother curve
+        const width = 0.18; // Controls how wide each peak is
+
         const points: XYPoint[] = [];
 
         for (let x = minX; x <= maxX; x += step) {
@@ -278,6 +368,8 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         : 0;
                 
                 const center = f.fractionIndex;
+
+                // Add gaussian contribution from this fraction's peak.
                 y += avgBindingStrength * Math.exp(-((x - center) ** 2) / (2 * width * width));
             });
 
@@ -290,11 +382,17 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         return points;
     }, [data]);
 
+    /*
+     * Build the salt gradient overlay for the second graph.
+     * It stays flat initially, then transitions toward saltEnd across later fractions.
+     */
     const saltGradientPoints = useMemo(() => {
         if (!data) return [];
 
         const fractions = data.fractions ?? [];
         const totalFractions = Math.max(1, fractions.length);
+
+        // Start the gradient after an initial loading/binding region.
         const gradientStartFraction = Math.max(2, Math.floor(totalFractions * 0.18));
 
         return fractions.map((f, index) => {
@@ -315,6 +413,11 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         });
     }, [data]);
 
+    /*
+     * Combined dataset for the second graph:
+     * - Protein signal on left y-axis
+     * - Salt gradient on right y-axis
+     */
     const saltChartData = useMemo(() => {
         return {
             datasets: [
@@ -349,6 +452,9 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         };
     }, [chromatogramSignalPoints, saltGradientPoints]);
 
+    /*
+     * Display and interaction options for the second graph.
+     */
     const saltChartOptions = useMemo(() => {
         return {
             responsive: true,
@@ -436,12 +542,14 @@ const HydrophobicInteractionFractionation: React.FC = () => {
             <Card className="hic-card">
                 <CardHeader title="Hydrophobic Interaction Fractionation (HIC)" />
                 <CardContent>
+                    {/* Show backend or request errors */}
                     {error && (
                         <Alert severity="error" className="hic-alert">
                             {error}
                         </Alert>
                     )}
 
+                    {/* Main control row for user inputs */}
                     <Box className="hic-controls">
                         <FormControl className="hic-field">
                             <InputLabel id="ligand-label">Ligand Type</InputLabel>
@@ -497,7 +605,8 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             onChange={(e) => setDeadband(parseFloat(e.target.value))}
                         />
                     </Box>
-
+                    
+                    {/* Noise / overlap slider */}
                     <Box className="hic-slider">
                         <Typography className="hic-slider-label">Noise / Overlap</Typography>
                         <Slider 
@@ -510,6 +619,8 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         />
                     </Box>
 
+
+                    {/* Main action buttons */}
                     <Box className="hic-button-row">
                         <Button variant="contained" component="label">
                             Upload FASTA
@@ -526,9 +637,11 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     </Box>
                 </CardContent>
             </Card>
-
+            
+            {/* Only show results after a successful run */}
             {data && (
                 <>
+                    {/* First graph: average binding strength by fraction */}
                     <Card className="hic-card">
                         <CardHeader title="Chromatogram" />
                         <CardContent>
@@ -546,6 +659,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         </CardContent>
                     </Card>
 
+                    {/* Second graph: smooth signal trace plus salt gradient overlay */}
                     <Card className="hic-card">
                         <CardHeader title="Chromatogram (Signal + Salt Gradient)" />
                         <CardContent>
@@ -554,7 +668,8 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             </Box>
                         </CardContent>
                     </Card>
-
+                    
+                    {/* Results table for individual fractions */}
                     <Card className="hic-table-card">
                         <CardHeader title="Fractions" />
                         <CardContent>
