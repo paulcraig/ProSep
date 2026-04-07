@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from typing import Dict, Any, List
 
 from pydantic import BaseModel, Field
-
+from typing import Optional
 from backend.logic.size_exclusion import SizeExclusionFractionation
 from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
 
@@ -22,7 +22,7 @@ gelDict = {
     "Bio-A 10.0 - 1500 kDA": [10000, 1500000],
 }
 
-from typing import Optional
+
 
 class SizeExclusionRequest(BaseModel):
     fasta_content: str = Field(..., description="FASTA content as raw text")
