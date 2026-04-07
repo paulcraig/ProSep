@@ -22,6 +22,7 @@ import { ReactComponent as TwoDEIcon } from "./assets/electrophoresis/2DE.svg";
 import PeptideRetention from "./pages/PeptideRetention";
 import ProteolyticDigestion from "./pages/ProteolyticDigestion";
 import IonExchangeFractionation from "./pages/IonExchangeFractionation";
+import SizeExclusionPage from './pages/SizeExclusion';
 
 function App() {
   const pages = [
@@ -59,6 +60,13 @@ function App() {
       icon: <SwapVertIcon />,
       component: <IonExchangeFractionation />,
       label: "Ion Exchange Fractionation",
+      artifactGroup: "ion_exchange",
+    },
+      {
+      id: 7,
+      icon: <SwapVertIcon />,
+      component: <SizeExclusionPage />,
+      label: "SizeExclusionPage",
       artifactGroup: "ion_exchange",
     },
     {

@@ -1,0 +1,147 @@
+.sec-page {
+  background: var(--background);
+  color: var(--text);
+  padding: 2rem;
+  min-height: 100vh;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Cards */
+.sec-card {
+  margin-bottom: 1.25rem;
+  background-color: var(--sub-background) !important;
+  border: 0.25rem solid var(--accent);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.sec-card .MuiCardHeader-title {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Controls */
+.sec-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Buttons */
+.sec-button {
+  background-color: var(--accent) !important;
+  color: white !important;
+}
+
+/* Summary */
+.sec-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+/* Chart */
+.sec-chart-wrap {
+  width: 100%;
+  min-height: 320px;
+  height: 360px;
+}
+
+/* Table container */
+.sec-card .MuiTableContainer-root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.sec-card .MuiTable-root {
+  width: 100%;
+}
+
+/* Table cells */
+.sec-card .MuiTableCell-root {
+  overflow-wrap: break-word;
+  word-break: normal;
+  vertical-align: top;
+}
+
+/* Header cells */
+.sec-card .MuiTableHead-root .MuiTableCell-root {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Protein table layout */
+.sec-protein-table {
+  table-layout: fixed;
+}
+
+/* Column sizing */
+.sec-protein-table th:nth-child(1),
+.sec-protein-table td:nth-child(1) {
+  width: 220px; /* Name */
+}
+
+.sec-protein-table th:nth-child(2),
+.sec-protein-table td:nth-child(2) {
+  width: 140px; /* Molecular Weight */
+}
+
+.sec-protein-table th:nth-child(3),
+.sec-protein-table td:nth-child(3) {
+  width: 160px; /* Hydrophobicity */
+}
+
+.sec-protein-table th:nth-child(4),
+.sec-protein-table td:nth-child(4) {
+  width: 140px; /* Binding */
+}
+
+/* Highlight key column (SIZE is the star now) */
+.sec-protein-table td:nth-child(2) {
+  color: #67e8f9; /* cyan */
+  font-weight: 600;
+}
+
+/* Secondary columns */
+.sec-protein-table td:nth-child(3) {
+  color: #a78bfa;
+}
+
+.sec-protein-table td:nth-child(4) {
+  color: #f472b6;
+}
+
+/* Row hover */
+.sec-card .MuiTableBody-root tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Scrollable ID / content cells (if reused) */
+.sec-scroll-cell {
+  max-width: 0;
+}
+
+.sec-scroll-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  max-height: 8.5rem;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+/* Info cards */
+.sec-summary-info-card {
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--background) !important;
+  border: 0.1rem solid var(--accent);
+}
