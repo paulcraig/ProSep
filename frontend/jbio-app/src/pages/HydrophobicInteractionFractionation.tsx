@@ -230,6 +230,72 @@ const HydrophobicInteractionFractionation: React.FC = () => {
     };
 
     /*
+    * Exports the current HIC fraction table as a CSV file.
+    *
+    * For each fraction, this function:
+    * - Calculates average hydrophobicity
+    * - Calculates average binding strength
+    * - Collects all protein IDs in that fraction
+    *
+    * The data is formatted into CSV rows, converted into a Blob,
+    * and downloaded in the browser as "hic_fractions.csv".
+    *
+    * Only runs if valid HIC data exists.
+    */
+    const handleCsv = () => {
+        if (!data || !data.fractions || data.fractions.length === 0) return;
+
+        const rows: string[] = [];
+
+        // CSV header
+        rows.push([
+            "Fraction",
+            "Protein Count",
+            "Avg Hydrophobicity",
+            "Avg Binding Strength",
+            "Protein IDs"
+        ].join(", "));
+
+        // One row per fraction
+        data.fractions.forEach((f) => {
+            const proteins = f.proteins ?? [];
+
+            const avgHydrophobicity =
+                proteins.length > 0
+                    ? proteins.reduce((sum, p) => sum + p.hydrophobicity, 0) / proteins.length
+                    : 0;
+
+            const avgBindingStrength =
+                proteins.length > 0
+                    ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length
+                    : 0;
+            
+            const proteinIds = proteins.map((p) => p.id).join("; ");
+
+            rows.push([
+                f.fractionIndex,
+                f.proteinCount ?? proteins.length,
+                avgHydrophobicity.toFixed(4),
+                avgBindingStrength.toFixed(4),
+                `"${proteinIds.replace(/"/g, '""')}"`
+            ].join(", "));
+        });
+
+        const csvContent = rows.join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "hic_fractions.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        window.URL.revokeObjectURL(url);
+    };
+
+    /*
      * Convenience alias for the returned fractions.
      * Used throughout the graphs and table.
      */
@@ -673,6 +739,16 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     <Card className="hic-table-card">
                         <CardHeader title="Fractions" />
                         <CardContent>
+                            {/* Download the currently generated fraction summary as a CSV file */}
+                            <Box className="hic-button-row">
+                                <Button
+                                    variant="contained"
+                                    onClick={handleCsv}
+                                    disabled={!data || !data.fractions || data.fractions.length === 0}
+                                >
+                                    Download CSV
+                                </Button>
+                            </Box>
                             <TableContainer>
                                 <Table size="small" className="hic-table">
                                     <TableHead>
