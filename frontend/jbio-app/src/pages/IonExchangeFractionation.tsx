@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { Suspense, lazy, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -26,9 +26,9 @@ import {
   Typography,
   Switch,
   Chip,
+  CircularProgress,
   IconButton,
 } from "@mui/material";
-import { Bar, Line, Scatter } from "react-chartjs-2";
 import {
   BarElement,
   CategoryScale,
@@ -119,6 +119,29 @@ type FractionSortKey = "fractionIndex" | "proteinCount" | "hitCount";
 type ProteinSortKey = "charge" | "molecularWeight";
 
 const MAX_STACKED_SERIES = 200;
+
+const LazyBar = lazy(() =>
+  import("react-chartjs-2").then((module) => ({ default: module.Bar })),
+);
+const LazyLine = lazy(() =>
+  import("react-chartjs-2").then((module) => ({ default: module.Line })),
+);
+const LazyScatter = lazy(() =>
+  import("react-chartjs-2").then((module) => ({
+    default: module.Scatter,
+  })),
+);
+
+const ChartLoadingPlaceholder: React.FC<{ chartName: string }> = ({
+  chartName,
+}) => {
+  return (
+    <Box className="ionx-chart-loading">
+      <CircularProgress size={34} thickness={4.5} />
+      <Typography variant="body2">Loading {chartName}</Typography>
+    </Box>
+  );
+};
 
 const IonExchangeFractionation: React.FC = () => {
   const [fastaText, setFastaText] = useState<string>("");
@@ -707,110 +730,128 @@ const IonExchangeFractionation: React.FC = () => {
                   sx={{ marginBottom: "0.25rem" }}
                 />
                 {showLineGraph ? (
-                  <Line
-                    data={lineData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      scales: {
-                        x: {
-                          type: "linear",
-                          title: {
-                            display: true,
-                            text: "Fractions",
+                  <Suspense
+                    fallback={
+                      <ChartLoadingPlaceholder chartName="Chromatogram" />
+                    }
+                  >
+                    <LazyLine
+                      data={lineData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                          x: {
+                            type: "linear",
+                            title: {
+                              display: true,
+                              text: "Fractions",
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                              callback: (value) =>
+                                Number(value) === 0
+                                  ? showWash
+                                    ? "Wash"
+                                    : "0"
+                                  : String(value),
+                            },
                           },
-                          beginAtZero: true,
-                          ticks: {
-                            callback: (value) =>
-                              Number(value) === 0
-                                ? showWash
-                                  ? "Wash"
-                                  : "0"
-                                : String(value),
+                          y: {
+                            type: useLogScale ? "logarithmic" : "linear",
+                            title: {
+                              display: true,
+                              text: showWash ? "Retained+Wash" : "Retained",
+                            },
+                            beginAtZero: !useLogScale,
                           },
                         },
-                        y: {
-                          type: useLogScale ? "logarithmic" : "linear",
-                          title: {
-                            display: true,
-                            text: showWash ? "Retained+Wash" : "Retained",
-                          },
-                          beginAtZero: !useLogScale,
-                        },
-                      },
-                    }}
-                  />
+                      }}
+                    />
+                  </Suspense>
                 ) : (
-                  <Scatter
-                    data={scatterData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      scales: {
-                        x: {
-                          title: {
-                            display: true,
-                            text: "Fractions",
+                  <Suspense
+                    fallback={
+                      <ChartLoadingPlaceholder chartName="Chromatogram" />
+                    }
+                  >
+                    <LazyScatter
+                      data={scatterData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                          x: {
+                            title: {
+                              display: true,
+                              text: "Fractions",
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                              callback: (value) =>
+                                Number(value) === 0
+                                  ? showWash
+                                    ? "Wash"
+                                    : "0"
+                                  : String(value),
+                            },
                           },
-                          beginAtZero: true,
-                          ticks: {
-                            callback: (value) =>
-                              Number(value) === 0
-                                ? showWash
-                                  ? "Wash"
-                                  : "0"
-                                : String(value),
+                          y: {
+                            type: useLogScale ? "logarithmic" : "linear",
+                            title: {
+                              display: true,
+                              text: showWash ? "Retained+Wash" : "Retained",
+                            },
+                            beginAtZero: !useLogScale,
                           },
                         },
-                        y: {
-                          type: useLogScale ? "logarithmic" : "linear",
-                          title: {
-                            display: true,
-                            text: showWash ? "Retained+Wash" : "Retained",
-                          },
-                          beginAtZero: !useLogScale,
-                        },
-                      },
-                    }}
-                  />
+                      }}
+                    />
+                  </Suspense>
                 )}
               </div>
 
               <div className="ionx-chart-wrap ionx-stacked-chart-wrap">
-                <Bar
-                  key={`stacked-hit-amounts-${fractionRows.length}-${stackedHitAmounts.datasets.length}`}
-                  data={stackedHitAmounts}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    normalized: true,
-                    scales: {
-                      x: {
-                        stacked: true,
-                        title: {
-                          display: true,
-                          text: showWash ? "Wash / Fractions" : "Fractions",
+                <Suspense
+                  fallback={
+                    <ChartLoadingPlaceholder chartName="Stacked Proteins" />
+                  }
+                >
+                  <LazyBar
+                    key={`stacked-hit-amounts-${fractionRows.length}-${stackedHitAmounts.datasets.length}`}
+                    data={stackedHitAmounts}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      animation: false,
+                      normalized: true,
+                      scales: {
+                        x: {
+                          stacked: true,
+                          title: {
+                            display: true,
+                            text: showWash ? "Wash / Fractions" : "Fractions",
+                          },
+                        },
+                        y: {
+                          stacked: true,
+                          type: "logarithmic",
+                          title: {
+                            display: true,
+                            text: showWash
+                              ? "Retained+Wash Amount"
+                              : "Retained Amount",
+                          },
                         },
                       },
-                      y: {
-                        stacked: true,
-                        type: "logarithmic",
-                        title: {
-                          display: true,
-                          text: showWash
-                            ? "Retained+Wash Amount"
-                            : "Retained Amount",
+                      plugins: {
+                        legend: {
+                          display: false,
                         },
                       },
-                    },
-                    plugins: {
-                      legend: {
-                        display: false,
-                      },
-                    },
-                  }}
-                />
+                    }}
+                  />
+                </Suspense>
               </div>
             </CardContent>
           </Card>
