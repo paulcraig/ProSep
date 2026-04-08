@@ -137,6 +137,7 @@ const IonExchangeFractionation: React.FC = () => {
   const [proteinRowsPerPage, setProteinRowsPerPage] = useState<number>(10);
   const [showLineGraph, setShowLineGraph] = useState<boolean>(true);
   const [useLogScale, setUseLogScale] = useState<boolean>(false);
+  const [showWash, setShowWash] = useState<boolean>(false);
   const [fractionSort, setFractionSort] = useState<{
     key: FractionSortKey;
     direction: SortDirection;
@@ -283,9 +284,11 @@ const IonExchangeFractionation: React.FC = () => {
   }, [sortedFractionRows, fractionPage, fractionRowsPerPage]);
 
   const proteinSeriesPoints = useMemo(() => {
-    const points: Array<{ x: number; y: number }> = [
-      { x: 0, y: data?.wash?.length ?? 0 },
-    ];
+    const points: Array<{ x: number; y: number }> = [];
+
+    if (showWash) {
+      points.push({ x: 0, y: data?.wash?.length ?? 0 });
+    }
 
     for (const fraction of fractionRows) {
       points.push({
@@ -298,7 +301,7 @@ const IonExchangeFractionation: React.FC = () => {
       point.y = Math.round((point.y / maxY) * 100) / 100;
     }
     return points;
-  }, [data, fractionRows]);
+  }, [data, fractionRows, showWash]);
 
   const scatterData = useMemo(() => {
     return {
@@ -343,9 +346,11 @@ const IonExchangeFractionation: React.FC = () => {
       washOtherTotal += protein.amount;
     }
 
-    labels.push("Wash");
-    fractionAmountMaps.push(washAmountByProteinId);
-    baseOtherData.push(washOtherTotal);
+    if (showWash) {
+      labels.push("Wash");
+      fractionAmountMaps.push(washAmountByProteinId);
+      baseOtherData.push(washOtherTotal);
+    }
 
     for (const fraction of fractionRows) {
       const amountByProteinId = new Map<string, number>();
@@ -413,7 +418,7 @@ const IonExchangeFractionation: React.FC = () => {
     const hasOther = otherData.some((value) => value > 0);
     if (hasOther) {
       datasets.push({
-        label: "Other/Wash",
+        label: showWash ? "Other/Wash" : "Other",
         data: otherData,
         backgroundColor: "rgba(120, 120, 120, 0.85)",
         stack: "hit-protein-amounts",
@@ -431,7 +436,7 @@ const IonExchangeFractionation: React.FC = () => {
         0,
       ),
     };
-  }, [data, fractionRows]);
+  }, [data, fractionRows, showWash]);
 
   return (
     <div className="ionx-page">
@@ -691,6 +696,16 @@ const IonExchangeFractionation: React.FC = () => {
                   label="Log Scale"
                   sx={{ marginBottom: "0.25rem" }}
                 />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showWash}
+                      onChange={(_, checked) => setShowWash(checked)}
+                    />
+                  }
+                  label="Show Wash"
+                  sx={{ marginBottom: "0.25rem" }}
+                />
                 {showLineGraph ? (
                   <Line
                     data={lineData}
@@ -707,14 +722,18 @@ const IonExchangeFractionation: React.FC = () => {
                           beginAtZero: true,
                           ticks: {
                             callback: (value) =>
-                              Number(value) === 0 ? "Fraction" : String(value),
+                              Number(value) === 0
+                                ? showWash
+                                  ? "Wash"
+                                  : "0"
+                                : String(value),
                           },
                         },
                         y: {
                           type: useLogScale ? "logarithmic" : "linear",
                           title: {
                             display: true,
-                            text: "Retained+Wash",
+                            text: showWash ? "Retained+Wash" : "Retained",
                           },
                           beginAtZero: !useLogScale,
                         },
@@ -736,14 +755,18 @@ const IonExchangeFractionation: React.FC = () => {
                           beginAtZero: true,
                           ticks: {
                             callback: (value) =>
-                              Number(value) === 0 ? "Fraction" : String(value),
+                              Number(value) === 0
+                                ? showWash
+                                  ? "Wash"
+                                  : "0"
+                                : String(value),
                           },
                         },
                         y: {
                           type: useLogScale ? "logarithmic" : "linear",
                           title: {
                             display: true,
-                            text: "Retained+Wash",
+                            text: showWash ? "Retained+Wash" : "Retained",
                           },
                           beginAtZero: !useLogScale,
                         },
@@ -767,7 +790,7 @@ const IonExchangeFractionation: React.FC = () => {
                         stacked: true,
                         title: {
                           display: true,
-                          text: "Wash / Fractions",
+                          text: showWash ? "Wash / Fractions" : "Fractions",
                         },
                       },
                       y: {
@@ -775,7 +798,9 @@ const IonExchangeFractionation: React.FC = () => {
                         type: "logarithmic",
                         title: {
                           display: true,
-                          text: "Retained+Wash Amount",
+                          text: showWash
+                            ? "Retained+Wash Amount"
+                            : "Retained Amount",
                         },
                       },
                     },
