@@ -251,6 +251,7 @@ class IonExchangeFractionation:
                 "molecularWeight": round(entry.molecular_weight, 2),
                 "charge": round(entry.charge, 2),
                 "color": IonExchangeFractionation._stable_color(entry.seq_id),
+                "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
             }
 
         return {

@@ -31,7 +31,7 @@ class SizeExclusionFractionation:
                     charge="n/a",
                     molecular_weight=molecular_weight,
                 ))
-        return entries
+    return entries
     
   def process(
          
@@ -45,6 +45,7 @@ class SizeExclusionFractionation:
         will parse fasta file unless giving a protein list of size 1 or more.
         
         """
+        print(fasta_content)
         entries = SizeExclusionFractionation._set_protien_list(fasta_content,proteinList)
 
         to_big: List[IonExchangeFractionation.ProteinEntry] = []
@@ -52,10 +53,11 @@ class SizeExclusionFractionation:
         inside:List[IonExchangeFractionation.ProteinEntry] = []
 
         for entry in entries:
-          
+            print()
            
             seq = entry.sequence.replace("X", "Q")
             entry.molecular_weight = PA(seq).molecular_weight()
+            print(entry.molecular_weight)
             if entry.molecular_weight < min_size:
                 to_small.append(entry)  # return ID or sequence
             elif entry.molecular_weight >max_size:

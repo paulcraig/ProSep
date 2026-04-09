@@ -1,4 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, {
+  Suspense,
+  lazy,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -26,9 +33,10 @@ import {
   Typography,
   Switch,
   Chip,
+  CircularProgress,
   IconButton,
+  InputAdornment,
 } from "@mui/material";
-import { Line, Scatter } from "react-chartjs-2";
 import {
   BarElement,
   CategoryScale,
@@ -50,10 +58,12 @@ import {
   ControlPointOutlined,
   ExpandMore,
   FileUpload,
+  Download,
   PlayArrow,
   RemoveOutlined,
   SettingsOutlined,
   WashOutlined,
+  Search,
 } from "@mui/icons-material";
 
 ChartJS.register(
@@ -77,6 +87,7 @@ type ProteinDto = {
   molecularWeight: number;
   charge: number;
   color: string;
+  amount: number;
 };
 
 type FractionDto = {
@@ -117,6 +128,31 @@ type SortDirection = "asc" | "desc";
 type FractionSortKey = "fractionIndex" | "proteinCount" | "hitCount";
 type ProteinSortKey = "charge" | "molecularWeight";
 
+const MAX_STACKED_SERIES = 200;
+
+const LazyBar = lazy(() =>
+  import("react-chartjs-2").then((module) => ({ default: module.Bar })),
+);
+const LazyLine = lazy(() =>
+  import("react-chartjs-2").then((module) => ({ default: module.Line })),
+);
+const LazyScatter = lazy(() =>
+  import("react-chartjs-2").then((module) => ({
+    default: module.Scatter,
+  })),
+);
+
+const ChartLoadingPlaceholder: React.FC<{ chartName: string }> = ({
+  chartName,
+}) => {
+  return (
+    <Box className="ionx-chart-loading">
+      <CircularProgress size={34} thickness={4.5} />
+      <Typography variant="body2">Loading {chartName}</Typography>
+    </Box>
+  );
+};
+
 const IonExchangeFractionation: React.FC = () => {
   const [fastaText, setFastaText] = useState<string>("");
   const [ph, setPh] = useState<number>(7.0);
@@ -133,7 +169,8 @@ const IonExchangeFractionation: React.FC = () => {
   const [proteinPage, setProteinPage] = useState<number>(0);
   const [proteinRowsPerPage, setProteinRowsPerPage] = useState<number>(10);
   const [showLineGraph, setShowLineGraph] = useState<boolean>(true);
-  const [useLogScale, setUseLogScale] = useState<boolean>(false);
+  const [useLogScale, setUseLogScale] = useState<boolean>(true);
+  const [showWash, setShowWash] = useState<boolean>(false);
   const [fractionSort, setFractionSort] = useState<{
     key: FractionSortKey;
     direction: SortDirection;
@@ -148,6 +185,53 @@ const IonExchangeFractionation: React.FC = () => {
     key: "charge",
     direction: "asc",
   });
+  const [fractionSearch, setFractionSearch] = useState<string>("");
+  const [proteinSearch, setProteinSearch] = useState<string>("");
+
+  const lineChartRef = useRef<ChartJS<"line"> | null>(null);
+  const scatterChartRef = useRef<ChartJS<"scatter"> | null>(null);
+  const stackedChartRef = useRef<ChartJS<"bar"> | null>(null);
+
+  const downloadChart = useCallback(
+    (chart: ChartJS | null, fileName: string) => {
+      if (!chart) {
+        return;
+      }
+
+      const canvas = chart.canvas;
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = canvas.width;
+      exportCanvas.height = canvas.height;
+
+      const exportCtx = exportCanvas.getContext("2d");
+      if (!exportCtx) {
+        return;
+      }
+
+      exportCtx.fillStyle = "#ffffff";
+      exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+      exportCtx.drawImage(canvas, 0, 0);
+
+      const base64Image = exportCanvas.toDataURL("image/png");
+
+      const a = document.createElement("a");
+      a.href = base64Image;
+      a.download = fileName;
+      a.click();
+    },
+    [],
+  );
+
+  const exportChromatogram = useCallback(() => {
+    const activeChart = showLineGraph
+      ? lineChartRef.current
+      : scatterChartRef.current;
+    downloadChart(activeChart, "chromatogram.png");
+  }, [downloadChart, showLineGraph]);
+
+  const exportStackedProteins = useCallback(() => {
+    downloadChart(stackedChartRef.current, "stacked-proteins.png");
+  }, [downloadChart]);
 
   const handleLoadFasta = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -215,8 +299,21 @@ const IonExchangeFractionation: React.FC = () => {
     );
   }, [fractionRows]);
 
+  const filteredFractionRows = useMemo(() => {
+    const query = fractionSearch.trim().toLowerCase();
+    if (!query) {
+      return fractionRows;
+    }
+
+    return fractionRows.filter((row) => {
+      const hitIds = (row.hitProteinIds ?? []).join(" ").toLowerCase();
+
+      return hitIds.includes(query);
+    });
+  }, [fractionRows, fractionSearch]);
+
   const sortedFractionRows = useMemo(() => {
-    const rows = [...fractionRows];
+    const rows = [...filteredFractionRows];
     const directionMultiplier = fractionSort.direction === "asc" ? 1 : -1;
 
     rows.sort((a, b) => {
@@ -238,10 +335,25 @@ const IonExchangeFractionation: React.FC = () => {
     });
 
     return rows;
-  }, [fractionRows, fractionSort]);
+  }, [filteredFractionRows, fractionSort]);
+
+  const filteredRetainedRows = useMemo(() => {
+    const query = proteinSearch.trim().toLowerCase();
+    if (!query) {
+      return retainedRows;
+    }
+
+    return retainedRows.filter((row) => {
+      return (
+        row.name.toLowerCase().includes(query) ||
+        row.sequence.toLowerCase().includes(query) ||
+        row.description.toLowerCase().includes(query)
+      );
+    });
+  }, [retainedRows, proteinSearch]);
 
   const sortedRetainedRows = useMemo(() => {
-    const rows = [...retainedRows];
+    const rows = [...filteredRetainedRows];
     const directionMultiplier = proteinSort.direction === "asc" ? 1 : -1;
 
     rows.sort((a, b) => {
@@ -254,7 +366,7 @@ const IonExchangeFractionation: React.FC = () => {
     });
 
     return rows;
-  }, [retainedRows, proteinSort]);
+  }, [filteredRetainedRows, proteinSort]);
 
   const handleFractionSort = (
     key: FractionSortKey,
@@ -280,19 +392,24 @@ const IonExchangeFractionation: React.FC = () => {
   }, [sortedFractionRows, fractionPage, fractionRowsPerPage]);
 
   const proteinSeriesPoints = useMemo(() => {
-    const points: Array<{ x: number; y: number }> = [
-      { x: 0, y: data?.wash?.length ?? 0 },
-    ];
+    const points: Array<{ x: number; y: number }> = [];
+
+    if (showWash) {
+      points.push({ x: 0, y: data?.wash?.length ?? 0 });
+    }
 
     for (const fraction of fractionRows) {
       points.push({
         x: fraction.fractionIndex,
-        y: fraction.proteinCount ?? fraction.proteins.length,
+        y: fraction.proteins.map((p) => p.amount).reduce((a, b) => a + b, 0),
       });
     }
-
+    const maxY = Math.max(...points.map((p) => p.y), 1);
+    for (const point of points) {
+      point.y = Math.round((point.y / maxY) * 100) / 100;
+    }
     return points;
-  }, [data, fractionRows]);
+  }, [data, fractionRows, showWash]);
 
   const scatterData = useMemo(() => {
     return {
@@ -317,12 +434,117 @@ const IonExchangeFractionation: React.FC = () => {
           backgroundColor: "rgba(107, 224, 57, 0.8)",
           pointRadius: 0,
           pointHoverRadius: 5,
-          tension: 0.25,
+          tension: 0.1,
           fill: false,
         },
       ],
     };
   }, [proteinSeriesPoints]);
+
+  const stackedHitAmounts = useMemo(() => {
+    const proteinColorById = new Map<string, string>();
+    const proteinTotals = new Map<string, number>();
+    const fractionAmountMaps: Array<Map<string, number>> = [];
+    const labels: string[] = [];
+    const baseOtherData: number[] = [];
+
+    const washAmountByProteinId = new Map<string, number>();
+    let washOtherTotal = 0;
+    for (const protein of data?.wash ?? []) {
+      washOtherTotal += protein.amount;
+    }
+
+    if (showWash) {
+      labels.push("Wash");
+      fractionAmountMaps.push(washAmountByProteinId);
+      baseOtherData.push(washOtherTotal);
+    }
+
+    for (const fraction of fractionRows) {
+      const amountByProteinId = new Map<string, number>();
+      const hitIdSet = new Set(fraction.hitProteinIds ?? []);
+      const hasHitFilter = hitIdSet.size > 0;
+      let fractionOtherTotal = 0;
+
+      labels.push(String(fraction.fractionIndex));
+
+      for (const protein of fraction.proteins) {
+        const isHitProtein = hasHitFilter && hitIdSet.has(protein.id);
+        if (!isHitProtein) {
+          fractionOtherTotal += protein.amount;
+          continue;
+        }
+
+        const previous = amountByProteinId.get(protein.id) ?? 0;
+        const next = previous + protein.amount;
+        amountByProteinId.set(protein.id, next);
+
+        proteinTotals.set(
+          protein.id,
+          (proteinTotals.get(protein.id) ?? 0) + protein.amount,
+        );
+
+        if (!proteinColorById.has(protein.id)) {
+          proteinColorById.set(protein.id, protein.color);
+        }
+      }
+
+      fractionAmountMaps.push(amountByProteinId);
+      baseOtherData.push(fractionOtherTotal);
+    }
+
+    const sortedProteinIds = Array.from(proteinTotals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([proteinId]) => proteinId);
+
+    const keptProteinIds = sortedProteinIds.slice(0, MAX_STACKED_SERIES);
+    const keptSet = new Set(keptProteinIds);
+
+    const datasets = keptProteinIds.map((proteinId) => ({
+      label: proteinId,
+      data: fractionAmountMaps.map(
+        (fractionMap) => fractionMap.get(proteinId) ?? 0,
+      ),
+      backgroundColor:
+        proteinColorById.get(proteinId) ?? "rgba(107, 224, 57, 0.8)",
+      stack: "hit-protein-amounts",
+      borderWidth: 0,
+      barPercentage: 1,
+      categoryPercentage: 1,
+    }));
+
+    const otherData = fractionAmountMaps.map((fractionMap, fractionIndex) => {
+      let otherTotal = baseOtherData[fractionIndex] ?? 0;
+      fractionMap.forEach((amount, proteinId) => {
+        if (!keptSet.has(proteinId)) {
+          otherTotal += amount;
+        }
+      });
+      return otherTotal;
+    });
+
+    const hasOther = otherData.some((value) => value > 0);
+    if (hasOther) {
+      datasets.push({
+        label: showWash ? "Other/Wash" : "Other",
+        data: otherData,
+        backgroundColor: "rgba(120, 120, 120, 0.85)",
+        stack: "hit-protein-amounts",
+        borderWidth: 0,
+        barPercentage: 1,
+        categoryPercentage: 1,
+      });
+    }
+
+    return {
+      labels,
+      datasets,
+      hiddenProteinCount: Math.max(
+        sortedProteinIds.length - MAX_STACKED_SERIES,
+        0,
+      ),
+    };
+  }, [data, fractionRows, showWash]);
 
   return (
     <div className="ionx-page">
@@ -493,6 +715,7 @@ const IonExchangeFractionation: React.FC = () => {
             <CardHeader title="Summary" />
             <CardContent>
               <Box
+                className="ionx-summary-grid"
                 sx={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
@@ -559,7 +782,7 @@ const IonExchangeFractionation: React.FC = () => {
           </Card>
 
           <Card className="ionx-card">
-            <CardHeader title="Proteins by Fraction" />
+            <CardHeader title="Fractionation" />
             <CardContent>
               <div className="ionx-chart-wrap">
                 <FormControlLabel
@@ -582,76 +805,198 @@ const IonExchangeFractionation: React.FC = () => {
                   label="Log Scale"
                   sx={{ marginBottom: "0.25rem" }}
                 />
-                {showLineGraph ? (
-                  <Line
-                    data={lineData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      scales: {
-                        x: {
-                          type: "linear",
-                          title: {
-                            display: true,
-                            text: "0 = Wash, 1..N = Fractions",
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showWash}
+                      onChange={(_, checked) => setShowWash(checked)}
+                    />
+                  }
+                  label="Show Wash"
+                  sx={{ marginBottom: "0.25rem" }}
+                />
+                <Box className="ionx-chart-actions">
+                  <Button
+                    className="ionx-button"
+                    variant="contained"
+                    onClick={exportChromatogram}
+                    startIcon={<Download />}
+                  >
+                    Download
+                  </Button>
+                </Box>
+                <div className="ionx-chart-surface">
+                  {showLineGraph ? (
+                    <Suspense
+                      fallback={
+                        <ChartLoadingPlaceholder chartName="Chromatogram" />
+                      }
+                    >
+                      <LazyLine
+                        ref={lineChartRef}
+                        data={lineData}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          scales: {
+                            x: {
+                              type: "linear",
+                              title: {
+                                display: true,
+                                text: "Fractions",
+                              },
+                              beginAtZero: true,
+                              ticks: {
+                                callback: (value) =>
+                                  Number(value) === 0
+                                    ? showWash
+                                      ? "Wash"
+                                      : "0"
+                                    : String(value),
+                              },
+                            },
+                            y: {
+                              type: useLogScale ? "logarithmic" : "linear",
+                              title: {
+                                display: true,
+                                text: showWash ? "Retained+Wash" : "Retained",
+                              },
+                              beginAtZero: !useLogScale,
+                            },
                           },
-                          beginAtZero: true,
-                          ticks: {
-                            callback: (value) =>
-                              Number(value) === 0 ? "Wash" : String(value),
+                        }}
+                      />
+                    </Suspense>
+                  ) : (
+                    <Suspense
+                      fallback={
+                        <ChartLoadingPlaceholder chartName="Chromatogram" />
+                      }
+                    >
+                      <LazyScatter
+                        ref={scatterChartRef}
+                        data={scatterData}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          scales: {
+                            x: {
+                              title: {
+                                display: true,
+                                text: "Fractions",
+                              },
+                              beginAtZero: true,
+                              ticks: {
+                                callback: (value) =>
+                                  Number(value) === 0
+                                    ? showWash
+                                      ? "Wash"
+                                      : "0"
+                                    : String(value),
+                              },
+                            },
+                            y: {
+                              type: useLogScale ? "logarithmic" : "linear",
+                              title: {
+                                display: true,
+                                text: showWash ? "Retained+Wash" : "Retained",
+                              },
+                              beginAtZero: !useLogScale,
+                            },
+                          },
+                        }}
+                      />
+                    </Suspense>
+                  )}
+                </div>
+              </div>
+
+              <div className="ionx-chart-wrap ionx-stacked-chart-wrap">
+                <Box className="ionx-chart-actions">
+                  <Button
+                    className="ionx-button"
+                    variant="contained"
+                    onClick={exportStackedProteins}
+                    startIcon={<Download />}
+                  >
+                    Download
+                  </Button>
+                </Box>
+                <div className="ionx-chart-surface">
+                  <Suspense
+                    fallback={
+                      <ChartLoadingPlaceholder chartName="Stacked Proteins" />
+                    }
+                  >
+                    <LazyBar
+                      ref={stackedChartRef}
+                      key={`stacked-hit-amounts-${fractionRows.length}-${stackedHitAmounts.datasets.length}`}
+                      data={stackedHitAmounts}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        normalized: true,
+                        scales: {
+                          x: {
+                            stacked: true,
+                            title: {
+                              display: true,
+                              text: showWash ? "Wash / Fractions" : "Fractions",
+                            },
+                          },
+                          y: {
+                            stacked: true,
+                            type: useLogScale ? "logarithmic" : "linear",
+                            title: {
+                              display: true,
+                              text: showWash
+                                ? "Retained+Wash Amount"
+                                : "Retained Amount",
+                            },
                           },
                         },
-                        y: {
-                          type: useLogScale ? "logarithmic" : "linear",
-                          title: {
-                            display: true,
-                            text: "Protein Count",
-                          },
-                          beginAtZero: !useLogScale,
-                        },
-                      },
-                    }}
-                  />
-                ) : (
-                  <Scatter
-                    data={scatterData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      scales: {
-                        x: {
-                          title: {
-                            display: true,
-                            text: "0 = Wash, 1..N = Fractions",
-                          },
-                          beginAtZero: true,
-                          ticks: {
-                            callback: (value) =>
-                              Number(value) === 0 ? "Wash" : String(value),
+                        plugins: {
+                          legend: {
+                            display: false,
                           },
                         },
-                        y: {
-                          type: useLogScale ? "logarithmic" : "linear",
-                          title: {
-                            display: true,
-                            text: "Protein Count",
-                          },
-                          beginAtZero: !useLogScale,
-                        },
-                      },
-                    }}
-                  />
-                )}
+                      }}
+                    />
+                  </Suspense>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="ionx-card">
-            <CardHeader title="Fractions" />
+          <Card className="ionx-card ionx-table-card">
+            <CardHeader
+              title="Hits"
+              action={
+                <TextField
+                  variant="outlined"
+                  value={fractionSearch}
+                  placeholder="Search"
+                  onChange={(e) => {
+                    setFractionSearch(e.target.value);
+                    setFractionPage(0);
+                  }}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              }
+            />
             <CardContent>
               <TablePagination
                 component="div"
-                count={fractionRows.length}
+                count={sortedFractionRows.length}
                 page={fractionPage}
                 onPageChange={(_, newPage) => setFractionPage(newPage)}
                 rowsPerPage={fractionRowsPerPage}
@@ -815,19 +1160,30 @@ const IonExchangeFractionation: React.FC = () => {
                                   return (
                                     <Chip
                                       key={`${row.fractionIndex}-${proteinId}-${proteinIndex}`}
-                                      size="small"
+                                      size="medium"
+                                      clickable
                                       label={proteinId}
                                       title={
-                                        protein
-                                          ? `${protein.description}\nCharge: ${protein.charge.toFixed(2)}`
-                                          : proteinId
+                                          "Copy Sequence"
                                       }
                                       sx={{
-                                        border: `2px solid ${protein?.color ?? "#777"}`,
-                                        backgroundColor: "rgba(0,0,0,0.15)",
+                                        border: "2px solid #333",
+                                        backgroundColor:
+                                          protein?.color ?? "inherit",
+                                        color: "#fff",
                                         fontWeight: 600,
+                                        fontSize: "1rem",
                                         margin: "0.2rem",
+                                        fontFamily: "monospace",
+                                        textShadow: "0 0 3px rgba(0,0,0,0.9)",
                                       }}
+
+                                        onClick={() => {
+                                          if (!protein) return;
+                                          navigator.clipboard.writeText(protein.sequence);
+                                        }
+                                      }
+                                    
                                     />
                                   );
                                 },
@@ -843,8 +1199,30 @@ const IonExchangeFractionation: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="ionx-card">
-            <CardHeader title="Filtered Proteins" />
+          <Card className="ionx-card ionx-table-card">
+            <CardHeader
+              title="Filtered Proteins"
+              action={
+                <TextField
+                  variant="outlined"
+                  value={proteinSearch}
+                  placeholder="Search"
+                  onChange={(e) => {
+                    setProteinSearch(e.target.value);
+                    setProteinPage(0);
+                  }}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              }
+            />
             <CardContent>
               <TablePagination
                 component="div"
@@ -949,31 +1327,59 @@ const IonExchangeFractionation: React.FC = () => {
                   <TableBody>
                     {pagedProteins.map((row, idx) => (
                       <TableRow key={`${row.id}-${idx}`}>
-                        <TableCell>{row.id}</TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                backgroundColor: row.color ?? "transparent",
+                                borderRadius: "50%",
+                                border: row.color ? "1px solid #333" : "none",
+                              }}
+                            />
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              {row.id}
+                            </Typography>
+                          </Box>
+                        </TableCell>
                         <TableCell>{row.name || "-"}</TableCell>
                         <TableCell>{row.charge.toFixed(2)}</TableCell>
                         <TableCell>{row.molecularWeight.toFixed(2)}</TableCell>
                         <TableCell
+                          title={row.sequence}
                           sx={{
-                            maxWidth: 280,
-                            whiteSpace: "nowrap",
+                            maxWidth: "150px",
+                            height: "1.5em",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                           }}
-                          title={row.sequence}
                         >
-                          <span>{row.sequence}</span>
+                          {row.sequence}
                         </TableCell>
                         <TableCell
+                          title={row.description}
                           sx={{
-                            maxWidth: 320,
-                            whiteSpace: "nowrap",
+                            maxWidth: "150px",
+                            height: "1.5em",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                           }}
-                          title={row.description}
                         >
-                          <span>{row.description}</span>
+                          {row.description}
                         </TableCell>
                       </TableRow>
                     ))}
