@@ -295,6 +295,68 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         window.URL.revokeObjectURL(url);
     };
 
+    // Keep salt start >= 0 and <= current salt end
+    const handleSaltStartChange = (value: string) => {
+        const parsed = parseFloat(value);
+
+        if (Number.isNaN(parsed)) {
+            setSaltStart(0);
+            return;
+        }
+
+        const next = Math.max(0, Math.min(parsed, saltEnd));
+        setSaltStart(next);
+    };
+
+    // Keep salt end >= current salt start
+    const handleSaltEndChange = (value: string) => {
+        const parsed = parseFloat(value);
+
+        if (Number.isNaN(parsed)) {
+            setSaltEnd(saltStart);
+            return;
+        }
+
+        const next = Math.max(saltStart, parsed);
+        setSaltEnd(next);
+    };
+
+    // Keep salt alpha non-negative
+    const handleSaltAlphaChange = (value: string) => {
+        const parsed = parseFloat(value);
+
+        if (Number.isNaN(parsed)) {
+            setSaltAlpha(0);
+            return;
+        }
+
+        setSaltAlpha(Math.max(0, parsed));
+    };
+
+    // Keep fraction count at least 1
+    const handleFractionCountChange = (value: string) => {
+        const parsed = parseInt(value, 10);
+
+        if (Number.isNaN(parsed)) {
+            setFractionCount(1);
+            return;
+        }
+
+        setFractionCount(Math.max(1, parsed));
+    };
+
+    // Keep deadband non-negative
+    const handleDeadbandChange = (value: string) => {
+        const parsed = parseFloat(value);
+
+        if (Number.isNaN(parsed)) {
+            setDeadband(0);
+            return;
+        }
+
+        setDeadband(Math.max(0, parsed));
+    };
+
     /*
      * Convenience alias for the returned fractions.
      * Used throughout the graphs and table.
@@ -636,23 +698,23 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             label="Salt Start"
                             type="number"
                             value={saltStart}
-                            onChange={(e) => setSaltStart(parseFloat(e.target.value))}
+                            onChange={(e) => handleSaltStartChange(e.target.value)}
                         />
 
                         <TextField
-                            className="hic-field" 
+                            className="hic-field"
                             label="Salt End"
                             type="number"
                             value={saltEnd}
-                            onChange={(e) => setSaltEnd(parseFloat(e.target.value))}
+                            onChange={(e) => handleSaltEndChange(e.target.value)}
                         />
 
                         <TextField
-                            className="hic-field" 
+                            className="hic-field"
                             label="Salt Alpha"
                             type="number"
                             value={saltAlpha}
-                            onChange={(e) => setSaltAlpha(parseFloat(e.target.value))}
+                            onChange={(e) => handleSaltAlphaChange(e.target.value)}
                         />
 
                         <TextField
@@ -660,15 +722,15 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             label="Fractions"
                             type="number"
                             value={fractionCount}
-                            onChange={(e) => setFractionCount(parseInt(e.target.value, 10))}
+                            onChange={(e) => handleFractionCountChange(e.target.value)}
                         />
 
                         <TextField
-                            className="hic-field hic-field-wide" 
+                            className="hic-field hic-field-wide"
                             label="Deadband (bindingStrength)"
                             type="number"
                             value={deadband}
-                            onChange={(e) => setDeadband(parseFloat(e.target.value))}
+                            onChange={(e) => handleDeadbandChange(e.target.value)}
                         />
                     </Box>
                     
