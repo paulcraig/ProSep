@@ -20,7 +20,6 @@ import { ReactComponent as OneDEIcon } from "./assets/electrophoresis/1DE.svg";
 import { ReactComponent as TwoDEIcon } from "./assets/electrophoresis/2DE.svg";
 
 import PeptideRetention from "./pages/PeptideRetention";
-import ProteolyticDigestion from "./pages/ProteolyticDigestion";
 import IonExchangeFractionation from "./pages/IonExchangeFractionation";
 import SizeExclusionPage from './pages/SizeExclusion';
 
