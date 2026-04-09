@@ -306,8 +306,6 @@ const IonExchangeFractionation: React.FC = () => {
     }
 
     return fractionRows.filter((row) => {
-      const proteinCount = row.proteinCount ?? row.proteins.length;
-      const hitCount = row.hitCount ?? 0;
       const hitIds = (row.hitProteinIds ?? []).join(" ").toLowerCase();
 
       return (
