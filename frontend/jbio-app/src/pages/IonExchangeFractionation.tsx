@@ -159,7 +159,7 @@ const IonExchangeFractionation: React.FC = () => {
   const [proteinPage, setProteinPage] = useState<number>(0);
   const [proteinRowsPerPage, setProteinRowsPerPage] = useState<number>(10);
   const [showLineGraph, setShowLineGraph] = useState<boolean>(true);
-  const [useLogScale, setUseLogScale] = useState<boolean>(false);
+  const [useLogScale, setUseLogScale] = useState<boolean>(true);
   const [showWash, setShowWash] = useState<boolean>(false);
   const [fractionSort, setFractionSort] = useState<{
     key: FractionSortKey;
@@ -835,7 +835,7 @@ const IonExchangeFractionation: React.FC = () => {
                         },
                         y: {
                           stacked: true,
-                          type: "logarithmic",
+                          type: useLogScale ? "logarithmic" : "linear",
                           title: {
                             display: true,
                             text: showWash
