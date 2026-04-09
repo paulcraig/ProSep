@@ -35,6 +35,7 @@ import {
   Chip,
   CircularProgress,
   IconButton,
+  InputAdornment,
 } from "@mui/material";
 import {
   BarElement,
@@ -62,6 +63,7 @@ import {
   RemoveOutlined,
   SettingsOutlined,
   WashOutlined,
+  Search,
 } from "@mui/icons-material";
 
 ChartJS.register(
@@ -183,6 +185,8 @@ const IonExchangeFractionation: React.FC = () => {
     key: "charge",
     direction: "asc",
   });
+  const [fractionSearch, setFractionSearch] = useState<string>("");
+  const [proteinSearch, setProteinSearch] = useState<string>("");
 
   const lineChartRef = useRef<ChartJS<"line"> | null>(null);
   const scatterChartRef = useRef<ChartJS<"scatter"> | null>(null);
@@ -295,8 +299,28 @@ const IonExchangeFractionation: React.FC = () => {
     );
   }, [fractionRows]);
 
+  const filteredFractionRows = useMemo(() => {
+    const query = fractionSearch.trim().toLowerCase();
+    if (!query) {
+      return fractionRows;
+    }
+
+    return fractionRows.filter((row) => {
+      const proteinCount = row.proteinCount ?? row.proteins.length;
+      const hitCount = row.hitCount ?? 0;
+      const hitIds = (row.hitProteinIds ?? []).join(" ").toLowerCase();
+
+      return (
+        String(row.fractionIndex).includes(query) ||
+        String(proteinCount).includes(query) ||
+        String(hitCount).includes(query) ||
+        hitIds.includes(query)
+      );
+    });
+  }, [fractionRows, fractionSearch]);
+
   const sortedFractionRows = useMemo(() => {
-    const rows = [...fractionRows];
+    const rows = [...filteredFractionRows];
     const directionMultiplier = fractionSort.direction === "asc" ? 1 : -1;
 
     rows.sort((a, b) => {
@@ -318,10 +342,28 @@ const IonExchangeFractionation: React.FC = () => {
     });
 
     return rows;
-  }, [fractionRows, fractionSort]);
+  }, [filteredFractionRows, fractionSort]);
+
+  const filteredRetainedRows = useMemo(() => {
+    const query = proteinSearch.trim().toLowerCase();
+    if (!query) {
+      return retainedRows;
+    }
+
+    return retainedRows.filter((row) => {
+      return (
+        row.id.toLowerCase().includes(query) ||
+        row.name.toLowerCase().includes(query) ||
+        row.sequence.toLowerCase().includes(query) ||
+        row.description.toLowerCase().includes(query) ||
+        row.charge.toFixed(2).includes(query) ||
+        row.molecularWeight.toFixed(2).includes(query)
+      );
+    });
+  }, [retainedRows, proteinSearch]);
 
   const sortedRetainedRows = useMemo(() => {
-    const rows = [...retainedRows];
+    const rows = [...filteredRetainedRows];
     const directionMultiplier = proteinSort.direction === "asc" ? 1 : -1;
 
     rows.sort((a, b) => {
@@ -334,7 +376,7 @@ const IonExchangeFractionation: React.FC = () => {
     });
 
     return rows;
-  }, [retainedRows, proteinSort]);
+  }, [filteredRetainedRows, proteinSort]);
 
   const handleFractionSort = (
     key: FractionSortKey,
@@ -937,11 +979,32 @@ const IonExchangeFractionation: React.FC = () => {
           </Card>
 
           <Card className="ionx-card">
-            <CardHeader title="Hits" />
+            <CardHeader
+              title="Hits"
+              action={
+                <TextField
+                  variant="outlined"
+                  value={fractionSearch}
+                  onChange={(e) => {
+                    setFractionSearch(e.target.value);
+                    setFractionPage(0);
+                  }}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              }
+            />
             <CardContent>
               <TablePagination
                 component="div"
-                count={fractionRows.length}
+                count={sortedFractionRows.length}
                 page={fractionPage}
                 onPageChange={(_, newPage) => setFractionPage(newPage)}
                 rowsPerPage={fractionRowsPerPage}
@@ -1134,7 +1197,28 @@ const IonExchangeFractionation: React.FC = () => {
           </Card>
 
           <Card className="ionx-card">
-            <CardHeader title="Filtered Proteins" />
+            <CardHeader
+              title="Filtered Proteins"
+              action={
+                <TextField
+                  variant="outlined"
+                  value={proteinSearch}
+                  onChange={(e) => {
+                    setProteinSearch(e.target.value);
+                    setProteinPage(0);
+                  }}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              }
+            />
             <CardContent>
               <TablePagination
                 component="div"
