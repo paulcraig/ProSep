@@ -22,6 +22,7 @@ import { ReactComponent as TwoDEIcon } from "./assets/electrophoresis/2DE.svg";
 import PeptideRetention from "./pages/PeptideRetention";
 import ProteolyticDigestion from "./pages/ProteolyticDigestion";
 import IonExchangeFractionation from "./pages/IonExchangeFractionation";
+import HydrophobicInteractionFractionation from "./pages/HydrophobicInteractionFractionation";
 
 function App() {
   const pages = [
@@ -63,6 +64,12 @@ function App() {
     },
     {
       id: 7,
+      icon: <SwapVertIcon />,
+      component: <HydrophobicInteractionFractionation />,
+      label: "Hydrophobic Interaction Fractionation",
+    },
+    {
+      id: 8,
       icon: <GitHubIcon />,
       link: "https://github.com/paulcraig/ProSep",
       label: "GitHub Repository",
