@@ -41,7 +41,22 @@
 .ionx-chart-wrap {
   width: 100%;
   min-height: 320px;
+}
+
+.ionx-chart-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.ionx-chart-surface {
+  width: 100%;
+  min-height: 320px;
   height: 360px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
 .ionx-chart-loading {

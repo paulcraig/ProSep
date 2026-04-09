@@ -1,4 +1,11 @@
-import React, { Suspense, lazy, useMemo, useState } from "react";
+import React, {
+  Suspense,
+  lazy,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -50,6 +57,7 @@ import {
   ControlPointOutlined,
   ExpandMore,
   FileUpload,
+  Download,
   PlayArrow,
   RemoveOutlined,
   SettingsOutlined,
@@ -175,6 +183,51 @@ const IonExchangeFractionation: React.FC = () => {
     key: "charge",
     direction: "asc",
   });
+
+  const lineChartRef = useRef<ChartJS<"line"> | null>(null);
+  const scatterChartRef = useRef<ChartJS<"scatter"> | null>(null);
+  const stackedChartRef = useRef<ChartJS<"bar"> | null>(null);
+
+  const downloadChart = useCallback(
+    (chart: ChartJS | null, fileName: string) => {
+      if (!chart) {
+        return;
+      }
+
+      const canvas = chart.canvas;
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = canvas.width;
+      exportCanvas.height = canvas.height;
+
+      const exportCtx = exportCanvas.getContext("2d");
+      if (!exportCtx) {
+        return;
+      }
+
+      exportCtx.fillStyle = "#ffffff";
+      exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+      exportCtx.drawImage(canvas, 0, 0);
+
+      const base64Image = exportCanvas.toDataURL("image/png");
+
+      const a = document.createElement("a");
+      a.href = base64Image;
+      a.download = fileName;
+      a.click();
+    },
+    [],
+  );
+
+  const exportChromatogram = useCallback(() => {
+    const activeChart = showLineGraph
+      ? lineChartRef.current
+      : scatterChartRef.current;
+    downloadChart(activeChart, "chromatogram.png");
+  }, [downloadChart, showLineGraph]);
+
+  const exportStackedProteins = useCallback(() => {
+    downloadChart(stackedChartRef.current, "stacked-proteins.png");
+  }, [downloadChart]);
 
   const handleLoadFasta = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -729,129 +782,156 @@ const IonExchangeFractionation: React.FC = () => {
                   label="Show Wash"
                   sx={{ marginBottom: "0.25rem" }}
                 />
-                {showLineGraph ? (
-                  <Suspense
-                    fallback={
-                      <ChartLoadingPlaceholder chartName="Chromatogram" />
-                    }
+                <Box className="ionx-chart-actions">
+                  <Button
+                    className="ionx-button"
+                    variant="contained"
+                    onClick={exportChromatogram}
+                    startIcon={<Download />}
                   >
-                    <LazyLine
-                      data={lineData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                          x: {
-                            type: "linear",
-                            title: {
-                              display: true,
-                              text: "Fractions",
+                    Download
+                  </Button>
+                </Box>
+                <div className="ionx-chart-surface">
+                  {showLineGraph ? (
+                    <Suspense
+                      fallback={
+                        <ChartLoadingPlaceholder chartName="Chromatogram" />
+                      }
+                    >
+                      <LazyLine
+                        ref={lineChartRef}
+                        data={lineData}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          scales: {
+                            x: {
+                              type: "linear",
+                              title: {
+                                display: true,
+                                text: "Fractions",
+                              },
+                              beginAtZero: true,
+                              ticks: {
+                                callback: (value) =>
+                                  Number(value) === 0
+                                    ? showWash
+                                      ? "Wash"
+                                      : "0"
+                                    : String(value),
+                              },
                             },
-                            beginAtZero: true,
-                            ticks: {
-                              callback: (value) =>
-                                Number(value) === 0
-                                  ? showWash
-                                    ? "Wash"
-                                    : "0"
-                                  : String(value),
-                            },
-                          },
-                          y: {
-                            type: useLogScale ? "logarithmic" : "linear",
-                            title: {
-                              display: true,
-                              text: showWash ? "Retained+Wash" : "Retained",
-                            },
-                            beginAtZero: !useLogScale,
-                          },
-                        },
-                      }}
-                    />
-                  </Suspense>
-                ) : (
-                  <Suspense
-                    fallback={
-                      <ChartLoadingPlaceholder chartName="Chromatogram" />
-                    }
-                  >
-                    <LazyScatter
-                      data={scatterData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                          x: {
-                            title: {
-                              display: true,
-                              text: "Fractions",
-                            },
-                            beginAtZero: true,
-                            ticks: {
-                              callback: (value) =>
-                                Number(value) === 0
-                                  ? showWash
-                                    ? "Wash"
-                                    : "0"
-                                  : String(value),
+                            y: {
+                              type: useLogScale ? "logarithmic" : "linear",
+                              title: {
+                                display: true,
+                                text: showWash ? "Retained+Wash" : "Retained",
+                              },
+                              beginAtZero: !useLogScale,
                             },
                           },
-                          y: {
-                            type: useLogScale ? "logarithmic" : "linear",
-                            title: {
-                              display: true,
-                              text: showWash ? "Retained+Wash" : "Retained",
+                        }}
+                      />
+                    </Suspense>
+                  ) : (
+                    <Suspense
+                      fallback={
+                        <ChartLoadingPlaceholder chartName="Chromatogram" />
+                      }
+                    >
+                      <LazyScatter
+                        ref={scatterChartRef}
+                        data={scatterData}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          scales: {
+                            x: {
+                              title: {
+                                display: true,
+                                text: "Fractions",
+                              },
+                              beginAtZero: true,
+                              ticks: {
+                                callback: (value) =>
+                                  Number(value) === 0
+                                    ? showWash
+                                      ? "Wash"
+                                      : "0"
+                                    : String(value),
+                              },
                             },
-                            beginAtZero: !useLogScale,
+                            y: {
+                              type: useLogScale ? "logarithmic" : "linear",
+                              title: {
+                                display: true,
+                                text: showWash ? "Retained+Wash" : "Retained",
+                              },
+                              beginAtZero: !useLogScale,
+                            },
                           },
-                        },
-                      }}
-                    />
-                  </Suspense>
-                )}
+                        }}
+                      />
+                    </Suspense>
+                  )}
+                </div>
               </div>
 
               <div className="ionx-chart-wrap ionx-stacked-chart-wrap">
-                <Suspense
-                  fallback={
-                    <ChartLoadingPlaceholder chartName="Stacked Proteins" />
-                  }
-                >
-                  <LazyBar
-                    key={`stacked-hit-amounts-${fractionRows.length}-${stackedHitAmounts.datasets.length}`}
-                    data={stackedHitAmounts}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      animation: false,
-                      normalized: true,
-                      scales: {
-                        x: {
-                          stacked: true,
-                          title: {
-                            display: true,
-                            text: showWash ? "Wash / Fractions" : "Fractions",
+                <Box className="ionx-chart-actions">
+                  <Button
+                    className="ionx-button"
+                    variant="contained"
+                    onClick={exportStackedProteins}
+                    startIcon={<Download />}
+                  >
+                    Download
+                  </Button>
+                </Box>
+                <div className="ionx-chart-surface">
+                  <Suspense
+                    fallback={
+                      <ChartLoadingPlaceholder chartName="Stacked Proteins" />
+                    }
+                  >
+                    <LazyBar
+                      ref={stackedChartRef}
+                      key={`stacked-hit-amounts-${fractionRows.length}-${stackedHitAmounts.datasets.length}`}
+                      data={stackedHitAmounts}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        normalized: true,
+                        scales: {
+                          x: {
+                            stacked: true,
+                            title: {
+                              display: true,
+                              text: showWash ? "Wash / Fractions" : "Fractions",
+                            },
+                          },
+                          y: {
+                            stacked: true,
+                            type: useLogScale ? "logarithmic" : "linear",
+                            title: {
+                              display: true,
+                              text: showWash
+                                ? "Retained+Wash Amount"
+                                : "Retained Amount",
+                            },
                           },
                         },
-                        y: {
-                          stacked: true,
-                          type: useLogScale ? "logarithmic" : "linear",
-                          title: {
-                            display: true,
-                            text: showWash
-                              ? "Retained+Wash Amount"
-                              : "Retained Amount",
+                        plugins: {
+                          legend: {
+                            display: false,
                           },
                         },
-                      },
-                      plugins: {
-                        legend: {
-                          display: false,
-                        },
-                      },
-                    }}
-                  />
-                </Suspense>
+                      }}
+                    />
+                  </Suspense>
+                </div>
               </div>
             </CardContent>
           </Card>
