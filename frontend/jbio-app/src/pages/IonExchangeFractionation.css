@@ -1,9 +1,7 @@
 .ionx-page {
   background: var(--background);
-  color: var(--text);
+  color: var(--text) !important;
   padding: 2rem;
-  min-height: 100vh;
-  max-width: 100%;
   box-sizing: border-box;
 }
 
@@ -36,6 +34,25 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 0.5rem 1rem;
+}
+
+.MuiTypography-body1, .MuiTypography-caption, .MuiTypography-h6,
+.MuiSelect-select, 
+.MuiTableCell-root, 
+.MuiSvgIcon-root, 
+.MuiTablePagination-selectLabel, 
+.MuiTablePagination-displayedRows,
+.MuiInputBase-input
+{
+  color: var(--text) !important;
+}
+
+.MuiInputLabel-root, .MuiSlider-root, .Mui-checked {
+  color: var(--accent) !important;
+}
+
+.MuiOutlinedInput-notchedOutline {
+  border-color: var(--accent) !important;
 }
 
 .ionx-chart-wrap {
@@ -73,6 +90,10 @@
 
 .ionx-stacked-chart-wrap {
   margin-top: 1rem;
+}
+
+.ionx-table-card {
+  overflow-x: scroll;
 }
 
 .ionx-card .MuiTableContainer-root {
@@ -144,7 +165,4 @@
   border: 0.1rem solid var(--accent);
 }
 
-* {
-  color: var(--text) !important;
-} 
 

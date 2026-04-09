@@ -308,9 +308,7 @@ const IonExchangeFractionation: React.FC = () => {
     return fractionRows.filter((row) => {
       const hitIds = (row.hitProteinIds ?? []).join(" ").toLowerCase();
 
-      return (
-        hitIds.includes(query)
-      );
+      return hitIds.includes(query);
     });
   }, [fractionRows, fractionSearch]);
 
@@ -717,6 +715,7 @@ const IonExchangeFractionation: React.FC = () => {
             <CardHeader title="Summary" />
             <CardContent>
               <Box
+                className="ionx-summary-grid"
                 sx={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
@@ -970,13 +969,14 @@ const IonExchangeFractionation: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="ionx-card">
+          <Card className="ionx-card ionx-table-card">
             <CardHeader
               title="Hits"
               action={
                 <TextField
                   variant="outlined"
                   value={fractionSearch}
+                  placeholder="Search"
                   onChange={(e) => {
                     setFractionSearch(e.target.value);
                     setFractionPage(0);
@@ -1160,7 +1160,7 @@ const IonExchangeFractionation: React.FC = () => {
                                   return (
                                     <Chip
                                       key={`${row.fractionIndex}-${proteinId}-${proteinIndex}`}
-                                      size="small"
+                                      size="medium"
                                       label={proteinId}
                                       title={
                                         protein
@@ -1168,10 +1168,15 @@ const IonExchangeFractionation: React.FC = () => {
                                           : proteinId
                                       }
                                       sx={{
-                                        border: `2px solid ${protein?.color ?? "#777"}`,
-                                        backgroundColor: "rgba(0,0,0,0.15)",
+                                        border: "2px solid #333",
+                                        backgroundColor:
+                                          protein?.color ?? "inherit",
+                                        color: "#fff",
                                         fontWeight: 600,
+                                        fontSize: "1rem",
                                         margin: "0.2rem",
+                                        fontFamily: "monospace",
+                                        textShadow: "0 0 3px rgba(0,0,0,0.9)",
                                       }}
                                     />
                                   );
@@ -1188,13 +1193,14 @@ const IonExchangeFractionation: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="ionx-card">
+          <Card className="ionx-card ionx-table-card">
             <CardHeader
               title="Filtered Proteins"
               action={
                 <TextField
                   variant="outlined"
                   value={proteinSearch}
+                  placeholder="Search"
                   onChange={(e) => {
                     setProteinSearch(e.target.value);
                     setProteinPage(0);
@@ -1315,7 +1321,33 @@ const IonExchangeFractionation: React.FC = () => {
                   <TableBody>
                     {pagedProteins.map((row, idx) => (
                       <TableRow key={`${row.id}-${idx}`}>
-                        <TableCell>{row.id}</TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                backgroundColor: row.color ?? "transparent",
+                                borderRadius: "50%",
+                                border: row.color ? "1px solid #333" : "none",
+                              }}
+                            />
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              {row.id}
+                            </Typography>
+                          </Box>
+                        </TableCell>
                         <TableCell>{row.name || "-"}</TableCell>
                         <TableCell>{row.charge.toFixed(2)}</TableCell>
                         <TableCell>{row.molecularWeight.toFixed(2)}</TableCell>
