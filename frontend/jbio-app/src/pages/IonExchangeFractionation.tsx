@@ -311,9 +311,6 @@ const IonExchangeFractionation: React.FC = () => {
       const hitIds = (row.hitProteinIds ?? []).join(" ").toLowerCase();
 
       return (
-        String(row.fractionIndex).includes(query) ||
-        String(proteinCount).includes(query) ||
-        String(hitCount).includes(query) ||
         hitIds.includes(query)
       );
     });
@@ -352,12 +349,9 @@ const IonExchangeFractionation: React.FC = () => {
 
     return retainedRows.filter((row) => {
       return (
-        row.id.toLowerCase().includes(query) ||
         row.name.toLowerCase().includes(query) ||
         row.sequence.toLowerCase().includes(query) ||
-        row.description.toLowerCase().includes(query) ||
-        row.charge.toFixed(2).includes(query) ||
-        row.molecularWeight.toFixed(2).includes(query)
+        row.description.toLowerCase().includes(query)
       );
     });
   }, [retainedRows, proteinSearch]);
