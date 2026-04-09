@@ -1161,11 +1161,10 @@ const IonExchangeFractionation: React.FC = () => {
                                     <Chip
                                       key={`${row.fractionIndex}-${proteinId}-${proteinIndex}`}
                                       size="medium"
+                                      clickable
                                       label={proteinId}
                                       title={
-                                        protein
-                                          ? `${protein.description}\nCharge: ${protein.charge.toFixed(2)}`
-                                          : proteinId
+                                          "Copy Sequence"
                                       }
                                       sx={{
                                         border: "2px solid #333",
@@ -1178,6 +1177,13 @@ const IonExchangeFractionation: React.FC = () => {
                                         fontFamily: "monospace",
                                         textShadow: "0 0 3px rgba(0,0,0,0.9)",
                                       }}
+
+                                        onClick={() => {
+                                          if (!protein) return;
+                                          navigator.clipboard.writeText(protein.sequence);
+                                        }
+                                      }
+                                    
                                     />
                                   );
                                 },
