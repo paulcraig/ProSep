@@ -295,7 +295,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         window.URL.revokeObjectURL(url);
     };
 
-    // Keep salt start >= 0 and <= current salt end
+    // Keep salt start non-negative, but do not force any relationship to salt end
     const handleSaltStartChange = (value: string) => {
         const parsed = parseFloat(value);
 
@@ -304,21 +304,19 @@ const HydrophobicInteractionFractionation: React.FC = () => {
             return;
         }
 
-        const next = Math.max(0, Math.min(parsed, saltEnd));
-        setSaltStart(next);
+        setSaltStart(Math.max(0, parsed));
     };
 
-    // Keep salt end >= current salt start
+    // Keep salt end non-negative, but do not force any relationship to salt start
     const handleSaltEndChange = (value: string) => {
         const parsed = parseFloat(value);
 
         if (Number.isNaN(parsed)) {
-            setSaltEnd(saltStart);
+            setSaltEnd(0);
             return;
         }
 
-        const next = Math.max(saltStart, parsed);
-        setSaltEnd(next);
+        setSaltEnd(Math.max(0, parsed));
     };
 
     // Keep salt alpha non-negative
