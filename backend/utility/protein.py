@@ -6,6 +6,29 @@ from Bio import SeqIO
 
 
 class Protein():
+
+    AMINO_ACIDS = {
+        'A': {'mass': 71.07,  'pKa': 0},
+        'R': {'mass': 156.18, 'pKa': 12.48},
+        'N': {'mass': 114.08, 'pKa': 0},
+        'D': {'mass': 115.08, 'pKa': 3.65},
+        'C': {'mass': 103.14, 'pKa': 8.18},
+        'E': {'mass': 129.11, 'pKa': 4.25},
+        'Q': {'mass': 128.13, 'pKa': 0},
+        'G': {'mass': 57.05,  'pKa': 0},
+        'H': {'mass': 137.14, 'pKa': 6.00},
+        'I': {'mass': 113.16, 'pKa': 0},
+        'L': {'mass': 113.16, 'pKa': 0},
+        'K': {'mass': 128.17, 'pKa': 10.53},
+        'M': {'mass': 131.19, 'pKa': 0},
+        'F': {'mass': 147.17, 'pKa': 0},
+        'P': {'mass': 97.11,  'pKa': 0},
+        'S': {'mass': 87.07,  'pKa': 0},
+        'T': {'mass': 101.10, 'pKa': 0},
+        'W': {'mass': 186.21, 'pKa': 0},
+        'Y': {'mass': 163.17, 'pKa': 10.07},
+        'V': {'mass': 99.13,  'pKa': 0}
+    }
     
     # Utilizes Biopython SeqIO library to parse through a fasta file given by the user and collect
     # information stored within the file

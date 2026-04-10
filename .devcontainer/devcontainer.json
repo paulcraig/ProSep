@@ -15,5 +15,5 @@
 		}
 	},
 	"forwardPorts": [3000, 8000],
-	"postCreateCommand": "python -m venv .venv && .venv/bin/pip install -r requirements.txt && npm --prefix frontend/jbio-app ci"
+	"postCreateCommand": "python -m venv .venv && .venv/bin/pip install -r requirements.txt && npm --prefix frontend/jbio-app ci && .venv/bin/pre-commit install"
 }
