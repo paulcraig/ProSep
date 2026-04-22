@@ -23,6 +23,7 @@ const KONAMI = [
 ];
 
 const ARTIFACT_GROUPS: { group: string; label: string }[] = [
+  { group: "admin",                  label: "Admin Information"         },
   { group: "about",                  label: "Project Information"       },
   { group: "1de",                    label: "1D Electrophoresis"        },
   { group: "2de",                    label: "2D Electrophoresis"        },
