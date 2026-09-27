@@ -5,20 +5,19 @@ repos:
   hooks:
     # Run the linter.
     - id: ruff-check
-      args: [ --fix ]
-      stages: [pre-commit]
+      stages: [pre-push]
     # Run the formatter.
     - id: ruff-format
-      stages: [pre-commit]
+      stages: [pre-push]
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
   hooks:
     - id: trailing-whitespace
-      stages: [pre-commit]
+      stages: [pre-push]
       exclude_types: [svg]
     - id: mixed-line-ending
-      stages: [pre-commit]
+      stages: [pre-push]
       exclude_types: [svg]
     - id: end-of-file-fixer
-      stages: [pre-commit]
+      stages: [pre-push]
       exclude_types: [svg]
