@@ -32,20 +32,14 @@ import {
 } from '@mui/material'
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LineElement, LinearScale, LogarithmicScale, PointElement, Tooltip } from 'chart.js'
 import { API_URL } from '../config'
-import './IonExchangeFractionation.css'
 import {
     ArrowDropDown,
     ArrowDropUp,
-    CheckCircleOutlined,
-    ChecklistOutlined,
-    ControlPointOutlined,
     ExpandMore,
     FileUpload,
     Download,
     PlayArrow,
-    RemoveOutlined,
     SettingsOutlined,
-    WashOutlined,
     Search,
 } from '@mui/icons-material'
 
@@ -473,34 +467,22 @@ const IonExchangeFractionation: React.FC = () => {
     }, [data, fractionRows, showWash])
 
     return (
-        <div className='ionx-page'>
-            <Card className='ionx-card'>
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Card>
                 <CardHeader title='Ion Exchange Fractionation' />
                 <CardContent>
-                    <Box className='ionx-controls'>
-                        <Button className='ionx-button' component='label' variant='contained' startIcon={<FileUpload />}>
-                            Upload FASTA File
-                            <input type='file' hidden accept='.fasta,.fas,.fa,.faa' onChange={handleLoadFasta} />
-                        </Button>
-
-                        <FormControl size='small' sx={{ minWidth: 180 }}>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        <FormControl>
                             <InputLabel id='media-type-label'>Media</InputLabel>
                             <Select labelId='media-type-label' value={mediaType} label='Media' onChange={e => setMediaType(e.target.value as MediaType)}>
                                 <MenuItem value='Q'>Q media (Triethylamine +)</MenuItem>
                                 <MenuItem value='S'>S media (Sulfite -)</MenuItem>
                             </Select>
                         </FormControl>
-                        <Button
-                            className='ionx-button'
-                            variant='contained'
-                            disabled={loading || fastaText.trim().length === 0}
-                            onClick={handleRunFractionation}
-                            startIcon={<PlayArrow />}
-                            sx={{ marginLeft: 'auto' }}
-                        >
-                            {loading ? 'Processing...' : 'Run Fractionation'}
-                        </Button>
+
+                        <TextField label='Fractions' type='number' value={fractionCount} onChange={e => setFractionCount(Math.max(1, Number(e.target.value) || 80))} />
                     </Box>
+
                     <Box sx={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
                         <Box
                             sx={{
@@ -518,52 +500,27 @@ const IonExchangeFractionation: React.FC = () => {
                         <Slider min={0} max={14} step={0.5} value={ph} marks onChange={(_, value) => setPh(value as number)} />
                     </Box>
 
-                    <Box sx={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: '0.5rem',
-                            }}
-                        >
-                            <Typography gutterBottom sx={{ margin: 0 }}>
-                                Fractions: {fractionCount}
-                            </Typography>
-                            <TextField
-                                size='small'
-                                type='number'
-                                value={fractionCount}
-                                onChange={e => setFractionCount(Math.max(1, Number(e.target.value) || 80))}
-                                inputMode='numeric'
-                                sx={{ width: 80 }}
-                            />
-                        </Box>
-                        <Slider min={0} max={200} step={10} value={fractionCount} marks onChange={(_, value) => setFractionCount(value as number)} />
+                    
+
+                    <Box sx={{ marginTop: 1, marginBottom: 2 }}>
+                        <Typography gutterBottom>Fuzzy overlap noise: {noise.toFixed(2)}</Typography>
+                        <Slider min={0} max={0.5} step={0.01} value={noise} onChange={(_, value) => setNoise(value as number)} />
                     </Box>
 
-                    <Accordion
-                        sx={{
-                            marginBottom: '0.5rem',
-                            backgroundColor: 'var(--background)',
-                        }}
-                    >
-                        <AccordionSummary aria-controls='panel1-content' id='panel1-header' expandIcon={<ExpandMore />}>
-                            <SettingsOutlined sx={{ marginRight: '0.5rem' }} />
-                            <Typography component='span'>Advanced</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Box sx={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
-                                <Typography gutterBottom>Fuzzy overlap noise: {noise.toFixed(2)}</Typography>
-                                <Slider min={0} max={0.5} step={0.01} value={noise} onChange={(_, value) => setNoise(value as number)} />
-                            </Box>
+                    <Box sx={{ marginTop: 1, marginBottom: 2 }}>
+                        <Typography gutterBottom>Charge deadband: ±{deadband.toFixed(2)}</Typography>
+                        <Slider min={0} max={1} step={0.01} value={deadband} onChange={(_, value) => setDeadband(value as number)} />
+                    </Box>
 
-                            <Box sx={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
-                                <Typography gutterBottom>Charge deadband: ±{deadband.toFixed(2)}</Typography>
-                                <Slider min={0} max={1} step={0.01} value={deadband} onChange={(_, value) => setDeadband(value as number)} />
-                            </Box>
-                        </AccordionDetails>
-                    </Accordion>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Button component='label' variant='contained' startIcon={<FileUpload />}>
+                            Upload FASTA File
+                            <input type='file' hidden accept='.fasta,.fas,.fa,.faa' onChange={handleLoadFasta} />
+                        </Button>
+                        <Button variant='contained' disabled={loading || fastaText.trim().length === 0} onClick={handleRunFractionation} startIcon={<PlayArrow />}>
+                            {loading ? 'Processing...' : 'Run Fractionation'}
+                        </Button>
+                    </Box>
 
                     {error && (
                         <Alert severity='error' sx={{ marginTop: '1rem' }}>
@@ -575,86 +532,19 @@ const IonExchangeFractionation: React.FC = () => {
 
             {data && (
                 <>
-                    <Card className='ionx-card'>
-                        <CardHeader title='Summary' />
-                        <CardContent>
-                            <Box
-                                className='ionx-summary-grid'
-                                sx={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                                    gap: 2,
-                                }}
-                            >
-                                <Card className='ionx-summary-info-card'>
-                                    <Box>
-                                        <ChecklistOutlined />
-                                    </Box>
-                                    <Box>
-                                        <Typography variant='caption' color='textSecondary'>
-                                            Processed Records
-                                        </Typography>
-                                        <Typography variant='h6'>{data.counts.total}</Typography>
-                                    </Box>
-                                </Card>
-                                <Card className='ionx-summary-info-card'>
-                                    <Box>
-                                        <CheckCircleOutlined />
-                                    </Box>
-                                    <Box>
-                                        <Typography variant='caption' color='textSecondary'>
-                                            Retained Proteins
-                                        </Typography>
-                                        <Typography variant='h6'>{data.counts.retained}</Typography>
-                                    </Box>
-                                </Card>
-                                <Card className='ionx-summary-info-card'>
-                                    <Box>
-                                        <WashOutlined />
-                                    </Box>
-                                    <Box>
-                                        <Typography variant='caption' color='textSecondary'>
-                                            Wash Proteins
-                                        </Typography>
-                                        <Typography variant='h6'>{data.counts.wash}</Typography>
-                                    </Box>
-                                </Card>
-                                <Card className='ionx-summary-info-card'>
-                                    {data.params.exchanger === 'anion' ? (
-                                        <Box>
-                                            <ControlPointOutlined />
-                                        </Box>
-                                    ) : (
-                                        <Box>
-                                            <RemoveOutlined />
-                                        </Box>
-                                    )}
-                                    <Box>
-                                        <Typography variant='caption' color='textSecondary'>
-                                            Exchanger
-                                        </Typography>
-                                        <Typography variant='h6' sx={{ textTransform: 'capitalize' }}>
-                                            {data.params.exchanger}
-                                        </Typography>
-                                    </Box>
-                                </Card>
-                            </Box>
-                        </CardContent>
-                    </Card>
-
-                    <Card className='ionx-card'>
+                    <Card>
                         <CardHeader title='Fractionation' />
                         <CardContent>
-                            <div className='ionx-chart-wrap'>
+                            <div>
                                 <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
                                 <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
                                 <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
-                                <Box className='ionx-chart-actions'>
-                                    <Button className='ionx-button' variant='contained' onClick={exportChromatogram} startIcon={<Download />}>
+                                <Box>
+                                    <Button variant='contained' onClick={exportChromatogram} startIcon={<Download />}>
                                         Download
                                     </Button>
                                 </Box>
-                                <div className='ionx-chart-surface'>
+                                <div>
                                     {showLineGraph ? (
                                         <Suspense fallback={<ChartLoadingPlaceholder chartName='Chromatogram' />}>
                                             <LazyLine
@@ -722,13 +612,13 @@ const IonExchangeFractionation: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className='ionx-chart-wrap ionx-stacked-chart-wrap'>
-                                <Box className='ionx-chart-actions'>
-                                    <Button className='ionx-button' variant='contained' onClick={exportStackedProteins} startIcon={<Download />}>
+                            <div>
+                                <Box>
+                                    <Button variant='contained' onClick={exportStackedProteins} startIcon={<Download />}>
                                         Download
                                     </Button>
                                 </Box>
-                                <div className='ionx-chart-surface'>
+                                <div>
                                     <Suspense fallback={<ChartLoadingPlaceholder chartName='Stacked Proteins' />}>
                                         <LazyBar
                                             ref={stackedChartRef}
@@ -766,10 +656,16 @@ const IonExchangeFractionation: React.FC = () => {
                                     </Suspense>
                                 </div>
                             </div>
+
+                            <Box>
+                                <Typography variant='body2'>
+                                    Total: {data.counts.total} | Retained: {data.counts.retained} | Wash: {data.counts.wash} | Exchanger: <span style={{ textTransform: 'capitalize' }}>{data.params.exchanger}</span>
+                                </Typography>
+                            </Box>
                         </CardContent>
                     </Card>
 
-                    <Card className='ionx-card ionx-table-card'>
+                    <Card>
                         <CardHeader
                             title='Hits'
                             action={
@@ -806,13 +702,12 @@ const IonExchangeFractionation: React.FC = () => {
                                 }}
                                 rowsPerPageOptions={[10, 25, 50]}
                             />
-                            <TableContainer className='ionx-table-container ionx-fractions-table-container'>
-                                <Table className='ionx-fractions-table'>
+                            <TableContainer>
+                                <Table>
                                     <TableHead>
                                         <TableRow>
                                             <TableCell>
                                                 <Box
-                                                    className='ionx-sort-header'
                                                     sx={{
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -840,7 +735,6 @@ const IonExchangeFractionation: React.FC = () => {
                                             </TableCell>
                                             <TableCell>
                                                 <Box
-                                                    className='ionx-sort-header'
                                                     sx={{
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -868,7 +762,6 @@ const IonExchangeFractionation: React.FC = () => {
                                             </TableCell>
                                             <TableCell>
                                                 <Box
-                                                    className='ionx-sort-header'
                                                     sx={{
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -903,11 +796,11 @@ const IonExchangeFractionation: React.FC = () => {
                                                 <TableCell>{row.fractionIndex}</TableCell>
                                                 <TableCell>{row.proteinCount ?? row.proteins.length}</TableCell>
                                                 <TableCell>{row.hitCount ?? 0}</TableCell>
-                                                <TableCell className='ionx-hit-ids-cell'>
+                                                <TableCell>
                                                     {(row.hitProteinIds ?? []).length === 0 ? (
                                                         '...'
                                                     ) : (
-                                                        <Box className='ionx-hit-ids-scroll'>
+                                                        <Box>
                                                             {(row.hitProteinIds ?? []).map((proteinId, proteinIndex) => {
                                                                 const protein = row.proteins.find(item => item.id === proteinId)
                                                                 return (
@@ -945,7 +838,7 @@ const IonExchangeFractionation: React.FC = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className='ionx-card ionx-table-card'>
+                    <Card>
                         <CardHeader
                             title='Filtered Proteins'
                             action={
@@ -982,7 +875,7 @@ const IonExchangeFractionation: React.FC = () => {
                                 }}
                                 rowsPerPageOptions={[10, 25, 50]}
                             />
-                            <TableContainer className='ionx-table-container ionx-proteins-table-container'>
+                            <TableContainer>
                                 <Table>
                                     <TableHead>
                                         <TableRow>
@@ -1112,7 +1005,7 @@ const IonExchangeFractionation: React.FC = () => {
                     </Card>
                 </>
             )}
-        </div>
+        </Box>
     )
 }
 
