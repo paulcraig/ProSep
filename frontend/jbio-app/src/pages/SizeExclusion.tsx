@@ -1,6 +1,4 @@
 import React, { useMemo, useState } from "react";
- 
-
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -12,8 +10,8 @@ import {
   Legend,
 } from "chart.js";
 import { API_URL } from "../config";
-import "./SizeExclusion.css"; // ✅ IMPORT CSS
 import { Alert, Box, Button, Card, CardContent, CardHeader, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
+
 // Gel dictionary
 const gelDict: { [key: string]: [number, number] } = {
   "Bio-P 0.1-1.8 kDa": [100, 1800],
@@ -29,7 +27,6 @@ const gelDict: { [key: string]: [number, number] } = {
   "Bio-A 10.0 - 500 kDA": [10000, 500000],
   "Bio-A 10.0 - 1500 kDA": [10000, 1500000],
 };
-
 
 ChartJS.register(
   CategoryScale,
@@ -169,14 +166,14 @@ const SizeExclusionPage: React.FC = () => {
 
 
   return (
-    <Box className="sec-page">
-      <Card className="sec-card">
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Card>
         <CardHeader title="Size Exclusion Chromatography" />
         <CardContent>
           {error && <Alert severity="error">{error}</Alert>}
 
-          <Box className="sec-controls">
-            <FormControl fullWidth>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, pb: 1 }}>
+            <FormControl>
               <InputLabel id="gel-select-label">Gel Type</InputLabel>
               <Select
                 labelId="gel-select-label"
@@ -191,7 +188,7 @@ const SizeExclusionPage: React.FC = () => {
                 ))}
               </Select>
             </FormControl>
-         
+
             <TextField
               label="Fractions (x)"
               type="number"
@@ -202,13 +199,12 @@ const SizeExclusionPage: React.FC = () => {
           </Box>
 
           <Box mt={2}>
-            <Button className="sec-button" variant="contained" component="label">
+            <Button variant="contained" component="label">
               Upload FASTA
               <input hidden type="file" onChange={handleLoadFasta} />
             </Button>
 
             <Button
-              className="sec-button"
               variant="contained"
               onClick={handleRun}
               disabled={loading || !fastaText.trim()}
@@ -222,24 +218,24 @@ const SizeExclusionPage: React.FC = () => {
 
       {data && (
         <>
-          <Card className="sec-card">
+          <Card>
             <CardContent>
-              <Box className="sec-chart-wrap">
+              <Box sx={{ height: 320, display: 'flex', justifyContent: 'center' }}>
                 <Line data={chartData} options={chartOptions} />
               </Box>
-              <Box className="sec-summary-info-card">
-                <Typography>
+              <Box>
+                <Typography variant="body2">
                   Total: {data.counts.total} | Too Small: {data.counts.to_small} | Too Big: {data.counts.to_big} | Inside: {data.counts.inside}
                 </Typography>
               </Box>
             </CardContent>
           </Card>
 
-          <Card className="sec-card">
+          <Card>
             <CardHeader title="Proteins (Inside Range)" />
             <CardContent>
               <TableContainer>
-                <Table size="small" className="sec-protein-table">
+                <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Name</TableCell>

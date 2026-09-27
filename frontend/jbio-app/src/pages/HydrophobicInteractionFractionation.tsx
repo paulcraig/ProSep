@@ -670,7 +670,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 
                     {/* Main control row for user inputs */}
                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, pb: 1 }}>
-                        <FormControl className="hic-field">
+                        <FormControl>
                             <InputLabel id="ligand-label">Ligand Type</InputLabel>
                             <Select
                                 labelId="ligand-label"
@@ -685,7 +685,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         </FormControl>
 
                         <TextField
-                            className="hic-field"
                             label="Salt Start"
                             type="number"
                             value={saltStart}
@@ -693,7 +692,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         />
 
                         <TextField
-                            className="hic-field"
                             label="Salt End"
                             type="number"
                             value={saltEnd}
@@ -701,7 +699,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         />
 
                         <TextField
-                            className="hic-field"
                             label="Salt Alpha"
                             type="number"
                             value={saltAlpha}
@@ -709,7 +706,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         />
 
                         <TextField
-                            className="hic-field"
                             label="Fractions"
                             type="number"
                             value={fractionCount}
@@ -717,7 +713,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         />
 
                         <TextField
-                            className="hic-field hic-field-wide"
                             label="Deadband (bindingStrength)"
                             type="number"
                             value={deadband}
@@ -727,7 +722,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 
                     {/* Noise / overlap slider */}
                     <Box sx={{ marginTop: 1, marginBottom: 2 }}>
-                        <Typography className="hic-slider-label">Noise / Overlap</Typography>
+                        <Typography>Noise / Overlap</Typography>
                         <Slider
                             value={noise}
                             step={0.01}
@@ -756,9 +751,9 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     </Box>
 
                     {/* Show backend or request errors */}
-                    {true && (
+                    {error && (
                         <Alert severity="error" sx={{ mt: 2 }}>
-                            {error}HELLO
+                            {error}
                         </Alert>
                     )}
                 </CardContent>
@@ -800,7 +795,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         <CardHeader title="Fractions" />
                         <CardContent>
                             <TableContainer>
-                                <Table size="small" className="hic-table">
+                                <Table size="small">
                                     <TableHead>
                                         <TableRow>
                                             <TableCell>Fraction</TableCell>
