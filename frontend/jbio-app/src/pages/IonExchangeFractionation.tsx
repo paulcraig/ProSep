@@ -21,20 +21,18 @@ import {
     TableContainer,
     TableHead,
     TablePagination,
+    TableSortLabel,
     TableRow,
     TextField,
     Typography,
     Switch,
     Chip,
     CircularProgress,
-    IconButton,
     InputAdornment,
 } from '@mui/material'
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LineElement, LinearScale, LogarithmicScale, PointElement, Tooltip } from 'chart.js'
 import { API_URL } from '../config'
 import {
-    ArrowDropDown,
-    ArrowDropUp,
     ExpandMore,
     FileUpload,
     Download,
@@ -707,85 +705,31 @@ const IonExchangeFractionation: React.FC = () => {
                                     <TableHead>
                                         <TableRow>
                                             <TableCell>
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                    }}
+                                                <TableSortLabel
+                                                    active={fractionSort.key === 'fractionIndex'}
+                                                    direction={fractionSort.key === 'fractionIndex' ? fractionSort.direction : 'asc'}
+                                                    onClick={() => handleFractionSort('fractionIndex', fractionSort.key === 'fractionIndex' && fractionSort.direction === 'asc' ? 'desc' : 'asc')}
                                                 >
                                                     Fraction
-                                                    <IconButton
-                                                        size='small'
-                                                        color={fractionSort.key === 'fractionIndex' && fractionSort.direction === 'asc' ? 'primary' : 'default'}
-                                                        onClick={() => handleFractionSort('fractionIndex', 'asc')}
-                                                        title='Sort ascending'
-                                                    >
-                                                        <ArrowDropUp fontSize='small' />
-                                                    </IconButton>
-                                                    <IconButton
-                                                        size='small'
-                                                        color={fractionSort.key === 'fractionIndex' && fractionSort.direction === 'desc' ? 'primary' : 'default'}
-                                                        onClick={() => handleFractionSort('fractionIndex', 'desc')}
-                                                        title='Sort descending'
-                                                    >
-                                                        <ArrowDropDown fontSize='small' />
-                                                    </IconButton>
-                                                </Box>
+                                                </TableSortLabel>
                                             </TableCell>
                                             <TableCell>
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                    }}
+                                                <TableSortLabel
+                                                    active={fractionSort.key === 'proteinCount'}
+                                                    direction={fractionSort.key === 'proteinCount' ? fractionSort.direction : 'asc'}
+                                                    onClick={() => handleFractionSort('proteinCount', fractionSort.key === 'proteinCount' && fractionSort.direction === 'asc' ? 'desc' : 'asc')}
                                                 >
                                                     Protein Count
-                                                    <IconButton
-                                                        size='small'
-                                                        color={fractionSort.key === 'proteinCount' && fractionSort.direction === 'asc' ? 'primary' : 'default'}
-                                                        onClick={() => handleFractionSort('proteinCount', 'asc')}
-                                                        title='Sort ascending'
-                                                    >
-                                                        <ArrowDropUp fontSize='small' />
-                                                    </IconButton>
-                                                    <IconButton
-                                                        size='small'
-                                                        color={fractionSort.key === 'proteinCount' && fractionSort.direction === 'desc' ? 'primary' : 'default'}
-                                                        onClick={() => handleFractionSort('proteinCount', 'desc')}
-                                                        title='Sort descending'
-                                                    >
-                                                        <ArrowDropDown fontSize='small' />
-                                                    </IconButton>
-                                                </Box>
+                                                </TableSortLabel>
                                             </TableCell>
                                             <TableCell>
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                    }}
+                                                <TableSortLabel
+                                                    active={fractionSort.key === 'hitCount'}
+                                                    direction={fractionSort.key === 'hitCount' ? fractionSort.direction : 'asc'}
+                                                    onClick={() => handleFractionSort('hitCount', fractionSort.key === 'hitCount' && fractionSort.direction === 'asc' ? 'desc' : 'asc')}
                                                 >
                                                     Hit Count
-                                                    <IconButton
-                                                        size='small'
-                                                        color={fractionSort.key === 'hitCount' && fractionSort.direction === 'asc' ? 'primary' : 'default'}
-                                                        onClick={() => handleFractionSort('hitCount', 'asc')}
-                                                        title='Sort ascending'
-                                                    >
-                                                        <ArrowDropUp fontSize='small' />
-                                                    </IconButton>
-                                                    <IconButton
-                                                        size='small'
-                                                        color={fractionSort.key === 'hitCount' && fractionSort.direction === 'desc' ? 'primary' : 'default'}
-                                                        onClick={() => handleFractionSort('hitCount', 'desc')}
-                                                        title='Sort descending'
-                                                    >
-                                                        <ArrowDropDown fontSize='small' />
-                                                    </IconButton>
-                                                </Box>
+                                                </TableSortLabel>
                                             </TableCell>
                                             <TableCell>Hit Protein IDs</TableCell>
                                         </TableRow>
@@ -882,58 +826,22 @@ const IonExchangeFractionation: React.FC = () => {
                                             <TableCell>ID</TableCell>
                                             <TableCell>Name</TableCell>
                                             <TableCell>
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                    }}
+                                                <TableSortLabel
+                                                    active={proteinSort.key === 'charge'}
+                                                    direction={proteinSort.key === 'charge' ? proteinSort.direction : 'asc'}
+                                                    onClick={() => handleProteinSort('charge', proteinSort.key === 'charge' && proteinSort.direction === 'asc' ? 'desc' : 'asc')}
                                                 >
                                                     Charge at pH {ph.toFixed(1)}
-                                                    <IconButton
-                                                        size='small'
-                                                        color={proteinSort.key === 'charge' && proteinSort.direction === 'asc' ? 'primary' : 'default'}
-                                                        onClick={() => handleProteinSort('charge', 'asc')}
-                                                        title='Sort ascending'
-                                                    >
-                                                        <ArrowDropUp fontSize='small' />
-                                                    </IconButton>
-                                                    <IconButton
-                                                        size='small'
-                                                        color={proteinSort.key === 'charge' && proteinSort.direction === 'desc' ? 'primary' : 'default'}
-                                                        onClick={() => handleProteinSort('charge', 'desc')}
-                                                        title='Sort descending'
-                                                    >
-                                                        <ArrowDropDown fontSize='small' />
-                                                    </IconButton>
-                                                </Box>
+                                                </TableSortLabel>
                                             </TableCell>
                                             <TableCell>
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 0.5,
-                                                    }}
+                                                <TableSortLabel
+                                                    active={proteinSort.key === 'molecularWeight'}
+                                                    direction={proteinSort.key === 'molecularWeight' ? proteinSort.direction : 'asc'}
+                                                    onClick={() => handleProteinSort('molecularWeight', proteinSort.key === 'molecularWeight' && proteinSort.direction === 'asc' ? 'desc' : 'asc')}
                                                 >
                                                     Molecular Weight
-                                                    <IconButton
-                                                        size='small'
-                                                        color={proteinSort.key === 'molecularWeight' && proteinSort.direction === 'asc' ? 'primary' : 'default'}
-                                                        onClick={() => handleProteinSort('molecularWeight', 'asc')}
-                                                        title='Sort ascending'
-                                                    >
-                                                        <ArrowDropUp fontSize='small' />
-                                                    </IconButton>
-                                                    <IconButton
-                                                        size='small'
-                                                        color={proteinSort.key === 'molecularWeight' && proteinSort.direction === 'desc' ? 'primary' : 'default'}
-                                                        onClick={() => handleProteinSort('molecularWeight', 'desc')}
-                                                        title='Sort descending'
-                                                    >
-                                                        <ArrowDropDown fontSize='small' />
-                                                    </IconButton>
-                                                </Box>
+                                                </TableSortLabel>
                                             </TableCell>
                                             <TableCell>Sequence</TableCell>
                                             <TableCell>Description</TableCell>
