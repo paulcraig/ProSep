@@ -113,6 +113,20 @@ theme = createTheme(
                         ]
                     }
                 }
+            },
+            MuiTableSortLabel: {
+                styleOverrides: {
+                    icon: {
+                        variants: [
+                            {
+                                props: { active: false },
+                                style: {
+                                    opacity: 0.3
+                                }
+                            }
+                        ],
+                    }
+                }
             }
         },
     },
