@@ -36,24 +36,6 @@
   gap: 0.5rem 1rem;
 }
 
-.MuiTypography-body1, .MuiTypography-caption, .MuiTypography-h6,
-.MuiSelect-select, 
-.MuiTableCell-root, 
-.MuiSvgIcon-root, 
-.MuiTablePagination-selectLabel, 
-.MuiTablePagination-displayedRows,
-.MuiInputBase-input
-{
-  color: var(--text) !important;
-}
-
-.MuiInputLabel-root, .MuiSlider-root, .Mui-checked {
-  color: var(--accent) !important;
-}
-
-.MuiOutlinedInput-notchedOutline {
-  border-color: var(--accent) !important;
-}
 
 .ionx-chart-wrap {
   width: 100%;
@@ -164,4 +146,3 @@
   background-color: var(--background) !important;
   border: 0.1rem solid var(--accent);
 }
-

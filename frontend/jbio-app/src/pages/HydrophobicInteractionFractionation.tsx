@@ -34,7 +34,6 @@ import {
     Tooltip,
 } from "chart.js";
 import { API_URL } from "../config";
-import "./HydrophobicInteractionFractionation.css";
 
 /*
  * Register the chart components we need for Chart.js.
@@ -106,9 +105,9 @@ type CountsDto = {
 /*
  * Simple x/y point used to build chart datasets.
  */
-type XYPoint = { 
-    x: number; 
-    y: number; 
+type XYPoint = {
+    x: number;
+    y: number;
 };
 
 /*
@@ -163,7 +162,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
      */
     const [fractionPage, setFractionPage] = useState<number>(0);
     const [fractionRowsPerPage, setFractionRowsPerPage] = useState<number>(10);
-    
+
     /*
      * Reads an uploaded FASTA file into text and stores it in state.
      */
@@ -203,7 +202,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     }),
                 }
             );
-            
+
             // Read raw text first so debugging bad responses is easier.
             const text = await response.text();
             console.log("HIC raw response:", text);
@@ -269,7 +268,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                 proteins.length > 0
                     ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length
                     : 0;
-            
+
             const proteinIds = proteins.map((p) => p.id).join("; ");
 
             rows.push([
@@ -492,7 +491,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     proteins.length > 0
                         ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length
                         : 0;
-                
+
                 const center = f.fractionIndex;
 
                 // Add gaussian contribution from this fraction's peak.
@@ -664,19 +663,13 @@ const HydrophobicInteractionFractionation: React.FC = () => {
     }, [data]);
 
     return (
-        <Box className="hic-container">
-            <Card className="hic-card">
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Card>
                 <CardHeader title="Hydrophobic Interaction Fractionation (HIC)" />
                 <CardContent>
-                    {/* Show backend or request errors */}
-                    {error && (
-                        <Alert severity="error" className="hic-alert">
-                            {error}
-                        </Alert>
-                    )}
 
                     {/* Main control row for user inputs */}
-                    <Box className="hic-controls">
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, pb: 1 }}>
                         <FormControl className="hic-field">
                             <InputLabel id="ligand-label">Ligand Type</InputLabel>
                             <Select
@@ -731,11 +724,11 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             onChange={(e) => handleDeadbandChange(e.target.value)}
                         />
                     </Box>
-                    
+
                     {/* Noise / overlap slider */}
-                    <Box className="hic-slider">
+                    <Box sx={{ marginTop: 1, marginBottom: 2 }}>
                         <Typography className="hic-slider-label">Noise / Overlap</Typography>
-                        <Slider 
+                        <Slider
                             value={noise}
                             step={0.01}
                             min={0}
@@ -747,7 +740,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 
 
                     {/* Main action buttons */}
-                    <Box className="hic-button-row">
+                    <Box sx={{ display: 'flex', gap: 2 }}>
                         <Button variant="contained" component="label">
                             Upload FASTA
                             <input hidden type="file" onChange={handleLoadFasta} />
@@ -761,20 +754,27 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             {loading ? "Running..." : "Run HIC"}
                         </Button>
                     </Box>
+
+                    {/* Show backend or request errors */}
+                    {true && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                            {error}HELLO
+                        </Alert>
+                    )}
                 </CardContent>
             </Card>
-            
+
             {/* Only show results after a successful run */}
             {data && (
                 <>
                     {/* First graph: average binding strength by fraction */}
-                    <Card className="hic-card">
+                    <Card>
                         <CardHeader title="Chromatogram" />
                         <CardContent>
-                            <Box className="hic-chart-box">
+                            <Box sx={{ height: 320, display: 'flex', justifyContent: 'center' }}>
                                 <Line data={chartData} options={chartOptions} />
                             </Box>
-                            <Box className="hic-stats">
+                            <Box>
                                 <Typography variant="body2">
                                     Ligand: {data.params.ligandType} | Salt Start: {data.params.saltStart} | Salt End: {data.params.saltEnd} | Deadband: {data.params.deadband}
                                 </Typography>
@@ -786,29 +786,19 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     </Card>
 
                     {/* Second graph: smooth signal trace plus salt gradient overlay */}
-                    <Card className="hic-card">
+                    <Card >
                         <CardHeader title="Chromatogram (Signal + Salt Gradient)" />
                         <CardContent>
-                            <Box className="hic-chart-box">
+                            <Box sx={{ height: 320, display: 'flex', justifyContent: 'center' }}>
                                 <Line data={saltChartData} options={saltChartOptions}/>
                             </Box>
                         </CardContent>
                     </Card>
-                    
+
                     {/* Results table for individual fractions */}
-                    <Card className="hic-table-card">
+                    <Card>
                         <CardHeader title="Fractions" />
                         <CardContent>
-                            {/* Download the currently generated fraction summary as a CSV file */}
-                            <Box className="hic-button-row">
-                                <Button
-                                    variant="contained"
-                                    onClick={handleCsv}
-                                    disabled={!data || !data.fractions || data.fractions.length === 0}
-                                >
-                                    Download CSV
-                                </Button>
-                            </Box>
                             <TableContainer>
                                 <Table size="small" className="hic-table">
                                     <TableHead>
@@ -855,19 +845,29 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                                 </Table>
                             </TableContainer>
 
-                            <TablePagination
-                                className="hic-pagination"
-                                component="div"
-                                count={fractionRows.length}
-                                page={fractionPage}
-                                onPageChange={(_, newPage) => setFractionPage(newPage)}
-                                rowsPerPage={fractionRowsPerPage}
-                                onRowsPerPageChange={(e) => {
-                                    setFractionRowsPerPage(parseInt(e.target.value, 10));
-                                    setFractionPage(0);
-                                }}
-                                rowsPerPageOptions={[5, 10, 25, 50]}
-                            />
+                            {/* Download the currently generated fraction summary as a CSV file */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Button
+                                    variant="contained"
+                                    onClick={handleCsv}
+                                    disabled={!data || !data.fractions || data.fractions.length === 0}
+                                >
+                                    Download CSV
+                                </Button>
+                                <TablePagination
+                                    sx={{ mb: 1 }}
+                                    component="div"
+                                    count={fractionRows.length}
+                                    page={fractionPage}
+                                    onPageChange={(_, newPage) => setFractionPage(newPage)}
+                                    rowsPerPage={fractionRowsPerPage}
+                                    onRowsPerPageChange={(e) => {
+                                        setFractionRowsPerPage(parseInt(e.target.value, 10));
+                                        setFractionPage(0);
+                                    }}
+                                    rowsPerPageOptions={[5, 10, 25, 50]}
+                                />
+                            </Box>
                         </CardContent>
                     </Card>
                 </>
@@ -877,6 +877,3 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 };
 
 export default HydrophobicInteractionFractionation;
-
-
-
