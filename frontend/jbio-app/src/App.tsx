@@ -86,7 +86,7 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Dashboard pages={pages} homepage={1} darkmode={true} logo={logo} />;
+      <Dashboard pages={pages} homepage={1} darkmode={true} logo={logo} />
     </ThemeProvider>
   )
 }
