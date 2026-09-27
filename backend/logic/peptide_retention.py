@@ -76,7 +76,7 @@ class PeptideRetentionPredictor:
 
         params = AllChem.ETKDGv3()
         params.trackFailures = True
-        params.timeout = 30
+        params.numThreads = 0
         # we only use the first configuration found for our calculations anyway, no need to find 10
         cids = AllChem.EmbedMultipleConfs(mol, numConfs=1, params=params)
 
