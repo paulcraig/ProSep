@@ -3,18 +3,18 @@ import { createTheme } from '@mui/material'
 let theme = createTheme({
     palette: {
         text: {
-            primary: "#ffffff",
-            secondary: "#ffffff"
+            primary: '#ffffff',
+            secondary: '#ffffff',
         },
         primary: {
             main: '#8ea2ff',
         },
         secondary: {
             main: '#555a66',
-            light: '#3f4350'
+            light: '#3f4350',
         },
         background: {
-            default: "#282b30",
+            default: '#282b30',
             paper: '#3a3d46',
         },
     },
@@ -37,16 +37,16 @@ theme = createTheme(
                     },
                     title: {
                         fontWeight: 700,
-                        fontSize: "1.2rem",
+                        fontSize: '1.2rem',
                     },
                 },
             },
             MuiTextField: {
                 styleOverrides: {
                     root: {
-                        width: 260
-                    }
-                }
+                        width: 260,
+                    },
+                },
             },
             MuiSelect: {
                 styleOverrides: {
@@ -55,43 +55,43 @@ theme = createTheme(
                         width: 260,
                     },
                     icon: {
-                        color: "#ffffff"
-                    }
-                }
+                        color: '#ffffff',
+                    },
+                },
             },
             MuiOutlinedInput: {
                 styleOverrides: {
                     root: {
-                        backgroundColor: theme.palette.secondary.light
+                        backgroundColor: theme.palette.secondary.light,
                     },
                     notchedOutline: {
-                        borderColor: theme.palette.secondary.main
+                        borderColor: theme.palette.secondary.main,
                     },
-                }
+                },
             },
             MuiSlider: {
                 styleOverrides: {
                     track: {
-                        border: "none",
+                        border: 'none',
                     },
                     thumb: {
-                        color: "#ffffff"
-                    }
-                }
+                        color: '#ffffff',
+                    },
+                },
             },
             MuiButton: {
                 styleOverrides: {
                     root: {
-                        fontWeight: 600
-                    }
-                }
+                        fontWeight: 600,
+                    },
+                },
             },
             MuiTableHead: {
                 styleOverrides: {
                     root: {
-                        backgroundColor: theme.palette.background.default
-                    }
-                }
+                        backgroundColor: theme.palette.background.default,
+                    },
+                },
             },
             MuiTableCell: {
                 styleOverrides: {
@@ -99,7 +99,7 @@ theme = createTheme(
                         borderBottomWidth: 1,
                         borderColor: theme.palette.secondary.main,
                     },
-                }
+                },
             },
             MuiAlert: {
                 styleOverrides: {
@@ -108,14 +108,14 @@ theme = createTheme(
                             {
                                 props: { severity: 'error' },
                                 style: {
-                                    color: "#ff6b6b",
-                                    backgroundColor: "#2a1a1a",
-                                    border: "1px solid #ff6b6b"
-                                }
-                            }
-                        ]
-                    }
-                }
+                                    color: '#ff6b6b',
+                                    backgroundColor: '#2a1a1a',
+                                    border: '1px solid #ff6b6b',
+                                },
+                            },
+                        ],
+                    },
+                },
             },
             MuiTableSortLabel: {
                 styleOverrides: {
@@ -124,13 +124,13 @@ theme = createTheme(
                             {
                                 props: { active: false },
                                 style: {
-                                    opacity: 0.3
-                                }
-                            }
+                                    opacity: 0.3,
+                                },
+                            },
                         ],
-                    }
-                }
-            }
+                    },
+                },
+            },
         },
     },
     theme,

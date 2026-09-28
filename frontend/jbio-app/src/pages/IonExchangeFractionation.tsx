@@ -32,14 +32,7 @@ import {
 } from '@mui/material'
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LineElement, LinearScale, LogarithmicScale, PointElement, Tooltip } from 'chart.js'
 import { API_URL } from '../config'
-import {
-    ExpandMore,
-    FileUpload,
-    Download,
-    PlayArrow,
-    SettingsOutlined,
-    Search,
-} from '@mui/icons-material'
+import { ExpandMore, FileUpload, Download, PlayArrow, SettingsOutlined, Search } from '@mui/icons-material'
 import NumberField from '../components/ui/NumberField'
 
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, LineElement, PointElement, Tooltip, Legend)
@@ -480,8 +473,8 @@ const IonExchangeFractionation: React.FC = () => {
                         </FormControl>
 
                         <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={value => setFractionCount(value == null ? 80 : Math.max(1, value))} />
-                        
-                        <NumberField label='Deadband (Charge)' value={Number(deadband.toFixed(2))} onValueChange={value => setDeadband(Number(value))} min={0} max={1} step={0.01}/>
+
+                        <NumberField label='Deadband (Charge)' value={Number(deadband.toFixed(2))} onValueChange={value => setDeadband(Number(value))} min={0} max={1} step={0.01} />
                     </Box>
 
                     <Box sx={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
@@ -492,8 +485,6 @@ const IonExchangeFractionation: React.FC = () => {
                         </Box>
                         <Slider min={0} max={14} step={0.5} value={ph} marks onChange={(_, value) => setPh(value as number)} />
                     </Box>
-
-                    
 
                     <Box sx={{ marginTop: 1, marginBottom: 2 }}>
                         <Typography>Noise / Overlap: {noise.toFixed(2)}</Typography>
@@ -647,7 +638,8 @@ const IonExchangeFractionation: React.FC = () => {
 
                             <Box>
                                 <Typography variant='body2'>
-                                    Total: {data.counts.total} | Retained: {data.counts.retained} | Wash: {data.counts.wash} | Exchanger: <span style={{ textTransform: 'capitalize' }}>{data.params.exchanger}</span>
+                                    Total: {data.counts.total} | Retained: {data.counts.retained} | Wash: {data.counts.wash} | Exchanger:{' '}
+                                    <span style={{ textTransform: 'capitalize' }}>{data.params.exchanger}</span>
                                 </Typography>
                             </Box>
                         </CardContent>
