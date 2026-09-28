@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { NumberField as BaseNumberField } from '@base-ui/react/number-field'
+import { useTheme } from '@mui/material'
 import IconButton from '@mui/material/IconButton'
 import FormControl from '@mui/material/FormControl'
 import FormHelperText from '@mui/material/FormHelperText'
@@ -29,6 +30,7 @@ export default function NumberField({
     size?: 'small' | 'medium'
     error?: boolean
 }) {
+    const theme = useTheme()
     let id = React.useId()
     if (idProp) {
         id = idProp
@@ -67,7 +69,7 @@ export default function NumberField({
                                     maxHeight: 'unset',
                                     alignSelf: 'stretch',
                                     borderLeft: '1px solid',
-                                    borderColor: 'divider',
+                                    borderColor: theme.palette.secondary.main,
                                     ml: 0,
                                     '& button': {
                                         py: 0,
@@ -76,11 +78,11 @@ export default function NumberField({
                                     },
                                 }}
                             >
-                                <BaseNumberField.Increment render={<IconButton size={size} aria-label='Increase' />}>
+                                <BaseNumberField.Increment render={<IconButton size={size} aria-label='Increase' sx={{ color: theme.palette.text.primary }} />}>
                                     <KeyboardArrowUpIcon fontSize={size} sx={{ transform: 'translateY(2px)' }} />
                                 </BaseNumberField.Increment>
 
-                                <BaseNumberField.Decrement render={<IconButton size={size} aria-label='Decrease' />}>
+                                <BaseNumberField.Decrement render={<IconButton size={size} aria-label='Decrease' sx={{ color: theme.palette.text.primary }} />}>
                                     <KeyboardArrowDownIcon fontSize={size} sx={{ transform: 'translateY(-2px)' }} />
                                 </BaseNumberField.Decrement>
                             </InputAdornment>
