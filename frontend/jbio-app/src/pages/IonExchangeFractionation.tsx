@@ -485,18 +485,10 @@ const IonExchangeFractionation: React.FC = () => {
                     </Box>
 
                     <Box sx={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: '0.5rem',
-                            }}
-                        >
+                        <Box>
                             <Typography gutterBottom sx={{ margin: 0 }}>
                                 pH: {ph.toFixed(1)}
                             </Typography>
-                            <TextField size='small' type='number' value={ph} onChange={e => setPh(Math.max(0, Math.min(14, Number(e.target.value) || 7.0)))} inputMode='decimal' sx={{ width: 80 }} />
                         </Box>
                         <Slider min={0} max={14} step={0.5} value={ph} marks onChange={(_, value) => setPh(value as number)} />
                     </Box>
@@ -504,21 +496,16 @@ const IonExchangeFractionation: React.FC = () => {
                     
 
                     <Box sx={{ marginTop: 1, marginBottom: 2 }}>
-                        <Typography gutterBottom>Fuzzy overlap noise: {noise.toFixed(2)}</Typography>
+                        <Typography>Noise / Overlap: {noise.toFixed(2)}</Typography>
                         <Slider min={0} max={0.5} step={0.01} value={noise} onChange={(_, value) => setNoise(value as number)} />
                     </Box>
 
-                    <Box sx={{ marginTop: 1, marginBottom: 2 }}>
-                        <Typography gutterBottom>Charge deadband: ±{deadband.toFixed(2)}</Typography>
-                        <Slider min={0} max={1} step={0.01} value={deadband} onChange={(_, value) => setDeadband(value as number)} />
-                    </Box>
-
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Button component='label' variant='contained' startIcon={<FileUpload />}>
-                            Upload FASTA File
+                        <Button component='label' variant='contained'>
+                            Upload FASTA
                             <input type='file' hidden accept='.fasta,.fas,.fa,.faa' onChange={handleLoadFasta} />
                         </Button>
-                        <Button variant='contained' disabled={loading || fastaText.trim().length === 0} onClick={handleRunFractionation} startIcon={<PlayArrow />}>
+                        <Button variant='contained' disabled={loading || fastaText.trim().length === 0} onClick={handleRunFractionation}>
                             {loading ? 'Processing...' : 'Run Fractionation'}
                         </Button>
                     </Box>
