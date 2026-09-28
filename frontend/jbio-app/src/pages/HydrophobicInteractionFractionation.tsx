@@ -740,12 +740,11 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             </TableContainer>
 
                             {/* Download the currently generated fraction summary as a CSV file */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Button variant='contained' onClick={handleCsv} disabled={!data || !data.fractions || data.fractions.length === 0}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 1 }}>
+                                <Button variant='contained' onClick={handleCsv} disabled={!data || !data.fractions || data.fractions.length === 0} sx={{ height: 'min-content' }}>
                                     Download CSV
                                 </Button>
                                 <TablePagination
-                                    sx={{ mb: 1 }}
                                     component='div'
                                     count={fractionRows.length}
                                     page={fractionPage}
