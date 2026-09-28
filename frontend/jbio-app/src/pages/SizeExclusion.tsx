@@ -177,7 +177,7 @@ const SizeExclusionPage: React.FC = () => {
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, pb: 1 }}>
                         <FormControl>
                             <InputLabel id='gel-select-label'>Gel Type</InputLabel>
-                            <Select labelId='gel-select-label' value={selectedGel} label='Gel Type' onChange={handleGelChange}>
+                            <Select sx={{ width: 350 }} labelId='gel-select-label' value={selectedGel} label='Gel Type' onChange={handleGelChange}>
                                 {gelNames.map(name => (
                                     <MenuItem key={name} value={name}>
                                         {name} ({gelDict[name][0]} - {gelDict[name][1]} Da)
