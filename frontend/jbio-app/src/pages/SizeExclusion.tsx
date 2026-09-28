@@ -196,7 +196,7 @@ const SizeExclusionPage: React.FC = () => {
                         </Button>
 
                         <Button variant='contained' onClick={handleRun} disabled={loading || !fastaText.trim()} sx={{ ml: 2 }}>
-                            {loading ? 'Running...' : 'Run'}
+                            {loading ? 'Running...' : 'Run Fractination'}
                         </Button>
                     </Box>
                 </CardContent>
