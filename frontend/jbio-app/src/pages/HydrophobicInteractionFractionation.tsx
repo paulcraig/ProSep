@@ -18,12 +18,12 @@ import {
     TableHead,
     TablePagination,
     TableRow,
-    TextField,
     Typography,
 } from '@mui/material'
 import { Line } from 'react-chartjs-2'
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LineElement, LinearScale, LogarithmicScale, PointElement, Tooltip } from 'chart.js'
 import { API_URL } from '../config'
+import NumberField from '../components/ui/NumberField'
 
 /*
  * Register the chart components we need for Chart.js.
@@ -255,63 +255,53 @@ const HydrophobicInteractionFractionation: React.FC = () => {
     }
 
     // Keep salt start non-negative, but do not force any relationship to salt end
-    const handleSaltStartChange = (value: string) => {
-        const parsed = parseFloat(value)
-
-        if (Number.isNaN(parsed)) {
+    const handleSaltStartChange = (value: number | null) => {
+        if (value == null) {
             setSaltStart(0)
             return
         }
 
-        setSaltStart(Math.max(0, parsed))
+        setSaltStart(Math.max(0, value))
     }
 
     // Keep salt end non-negative, but do not force any relationship to salt start
-    const handleSaltEndChange = (value: string) => {
-        const parsed = parseFloat(value)
-
-        if (Number.isNaN(parsed)) {
+    const handleSaltEndChange = (value: number | null) => {
+        if (value == null) {
             setSaltEnd(0)
             return
         }
 
-        setSaltEnd(Math.max(0, parsed))
+        setSaltEnd(Math.max(0, value))
     }
 
     // Keep salt alpha non-negative
-    const handleSaltAlphaChange = (value: string) => {
-        const parsed = parseFloat(value)
-
-        if (Number.isNaN(parsed)) {
+    const handleSaltAlphaChange = (value: number | null) => {
+        if (value == null) {
             setSaltAlpha(0)
             return
         }
 
-        setSaltAlpha(Math.max(0, parsed))
+        setSaltAlpha(Math.max(0, value))
     }
 
     // Keep fraction count at least 1
-    const handleFractionCountChange = (value: string) => {
-        const parsed = parseInt(value, 10)
-
-        if (Number.isNaN(parsed)) {
+    const handleFractionCountChange = (value: number | null) => {
+        if (value == null) {
             setFractionCount(1)
             return
         }
 
-        setFractionCount(Math.max(1, parsed))
+        setFractionCount(Math.max(1, Math.floor(value)))
     }
 
     // Keep deadband non-negative
-    const handleDeadbandChange = (value: string) => {
-        const parsed = parseFloat(value)
-
-        if (Number.isNaN(parsed)) {
+    const handleDeadbandChange = (value: number | null) => {
+        if (value == null) {
             setDeadband(0)
             return
         }
 
-        setDeadband(Math.max(0, parsed))
+        setDeadband(Math.max(0, value))
     }
 
     /*
@@ -629,15 +619,15 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             </Select>
                         </FormControl>
 
-                        <TextField label='Salt Start' type='number' value={saltStart} onChange={e => handleSaltStartChange(e.target.value)} />
+                        <NumberField label='Salt Start' value={saltStart} min={0} onValueChange={handleSaltStartChange} />
 
-                        <TextField label='Salt End' type='number' value={saltEnd} onChange={e => handleSaltEndChange(e.target.value)} />
+                        <NumberField label='Salt End' value={saltEnd} min={0} onValueChange={handleSaltEndChange} />
 
-                        <TextField label='Salt Alpha' type='number' value={saltAlpha} onChange={e => handleSaltAlphaChange(e.target.value)} />
+                        <NumberField label='Salt Alpha' value={saltAlpha} min={0} onValueChange={handleSaltAlphaChange} />
 
-                        <TextField label='Fractions' type='number' value={fractionCount} onChange={e => handleFractionCountChange(e.target.value)} />
+                        <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={handleFractionCountChange} />
 
-                        <TextField label='Deadband (bindingStrength)' type='number' value={deadband} onChange={e => handleDeadbandChange(e.target.value)} />
+                        <NumberField label='Deadband (Binding Strength)' value={deadband} min={0} onValueChange={handleDeadbandChange} />
                     </Box>
 
                     {/* Noise / overlap slider */}

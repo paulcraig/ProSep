@@ -40,6 +40,7 @@ import {
     SettingsOutlined,
     Search,
 } from '@mui/icons-material'
+import NumberField from '../components/ui/NumberField'
 
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, LineElement, PointElement, Tooltip, Legend)
 
@@ -478,7 +479,9 @@ const IonExchangeFractionation: React.FC = () => {
                             </Select>
                         </FormControl>
 
-                        <TextField label='Fractions' type='number' value={fractionCount} onChange={e => setFractionCount(Math.max(1, Number(e.target.value) || 80))} />
+                        <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={value => setFractionCount(value == null ? 80 : Math.max(1, value))} />
+                        
+                        <NumberField label='Deadband (Charge)' value={Number(deadband.toFixed(2))} onValueChange={value => setDeadband(Number(value))} min={0} max={1} step={0.01}/>
                     </Box>
 
                     <Box sx={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
