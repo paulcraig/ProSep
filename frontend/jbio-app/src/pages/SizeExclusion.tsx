@@ -20,9 +20,9 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    TextField,
     Typography,
 } from '@mui/material'
+import NumberField from '../components/ui/NumberField'
 
 // Gel dictionary
 const gelDict: { [key: string]: [number, number] } = {
@@ -186,7 +186,7 @@ const SizeExclusionPage: React.FC = () => {
                             </Select>
                         </FormControl>
 
-                        <TextField label='Fractions (x)' type='number' value={fractionCount} onChange={e => setFractionCount(Math.max(1, parseInt(e.target.value) || 1))} inputProps={{ min: 1 }} />
+                        <NumberField label='Fractions (x)' value={fractionCount} min={1} onValueChange={value => setFractionCount(value == null ? 1 : Math.max(1, Math.floor(value)))} />
                     </Box>
 
                     <Box mt={2}>
