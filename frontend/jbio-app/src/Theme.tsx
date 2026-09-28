@@ -7,13 +7,15 @@ let theme = createTheme({
             secondary: "#ffffff"
         },
         primary: {
-            main: '#00ff00', // #8ea2ff
+            main: '#8ea2ff',
         },
         secondary: {
-            main: '#0000ff' // #555a66
+            main: '#555a66',
+            light: '#3f4350'
         },
         background: {
-            paper: '#880000', // #3a3d46
+            default: "#282b30",
+            paper: '#3a3d46',
         },
     },
 })
@@ -49,17 +51,18 @@ theme = createTheme(
             MuiSelect: {
                 styleOverrides: {
                     root: {
+                        backgroundColor: theme.palette.secondary.light,
                         width: 260,
                     },
                     icon: {
-                        color: "#00aaff"
+                        color: "#ffffff"
                     }
                 }
             },
             MuiOutlinedInput: {
                 styleOverrides: {
                     root: {
-                        backgroundColor: theme.palette.background.paper
+                        backgroundColor: theme.palette.secondary.light
                     },
                     notchedOutline: {
                         borderColor: theme.palette.secondary.main
@@ -72,7 +75,7 @@ theme = createTheme(
                         border: "none",
                     },
                     thumb: {
-                        color: "#ffff00"
+                        color: "#ffffff"
                     }
                 }
             },
@@ -86,7 +89,7 @@ theme = createTheme(
             MuiTableHead: {
                 styleOverrides: {
                     root: {
-                        backgroundColor: "#2f323a"
+                        backgroundColor: theme.palette.background.default
                     }
                 }
             },
@@ -94,7 +97,7 @@ theme = createTheme(
                 styleOverrides: {
                     root: {
                         borderBottomWidth: 1,
-                        borderColor: "#ff00ff", // #555a66
+                        borderColor: theme.palette.secondary.main,
                     },
                 }
             },
