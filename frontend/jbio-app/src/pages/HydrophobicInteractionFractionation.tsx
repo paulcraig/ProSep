@@ -644,7 +644,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         </Button>
 
                         <Button variant='contained' onClick={handleRun} disabled={loading || !fastaText.trim()}>
-                            {loading ? 'Running...' : 'Run Fractination'}
+                            {loading ? 'Running...' : 'Run Fractionation'}
                         </Button>
                     </Box>
 
