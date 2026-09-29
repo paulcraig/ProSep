@@ -180,6 +180,14 @@ class TestProtein(unittest.TestCase):
         achual = Protein.get_amino_acid_count("backend/tests/data/twoProteins.fasta")
         self.assertEqual(expected, achual)
 
+    def test_calculate_absorbance(self):
+        file = "backend/tests/data/singleProtein.fasta"
+        first_seq = next(iter(Protein.parse_protein(file).values()))[1]
+        expected = 740
+        actual = Protein.calculate_absorbance(first_seq)
+
+        self.assertEqual(actual, expected)
+
 
 if __name__ == "__main__":
     file = "backend/tests/data/singleProtein.fasta"
