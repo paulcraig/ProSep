@@ -44,7 +44,7 @@ jobs:
     - uses: ./.github/workflows/common
     - name: Install libraries
       run: |
-        pip install ruff
+        pip install ruff==0.14.0
     - name: Analyse with ruff
       run: |
         ruff check backend/
