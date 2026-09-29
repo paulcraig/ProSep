@@ -186,7 +186,7 @@ const SizeExclusionPage: React.FC = () => {
                             </Select>
                         </FormControl>
 
-                        <NumberField label='Fractions (x)' value={fractionCount} min={1} onValueChange={value => setFractionCount(value == null ? 1 : Math.max(1, Math.floor(value)))} />
+                        <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={value => setFractionCount(value == null ? 1 : Math.max(1, Math.floor(value)))} />
                     </Box>
 
                     <Box mt={2}>
@@ -196,7 +196,7 @@ const SizeExclusionPage: React.FC = () => {
                         </Button>
 
                         <Button variant='contained' onClick={handleRun} disabled={loading || !fastaText.trim()} sx={{ ml: 2 }}>
-                            {loading ? 'Running...' : 'Run Fractination'}
+                            {loading ? 'Running...' : 'Run Fractionation'}
                         </Button>
                     </Box>
                 </CardContent>
