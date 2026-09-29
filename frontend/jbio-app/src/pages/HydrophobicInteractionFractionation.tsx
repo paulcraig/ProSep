@@ -619,13 +619,13 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                             </Select>
                         </FormControl>
 
+                        <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={handleFractionCountChange} />
+
                         <NumberField label='Salt Start' value={saltStart} min={0} onValueChange={handleSaltStartChange} />
 
                         <NumberField label='Salt End' value={saltEnd} min={0} onValueChange={handleSaltEndChange} />
 
                         <NumberField label='Salt Alpha' value={saltAlpha} min={0} onValueChange={handleSaltAlphaChange} />
-
-                        <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={handleFractionCountChange} />
 
                         <NumberField label='Deadband (Binding Strength)' value={deadband} min={0} onValueChange={handleDeadbandChange} />
                     </Box>
