@@ -83,6 +83,7 @@ theme = createTheme(
                 styleOverrides: {
                     root: {
                         fontWeight: 600,
+                        color: '#ffffff'
                     },
                 },
             },
