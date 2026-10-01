@@ -1,4 +1,5 @@
 from __future__ import annotations
+from backend.utility.protein import Protein
 
 import math
 import random
@@ -275,6 +276,7 @@ class IonExchangeFractionation:
                 {
                     "fractionIndex": index + 1,
                     "proteinCount": len(fraction),
+                    "absorbanceScore": sum(Protein.calculate_absorbance(entry.sequence) for entry in fraction),
                     "hitCount": len([
                         entry for entry in fraction if IonExchangeFractionation._param_of_interest(entry.sequence)
                     ]),
