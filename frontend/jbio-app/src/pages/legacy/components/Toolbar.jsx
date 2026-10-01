@@ -29,20 +29,25 @@ const AxisIcon = () => (
 );
 
 export const Toolbar = ({
-  simulationState, yAxisMode,
+  simulationState, hasProteins, yAxisMode,
   onUpload, onStartIEF, onStartSDS, onReset, onToggleYAxis,
 }) => {
-  const isReady      = simulationState === 'ready';
+  const canStartIEF  = simulationState === 'ready' && hasProteins;
   const isIEFDone    = simulationState === 'ief-complete';
+  const handleUpload = (event) => {
+    const files = event.target.files;
+    if (files?.length) onUpload(files);
+    event.target.value = '';
+  };
 
   return (
     <div className="twoDE-controls-row">
       <label className="twoDE-button icon" style={{ cursor: 'pointer' }}>
         <UploadIcon /> Upload FASTA
-        <input type="file" accept=".fasta,.fa,.faa,.FAA" multiple onChange={onUpload} style={{ display: 'none' }} />
+        <input type="file" accept=".fasta,.fa,.faa,.FAA" multiple onChange={handleUpload} style={{ display: 'none' }} />
       </label>
 
-      <button className="twoDE-button icon" onClick={onStartIEF} disabled={!isReady}>
+      <button className="twoDE-button icon" onClick={onStartIEF} disabled={!canStartIEF}>
         <HorizontalLinesIcon /> 1st Dimension
       </button>
 

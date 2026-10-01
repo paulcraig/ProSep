@@ -10,3 +10,5 @@ backend/.DS_Store
 
 data/*
 !data/.gitkeep
+
+test.fasta

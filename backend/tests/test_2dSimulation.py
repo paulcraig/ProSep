@@ -4,6 +4,30 @@ from backend.logic.two_de_simulation import Simulation_2de
 
 
 class Test2dSimulation(unittest.TestCase):
+    def test_acrylamide_percentages_change_distance_position(self):
+        position_at_8 = Simulation_2de.get_distance_position(
+            60000, 600, 8, min_mw=1000, max_mw=1000000
+        )
+        position_at_16 = Simulation_2de.get_distance_position(
+            60000, 600, 16, min_mw=1000, max_mw=1000000
+        )
+
+        self.assertNotEqual(position_at_8, position_at_16)
+
+    def test_gradient_position_uses_intermediate_concentration(self):
+        position_at_8 = Simulation_2de.get_mw_position(
+            60000, 600, 8, min_mw=1000, max_mw=1000000
+        )
+        position_at_16 = Simulation_2de.get_mw_position(
+            60000, 600, 16, min_mw=1000, max_mw=1000000
+        )
+        gradient_position = Simulation_2de.get_gradient_position(
+            60000, "mw", 600, min_mw=1000, max_mw=1000000
+        )
+
+        self.assertLess(position_at_8, gradient_position)
+        self.assertLess(gradient_position, position_at_16)
+
     def test_parse_fasta_content(self):
         """Given an amino acid sequence parse_fasta_content should parse it into a dict with relent information stored"""
         expected = [

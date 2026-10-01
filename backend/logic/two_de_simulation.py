@@ -9,16 +9,26 @@ from Bio import SeqIO
 from backend.utility.protein import Protein
 
 
-class Simulation_2de():
+class Simulation_2de:
     COLOR_PALETTE = [
-        '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-        '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#808080'
+        "#FF0000",
+        "#00FF00",
+        "#0000FF",
+        "#FFFF00",
+        "#FF00FF",
+        "#00FFFF",
+        "#FFA500",
+        "#800080",
+        "#008000",
+        "#FFC0CB",
+        "#A52A2A",
+        "#808080",
     ]
 
     @staticmethod
     def simulate_ief(proteins, ph_range, canvas_width, canvas_height, steps=25):
-        min_ph = ph_range['min']
-        max_ph = ph_range['max']
+        min_ph = ph_range["min"]
+        max_ph = ph_range["max"]
         simulation_results = []
 
         for step in range(steps + 1):
@@ -26,53 +36,57 @@ class Simulation_2de():
             step_results = []
             for protein in proteins:
                 protein_data = protein.copy()
-                clampedPH = min(max(protein['pH'], min_ph), max_ph)
-                targetX = Simulation_2de.get_ph_position(clampedPH, canvas_width, min_ph, max_ph)
+                clampedPH = min(max(protein["pH"], min_ph), max_ph)
+                targetX = Simulation_2de.get_ph_position(
+                    clampedPH, canvas_width, min_ph, max_ph
+                )
 
                 if step == 0:
                     startX = np.random.uniform(50, canvas_width - 50)
                     spreadY = np.random.uniform(50, 70)
-                    protein_data.update({
-                        'x': startX,
-                        'y': spreadY,
-                        'currentpH': min_ph + ((startX - 50) / (canvas_width - 100)) * (max_ph - min_ph),
-                        'bandWidth': 40,
-                        'settled': False
-                    })
+                    protein_data.update(
+                        {
+                            "x": startX,
+                            "y": spreadY,
+                            "currentpH": min_ph
+                            + ((startX - 50) / (canvas_width - 100))
+                            * (max_ph - min_ph),
+                            "bandWidth": 40,
+                            "settled": False,
+                        }
+                    )
                 else:
                     prev_data = simulation_results[step - 1][proteins.index(protein)]
-                    dx = targetX - prev_data['x']
-                    newX = prev_data['x'] + dx * (0.1 + progress * 0.2)
-                    newBandWidth = max(3, prev_data['bandWidth'] * (1 - progress * 0.8))
+                    dx = targetX - prev_data["x"]
+                    newX = prev_data["x"] + dx * (0.1 + progress * 0.2)
+                    newBandWidth = max(3, prev_data["bandWidth"] * (1 - progress * 0.8))
                     settled = abs(dx) < 1
-                    protein_data.update({
-                        'x': newX,
-                        'y': 80,
-                        'bandWidth': newBandWidth,
-                        'settled': settled
-                    })
+                    protein_data.update(
+                        {
+                            "x": newX,
+                            "y": 80,
+                            "bandWidth": newBandWidth,
+                            "settled": settled,
+                        }
+                    )
                 step_results.append(protein_data)
             simulation_results.append(step_results)
 
         return simulation_results
 
-
     @staticmethod
-    def simulate_sds(proteins, y_axis_mode, acrylamide_percentage, canvas_height, steps=25):
+    def simulate_sds(
+        proteins, y_axis_mode, acrylamide_percentage, canvas_height, steps=25
+    ):
         simulation_results = []
         condensed_proteins = []
-        mws:List = []
+        mws: List = []
 
         for protein in proteins:
-
-            mws.append(protein['mw'])
+            mws.append(protein["mw"])
 
             protein_data = protein.copy()
-            protein_data.update({
-                'y': 150,
-                'condensing': True,
-                'bandWidth': 3
-            })
+            protein_data.update({"y": 150, "condensing": True, "bandWidth": 3})
             condensed_proteins.append(protein_data)
         simulation_results.append(condensed_proteins)
 
@@ -81,25 +95,64 @@ class Simulation_2de():
             for i, protein in enumerate(proteins):
                 protein_data = protein.copy()
                 prev_data = simulation_results[step - 1][i]
-                if y_axis_mode == 'mw':
-                    targetPosY = Simulation_2de.get_mw_position(protein['mw'], canvas_height, acrylamide_percentage, min_mw=min(mws), max_mw=max(mws))
+                if acrylamide_percentage == "gradient-8-16":
+                    targetPosY = Simulation_2de.get_gradient_position(
+                        protein["mw"],
+                        y_axis_mode,
+                        canvas_height,
+                        min_mw=min(mws),
+                        max_mw=max(mws),
+                    )
+                elif y_axis_mode == "mw":
+                    targetPosY = Simulation_2de.get_mw_position(
+                        protein["mw"],
+                        canvas_height,
+                        acrylamide_percentage,
+                        min_mw=min(mws),
+                        max_mw=max(mws),
+                    )
                 else:
-                    targetPosY = Simulation_2de.get_distance_position(protein['mw'], canvas_height, acrylamide_percentage, min_mw=min(mws), max_mw=max(mws))
+                    targetPosY = Simulation_2de.get_distance_position(
+                        protein["mw"],
+                        canvas_height,
+                        acrylamide_percentage,
+                        min_mw=min(mws),
+                        max_mw=max(mws),
+                    )
 
                 if targetPosY >= 600:
                     targetPosY = 600
 
-                protein_data.update({
-                    'x': prev_data['x'],
-                    'y': prev_data['y'] + (targetPosY - prev_data['y']) * 0.1,
-                    'condensing': False,
-                    'bandWidth': prev_data['bandWidth']
-                })
+                protein_data.update(
+                    {
+                        "x": prev_data["x"],
+                        "y": prev_data["y"] + (targetPosY - prev_data["y"]) * 0.1,
+                        "condensing": False,
+                        "bandWidth": prev_data["bandWidth"],
+                    }
+                )
                 step_results.append(protein_data)
             simulation_results.append(step_results)
 
         return simulation_results
-    
+
+    @staticmethod
+    def get_gradient_position(mw, y_axis_mode, canvas_height, min_mw, max_mw):
+        position_function = (
+            Simulation_2de.get_mw_position
+            if y_axis_mode == "mw"
+            else Simulation_2de.get_distance_position
+        )
+        acrylamide_percentage = 12
+        for _ in range(8):
+            position = position_function(
+                mw, canvas_height, acrylamide_percentage, min_mw=min_mw, max_mw=max_mw
+            )
+            depth = (position - 170) / (canvas_height - 220)
+            acrylamide_percentage = 8 + 8 * min(max(depth, 0), 1)
+        return position_function(
+            mw, canvas_height, acrylamide_percentage, min_mw=min_mw, max_mw=max_mw
+        )
 
     @staticmethod
     def parse_fasta(sequences, new_proteins):
@@ -109,31 +162,33 @@ class Simulation_2de():
         links_dict = Protein.find_links(sequences)
 
         for seq in sequences:
-            header = seq.get('header', 'Unknown')
-            match = re.search(r'\|([A-Z0-9]+\.\d+)\|', header)
+            header = seq.get("header", "Unknown")
+            match = re.search(r"\|([A-Z0-9]+\.\d+)\|", header)
             short_id = match.group(1) if match else header[:10]
 
             protein_info = {
-                'name': seq.get('name', header),
-                'fullName': seq.get('name', header),
-                'organism': seq.get('organism', 'Unknown organism'),
-                'uniprotId': "N/A",
-                'mw': seq.get('mw'),
-                'pH': seq.get('pH'),
-                'color': Simulation_2de.COLOR_PALETTE[len(new_proteins) % len(Simulation_2de.COLOR_PALETTE)],
-                'sequence': seq.get('sequence', ''),
-                'x': 50,
-                'y': 300,
-                'currentpH': 7,
-                'velocity': 0,
-                'settled': False,
-                'ID': short_id,
-                'Link': links_dict.get(short_id, "N/A"),
-                'display_name': header
+                "name": seq.get("name", header),
+                "fullName": seq.get("name", header),
+                "organism": seq.get("organism", "Unknown organism"),
+                "uniprotId": "N/A",
+                "mw": seq.get("mw"),
+                "pH": seq.get("pH"),
+                "color": Simulation_2de.COLOR_PALETTE[
+                    len(new_proteins) % len(Simulation_2de.COLOR_PALETTE)
+                ],
+                "sequence": seq.get("sequence", ""),
+                "x": 50,
+                "y": 300,
+                "currentpH": 7,
+                "velocity": 0,
+                "settled": False,
+                "ID": short_id,
+                "Link": links_dict.get(short_id, "N/A"),
+                "display_name": header,
             }
 
             new_proteins.append(protein_info.copy())
-        
+
     @staticmethod
     def parse_fasta_content(content: str) -> List[Dict[str, Any]]:
         sequences = []
@@ -142,47 +197,74 @@ class Simulation_2de():
             header = str(record.description)
             sequence = str(record.seq)
             mw = ProteinAnalysis(sequence).molecular_weight()
-            
+
             pH = Protein.calculate_theoretical_pi(sequence)
 
             info = Protein.extract_protein_info(header)
-            sequences.append({
-                'header': header,
-                'sequence': sequence,
-                'name': info['name'],
-                'organism': info['organism'],
-                'mw': mw,
-                'pH': pH
-            })
+            sequences.append(
+                {
+                    "header": header,
+                    "sequence": sequence,
+                    "name": info["name"],
+                    "organism": info["organism"],
+                    "mw": mw,
+                    "pH": pH,
+                }
+            )
         return sequences
-    
 
     @staticmethod
     def get_ph_position(pH, canvas_width, min_ph, max_ph):
         clampedPH = min(max(pH, min_ph), max_ph)
         return 50 + ((clampedPH - min_ph) / (max_ph - min_ph)) * (canvas_width - 100)
 
-
-    '''
+    """
     The two functions below calculate the Y position on the gel based on molecular weight or distance traveled.
-    '''
+    """
+
     @staticmethod
-    def get_mw_position(mw, canvas_height, acrylamide_percentage, min_mw = 1000, max_mw = 1000000):
+    def get_mw_position(
+        mw, canvas_height, acrylamide_percentage, min_mw=1000, max_mw=1000000
+    ):
         log_mw = math.log10(min(max(mw, min_mw), max_mw))
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 15
         try:
-            return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(min_mw))) * (canvas_height - 220) * acrylamide_factor
+            return (
+                170
+                + (
+                    (math.log10(max_mw) - log_mw)
+                    / (math.log10(max_mw) - math.log10(min_mw))
+                )
+                * (canvas_height - 220)
+                * acrylamide_factor
+            )
         except ZeroDivisionError:
-            return 170 + ((math.log10(max_mw) - log_mw) / (math.log10(max_mw) - math.log10(max_mw))) * (canvas_height - 220) * acrylamide_factor
-
+            return (
+                170
+                + (
+                    (math.log10(max_mw) - log_mw)
+                    / (math.log10(max_mw) - math.log10(max_mw))
+                )
+                * (canvas_height - 220)
+                * acrylamide_factor
+            )
 
     @staticmethod
-    def get_distance_position(mw, canvas_height, acrylamide_percentage, max_distance_traveled=6, min_mw = 1000, max_mw = 1000000):
-        normalized_mw = (math.log10(min(max(mw, min_mw), max_mw)) - math.log10(min_mw)) / (math.log10(max_mw) - math.log10(min_mw))
+    def get_distance_position(
+        mw,
+        canvas_height,
+        acrylamide_percentage,
+        max_distance_traveled=6,
+        min_mw=1000,
+        max_mw=1000000,
+    ):
+        normalized_mw = (
+            math.log10(min(max(mw, min_mw), max_mw)) - math.log10(min_mw)
+        ) / (math.log10(max_mw) - math.log10(min_mw))
         acrylamide_factor = 1 + (acrylamide_percentage - 7.5) / 10
         distance = max_distance_traveled * (1 - normalized_mw) * acrylamide_factor
-        return 170 + (distance / (max_distance_traveled * acrylamide_factor)) * (canvas_height - 220)
+        return 170 + (distance / max_distance_traveled) * (canvas_height - 220)
 
-if (__name__ == '__main__'):
+
+if __name__ == "__main__":
     print(Simulation_2de().parse_fasta_content("tests\data\singleProtein.fasta"))
-    

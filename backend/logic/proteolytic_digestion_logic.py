@@ -12,13 +12,27 @@ import random
 class ProteolyticDigestion:
     @staticmethod
     def breakUpProtein(sequence: str, two_animno_acids: str) -> List:
-        seperated: list = sequence.split(two_animno_acids)
-        i = 0
-        while i < len(seperated) - 1:
-            seperated[i] = seperated[i] + two_animno_acids
-            i += 1
+        if not sequence or not two_animno_acids:
+            return []
 
-        return seperated
+        cleavage_residues = set(two_animno_acids)
+        fragments = []
+        fragment_start = 0
+
+        for index, residue in enumerate(sequence):
+            trypsin_cut_before_proline = (
+                two_animno_acids == "KR"
+                and index + 1 < len(sequence)
+                and sequence[index + 1] == "P"
+            )
+            if residue in cleavage_residues and not trypsin_cut_before_proline:
+                fragments.append(sequence[fragment_start : index + 1])
+                fragment_start = index + 1
+
+        if fragment_start < len(sequence):
+            fragments.append(sequence[fragment_start:])
+
+        return fragments
 
     @staticmethod
     def fileGetProteinInfo(file: UploadFile) -> Any:
