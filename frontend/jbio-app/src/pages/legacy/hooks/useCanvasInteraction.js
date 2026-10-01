@@ -51,7 +51,7 @@ export function useCanvasInteraction({
 
   const handleCanvasMouseMove = (event) => {
     const { x, y } = toCanvasCoords(event);
-    setMousePos({ x: event.clientX, y: event.clientY });
+    if (!selectedDot) setMousePos({ x: event.clientX, y: event.clientY });
     const hovered = dots.find(dot => hitTestDot(dot, x, y, hitCtx())) || null;
     setHoveredDot(hovered);
   };
@@ -91,10 +91,17 @@ export function useCanvasInteraction({
     canvasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  const clearSelection = () => {
+    setSelectedDot(null);
+    setHoveredDot(null);
+    setMousePos({ x: 0, y: 0 });
+  };
+
   return {
     selectedDot, setSelectedDot,
     hoveredDot,
     mousePos,
+    clearSelection,
     handleCanvasClick,
     handleCanvasMouseMove,
     handleCanvasMouseLeave,

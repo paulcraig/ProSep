@@ -69,13 +69,14 @@
   border: 1px solid var(--pd-border);
   border-radius: var(--pd-radius);
   width: 100%;
-  max-width: 680px;
-  max-height: 88vh;
+  max-width: 1040px;
+  max-height: 94vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
   animation: pd-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 16px;
 }
 
 @keyframes pd-slide-up {
@@ -109,7 +110,7 @@
 
 .pd-protein-name {
   font-family: var(--pd-display);
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--pd-text);
   margin: 0;
@@ -147,7 +148,7 @@
 
 .pd-section-label {
   font-family: var(--pd-mono);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--pd-muted);
@@ -160,7 +161,7 @@
 /* ─── Sequence box ───────────────────────────────────────────────────────────── */
 .pd-sequence-box {
   font-family: var(--pd-mono);
-  font-size: 12px;
+  font-size: 14px;
   color: var(--pd-success);
   background: rgba(79, 209, 165, 0.06);
   border: 1px solid rgba(79, 209, 165, 0.15);
@@ -168,7 +169,7 @@
   padding: 12px 14px;
   word-break: break-all;
   line-height: 1.7;
-  max-height: 90px;
+  max-height: 140px;
   overflow-y: auto;
 }
 
@@ -184,7 +185,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  padding: 10px 12px;
+  padding: 14px 16px;
   background: var(--pd-bg);
   border: 1px solid var(--pd-border);
   border-radius: var(--pd-radius-sm);
@@ -206,20 +207,20 @@
 
 .pd-protease-name {
   font-family: var(--pd-display);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--pd-text);
 }
 
 .pd-protease-aa {
   font-family: var(--pd-mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--pd-accent);
 }
 
 .pd-protease-desc {
   font-family: var(--pd-mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--pd-muted);
   margin-top: 10px;
   padding: 8px 12px;
@@ -264,7 +265,7 @@
 
 .pd-export-btn {
   font-family: var(--pd-mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--pd-accent);
   text-decoration: none;
   padding: 6px 12px;
@@ -291,7 +292,7 @@
   align-items: center;
   gap: 10px;
   font-family: var(--pd-mono);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--pd-muted);
   padding: 24px 0;
   justify-content: center;
@@ -347,14 +348,14 @@
 
 .pd-fragment-index {
   font-family: var(--pd-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--pd-muted);
   text-align: right;
 }
 
 .pd-fragment-seq {
   font-family: var(--pd-mono);
-  font-size: 12px;
+  font-size: 14px;
   color: var(--pd-success);
   word-break: break-all;
   line-height: 1.5;
@@ -362,7 +363,39 @@
 
 .pd-fragment-len {
   font-family: var(--pd-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--pd-muted);
   white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .pd-backdrop {
+    padding: 12px;
+  }
+
+  .pd-modal {
+    max-height: 96vh;
+  }
+
+  .pd-header {
+    padding: 18px;
+  }
+
+  .pd-section {
+    padding: 16px 18px;
+  }
+
+  .pd-protease-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pd-results-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pd-export-btn {
+    white-space: normal;
+  }
 }
