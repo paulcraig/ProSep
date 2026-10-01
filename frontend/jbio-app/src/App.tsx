@@ -14,7 +14,6 @@ import HiddenIcon from '@mui/icons-material/Terminal';
 import Hidden, { useHiddenUnlock } from './pages/Hidden';
 
 import SwapVertIcon from '@mui/icons-material/SwapVert';
-import AlignHorizontalCenterIcon from '@mui/icons-material/AlignHorizontalCenter';
 
 import { ReactComponent as OneDEIcon } from "./assets/electrophoresis/1DE.svg";
 import { ReactComponent as TwoDEIcon } from "./assets/electrophoresis/2DE.svg";
@@ -23,6 +22,8 @@ import PeptideRetention from "./pages/PeptideRetention";
 import IonExchangeFractionation from "./pages/IonExchangeFractionation";
 import HydrophobicInteractionFractionation from "./pages/HydrophobicInteractionFractionation";
 import SizeExclusionPage from './pages/SizeExclusion';
+import { ThemeProvider } from '@mui/material'
+import theme from './Theme'
 
 function App() {
   const pages = [
@@ -83,7 +84,11 @@ function App() {
     },
   ];
 
-  return <Dashboard pages={pages} homepage={1} darkmode={true} logo={logo} />;
+  return (
+    <ThemeProvider theme={theme}>
+      <Dashboard pages={pages} homepage={1} darkmode={true} logo={logo} />
+    </ThemeProvider>
+  )
 }
 
 export default App;

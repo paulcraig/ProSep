@@ -18,31 +18,7 @@ code {
 }
 
 /* Scrollbar styling */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--sub-background) transparent;
-}
 
-*::-webkit-scrollbar {
-  width: 12px;
-  background: transparent;
-}
-
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: var(--sub-background);
-  border-radius: 6px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--text);
-  background-clip: padding-box;
-}
 
 /* Site Themes */
 [data-theme="dark"] {
@@ -51,7 +27,7 @@ code {
 
   --text: #f6f6f6;
   --sub-text: #c5c5c5;
-  
+
   --accent: #7289da;
   --sub-accent: #323848;
   --highlight: #7289da24;
