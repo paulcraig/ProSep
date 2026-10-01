@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
-from typing import Any, Dict, List
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Literal
 from backend.logic.peptide_retention import PeptideRetentionPredictor
 
 router = APIRouter(
@@ -10,9 +10,13 @@ router = APIRouter(
 
 class SinglePeptideRequest(BaseModel):
     peptide: str
+    volume_type: Literal["2D", "3D"] = "3D"
+    num_confs: int = Field(1, ge=1, le=10)
 
 class MultiplePeptidesRequest(BaseModel):
     peptides: List[str]
+    volume_type: Literal["2D", "3D"] = "3D"
+    num_confs: int = Field(1, ge=1, le=10)
 
 
 @router.post("/predict", response_model=Dict[str, Any])
@@ -22,7 +26,9 @@ async def predict_single(body: SinglePeptideRequest) -> Any:
     if not peptide:
         return {"error": "No valid peptide provided."}
 
-    result = PeptideRetentionPredictor.predict(peptide)
+    result = PeptideRetentionPredictor.predict(
+        peptide, body.volume_type, body.num_confs
+    )
     return result
 
 
@@ -33,5 +39,7 @@ async def predict_multiple(body: MultiplePeptidesRequest) -> Any:
     if not peptides:
         return {"error": "No valid peptides provided."}
 
-    results = PeptideRetentionPredictor.predict_multiple(peptides)
+    results = PeptideRetentionPredictor.predict_multiple(
+        peptides, body.volume_type, body.num_confs
+    )
     return results

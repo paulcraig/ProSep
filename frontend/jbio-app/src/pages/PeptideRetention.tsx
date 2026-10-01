@@ -72,8 +72,13 @@ type PredictionSuccess = {
   log_vdw_vol: number;
   clog_p: number;
   predicted_tr: number;
+  volume_type: VolumeType;
+  num_confs: number;
+  compute_time: number;
   fromCache: boolean;
 };
+
+type VolumeType = "2D" | "3D";
 
 type CachedPrediction = Omit<PredictionSuccess, "fromCache">;
 
@@ -106,6 +111,10 @@ const PeptideRetention: React.FC = () => {
   const [elapsed, setElapsed] = useState(0);
   const [useCached, setUseCached] = useState(true);
 
+  // TEMP volume calc type and num confs for comparison
+  const [volumeType, setVolumeType] = useState<VolumeType>("3D");
+  const [numConfs, setNumConfs] = useState(1);
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const chartRef = useRef<any>(null);
@@ -118,13 +127,13 @@ const PeptideRetention: React.FC = () => {
 
   // Handle incoming peptides from navigation state
   useEffect(() => {
-    const state = location. state as { aminoAcids?: string[] };
+    const state = location.state as { aminoAcids?: string[] };
 
     if (state?.aminoAcids) {
-      setPeptides(state. aminoAcids);
+      setPeptides(state.aminoAcids);
       
       // Clear the state to avoid re-setting on refresh
-      window.history.replaceState({}, document. title);
+      window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
@@ -232,7 +241,7 @@ const PeptideRetention: React.FC = () => {
       const res = await fetch(`${API_URL}/pr/predict-multiple`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ peptides: batch }),
+        body: JSON.stringify({ peptides: batch, volume_type: volumeType, num_confs: numConfs }), // TEMP volume type and num confs 
         signal: abortRef.current?.signal,
       });
 
@@ -571,6 +580,27 @@ const PeptideRetention: React.FC = () => {
           }
           label="Use Cached"
         />
+        {/* Testing controls */}
+        <Button
+          variant="contained"
+          className="predict-button"
+          disabled={isLoading}
+          onClick={() => setVolumeType(volumeType === "3D" ? "2D" : "3D")}
+        >
+          Volume: {volumeType}
+        </Button>
+        <TextField
+          label="Number of 3D Confs"
+          type="number"
+          size="small"
+          value={numConfs}
+          disabled={isLoading || volumeType === "2D"}
+          onChange={(e) =>
+            setNumConfs(Math.min(10, Math.max(1, Number(e.target.value) || 1)))
+          }
+          inputProps={{ min: 1, max: 10 }}
+          sx={{ width: "5rem", input: { color: "var(--text)" } }}
+        />
         <Button
           variant="contained"
           onClick={() => ClearFunc()}
@@ -678,6 +708,7 @@ const PeptideRetention: React.FC = () => {
                   <TableCell>log SumAA</TableCell>
                   <TableCell>log VDW Vol</TableCell>
                   <TableCell>clogP</TableCell>
+                  <TableCell>Compute Time (ms)</TableCell>
                   <TableCell></TableCell>
                 </TableRow>
               </TableHead>
@@ -711,7 +742,7 @@ const PeptideRetention: React.FC = () => {
                     </TableCell>
                     {item.result ? (
                       "error" in item.result ? (
-                        <TableCell colSpan={6} style={{ color: "red" }}>
+                        <TableCell colSpan={7} style={{ color: "red" }}>
                           {item.result.error}
                         </TableCell>
                       ) : (
@@ -727,6 +758,11 @@ const PeptideRetention: React.FC = () => {
                             {item.result.log_vdw_vol.toFixed(4)}
                           </TableCell>
                           <TableCell>{item.result.clog_p.toFixed(4)}</TableCell>
+                          <TableCell>
+                            {item.result.compute_time?.toFixed(1)} (
+                            {item.result.volume_type === "3D" ? `3D×${item.result.num_confs}` : item.result.volume_type}
+                            )
+                          </TableCell>
                           <TableCell>
                             <BTooltip title="Copy Row" arrow placement="top">
                               <IconButton
@@ -752,6 +788,9 @@ const PeptideRetention: React.FC = () => {
                       )
                     ) : (
                       <>
+                        <TableCell>
+                          <Skeleton />
+                        </TableCell>
                         <TableCell>
                           <Skeleton />
                         </TableCell>

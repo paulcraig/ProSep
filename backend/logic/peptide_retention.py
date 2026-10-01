@@ -1,6 +1,7 @@
 from rdkit import Chem
-from rdkit.Chem import Descriptors, AllChem
+from rdkit.Chem import Descriptors, AllChem, rdMolDescriptors
 import math
+import time
 from pyPept.sequence import Sequence, correct_pdb_atoms
 from pyPept.molecule import Molecule
 from concurrent.futures import ThreadPoolExecutor
@@ -68,37 +69,74 @@ class PeptideRetentionPredictor:
         return math.log10(total)
 
     @staticmethod
-    def compute_rdkit_features(smiles):
+    def vdw_2d_estimation(mol):
+        # Testing using a 2D estimation of van der waals volume which should 
+        # be much faster for larger peptides as compared to 3D embeddings
+        # https://pubmed.ncbi.nlm.nih.gov/12968888/
+
+        # Essentially we calculate total volume, and then subtract estimated overlapped volume
+        # volume = sum(sphere vol of all atoms) - (5.92 * N(B)) - (14.7 * R(A)) - (3.8 * R(NA))
+        # N(B) - number of bonds
+        # R(A) - number of aromatic rings
+        # R(NA) - number of nonaromatic rings
+
+        # These should be the only relevant atoms when it comes to peptides
+        sphere_volumes = {'H': 7.24, 'C': 20.58, 'N': 15.60, 'O': 14.71, 'S':24.43}
+        summed_atoms_volumes = sum(sphere_volumes[atom.GetSymbol()] for atom in mol.GetAtoms())
+
+        nb = mol.GetNumBonds()
+        ra = rdMolDescriptors.CalcNumAromaticRings(mol)
+        rna = rdMolDescriptors.CalcNumAliphaticRings(mol)
+
+        return summed_atoms_volumes - (5.92 * nb) - (14.7 * ra) - (3.8 * rna)
+
+    @staticmethod
+    def compute_rdkit_features(smiles, volume_type='3D', numConfs=1):
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             raise ValueError("Invalid SMILES")
         mol = Chem.AddHs(mol)
 
-        params = AllChem.ETKDGv3()
-        # we only use the first configuration found for our calculations anyway, no need to find 10
-        cids = AllChem.EmbedMultipleConfs(mol, numConfs=1, params=params)
+        vdw_vol = 1
+        if volume_type == '3D':
+            params = AllChem.ETKDGv3()
+            # we only use the first configuration found for our calculations anyway, no need to find 10
+            cids = AllChem.EmbedMultipleConfs(mol, numConfs=numConfs, params=params)
 
-        # TODO: do we prefer accuracy, or giving a result back to the user?
-        # currently if the conf resolution fails this result will be pretty inaccurate
-        # the alternative would be saying resolution failed for the specific peptide
-        if not cids:
-            AllChem.EmbedMolecule(mol)
-            vdw_vol = 1
-        else:
-            vdw_vol = AllChem.ComputeMolVolume(mol, confId=cids[0])
+            # TODO: do we prefer accuracy, or giving a result back to the user?
+            # currently if the conf resolution fails this result will be pretty inaccurate
+            # the alternative would be saying resolution failed for the specific peptide
+            if not cids:
+                AllChem.EmbedMolecule(mol)
+                vdw_vol = 1 # Will remove the vdw_vol's impact from the calculation
+            else:
+                vdw_vol = AllChem.ComputeMolVolume(mol, confId=cids[0])
+
+        elif volume_type == '2D':
+            try:
+                vdw_vol = PeptideRetentionPredictor.vdw_2d_estimation(mol)
+            except: pass
+
         clog_p = Descriptors.MolLogP(mol)
 
         return math.log10(vdw_vol), clog_p
 
     @staticmethod
-    def predict(peptide: str) -> dict:
+    def predict(peptide: str, volume_type: str = '3D', num_confs: int = 1) -> dict:
         try:
+            start = time.perf_counter()
             smiles = PeptideRetentionPredictor.peptide_to_smiles(peptide)
             if not smiles:
                 raise ValueError("Invalid peptide sequence")
             log_sum = PeptideRetentionPredictor.log_sum_aa(peptide)
-            log_vdw, clog_p = PeptideRetentionPredictor.compute_rdkit_features(smiles)
-            tr_pred = 8.02 + 14.86 * log_sum - 5.77 * log_vdw + 0.28 * clog_p
+            log_vdw, clog_p = PeptideRetentionPredictor.compute_rdkit_features(
+                smiles, volume_type=volume_type, numConfs=num_confs
+            )
+            
+            # Magic numbers here? Not sure where these coefficiants are coming from
+            # Likely worth another look at for better accuracy
+            tr_pred = 8.02 + 14.86 * log_sum - 5.77 * log_vdw + 0.28 * clog_p 
+
             return {
                 "peptide": peptide,
                 "smiles": smiles,
@@ -106,13 +144,23 @@ class PeptideRetentionPredictor:
                 "log_vdw_vol": log_vdw,
                 "clog_p": clog_p,
                 "predicted_tr": tr_pred,
+                # Tracking for comparison
+                "volume_type": volume_type,
+                "num_confs": num_confs,
+                "compute_time": (time.perf_counter() - start) * 1000, 
             }
+        
         except Exception as e:
             return {"peptide": peptide, "error": str(e)}
 
     @staticmethod
-    def predict_multiple(peptides: list[str]) -> list[dict]:
+    def predict_multiple(peptides: list[str], volume_type: str = '3D', num_confs: int = 1) -> list[dict]:
         results = []
         with ThreadPoolExecutor() as executor:
-            results = list(executor.map(PeptideRetentionPredictor.predict, peptides))
+            results = list(
+                executor.map(
+                    lambda p: PeptideRetentionPredictor.predict(p, volume_type, num_confs),
+                    peptides,
+                )
+            )
         return results
