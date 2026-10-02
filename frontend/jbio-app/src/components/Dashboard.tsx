@@ -83,6 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ pages, homepage, darkmode = false
 
   useEffect(() => {
     localStorage.setItem('dashboard-theme', isDarkMode ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
   return (

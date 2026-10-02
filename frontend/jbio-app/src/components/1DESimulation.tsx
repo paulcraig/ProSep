@@ -51,7 +51,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const [zoom, setZoom] = useState(1);
   const [anchor, setAnchor] = useState(0.5);
   const [isDragging, setIsDragging] = useState(false);
-  const [lastY, setwellWastY] = useState<number | null>(null);
+  const [lastY, setwellLastY] = useState<number | null>(null);
   const rafRef = React.useRef<number | null>(null);
 
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -96,9 +96,10 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const chipsRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
 
+  // TODO: Review and refactor if needed. Fix magic numbers
   React.useEffect(() => {
     const updateHeight = () => {
-      const toolbarHeight = toolbarRef.current?.offsetHeight || 0; // TODO: This jank needs to be fixed...
+      const toolbarHeight = toolbarRef.current?.offsetHeight || 0;
       const chipsHeight = chipsRef.current?.offsetHeight || 0;
       const reservedSpace = toolbarHeight + chipsHeight + 200;
 
@@ -154,7 +155,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   }
 
 
-  const valueToY = (v: number) => {
+  const valueToY = React.useCallback((v: number) => {
     const norm = v / ticks;
     const a = anchor;
     let mapped;
@@ -165,7 +166,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       mapped = 1 - (1 - a) * Math.pow((1 - norm) / Math.max(1 - a, 1e-9), zoom);
     }
     return (wellH * 2) + (mapped * (slabH - wellH));
-  }
+  }, [ticks, anchor, zoom, slabH]);
   const bandMin = valueToY(0) + (bandH * 0.25)
 
 
@@ -244,7 +245,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       const b = meanY - m * meanX;
       return [rows, { m, b }] as const;
 
-    }, [open, positions, selectedStandards, ticks]);
+    }, [positions, selectedStandards, ticks]);
 
     React.useEffect(() => {
       setSlope(trend.m);
@@ -731,7 +732,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     if (!container || !container.contains(eventTarget)) return;
 
     setIsDragging(true);
-    setwellWastY(e.clientY);
+    setwellLastY(e.clientY);
   }
 
 
@@ -745,7 +746,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       rafRef.current = null;
       const dy = clientY - lastY;
       const normShift = dy / (slabH - wellH);
-      setwellWastY(clientY);
+      setwellLastY(clientY);
       setAnchor(a => Math.max(0, Math.min(1, a - normShift)));
     })
   }
@@ -753,7 +754,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
   const onMouseUp = () => {
     setIsDragging(false);
-    setwellWastY(null);
+    setwellLastY(null);
   }
 
 
@@ -804,7 +805,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             [1, 2].map(j => {
               const subY = valueToY(i + j / subTicks)
               const subOpacity = Math.pow(Math.max(0, Math.min(1, (subY - y) / (minTickH / 2))), 2)
-              const fadeNearN = Math.pow(Math.max(0, Math.min(1, valueToY(ticks) - subY / (minTickH / 2))), 2)
+              const fadeNearN = Math.pow(Math.max(0, Math.min(1, (valueToY(ticks) - subY) / (minTickH / 2))), 2)
 
               return (
                 <g key={`sub-${i}-${j}`} opacity={subOpacity * fadeNearN}>
@@ -824,7 +825,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         </g>
       )
     })
-  }, [ticks, zoom, anchor, totalH, wellsCount, windowWidth]);
+  },  [ticks, valueToY, slabW]);
 
 
   const dots = React.useMemo(() => {
@@ -879,7 +880,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     })
 
     return [...wellDots, ...slabDots];
-  }, [acrylamidePct, ticks, zoom, anchor, totalH, wellsCount]);
+  }, [acrylamidePct, ticks, zoom, valueToY, slabW, wellW]);
 
 
   return (
@@ -1189,9 +1190,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                     title={label}
                     slotProps={{
                       tooltip: {
-                        sx: { // TODO : This needs to be fixed later (I'm crunchin to finish on time)
-                          backgroundColor: '#282b30',
-                          color: '#f6f6f6',
+                        sx: {
+                          backgroundColor: 'var(--background)',
+                          color: 'var(--text)',
                           fontWeight: 'normal',
                           boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)'
                         },
