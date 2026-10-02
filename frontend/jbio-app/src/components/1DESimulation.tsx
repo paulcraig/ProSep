@@ -1282,17 +1282,24 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                         component='span'
                         aria-label={`Load well ${wi}`}
                         sx={{
-                          backgroundColor: 'var(--highlight)',
-                          color: 'var(--text)',
+                          backgroundColor: 'var(--accent)',
+                          color: 'var(--background)',
                           width: 36, height: 36, padding: 0,
                           border: '2px solid var(--accent)',
                           '&:hover': {
                             backgroundColor: 'var(--accent)',
+                            filter: 'brightness(1.1)',
                             transform: 'scale(1.08)',
                           },
                         }}
                       >
-                        <UploadIcon sx={{ fontSize: 20 }} />
+                        <UploadIcon
+                          sx={{
+                            fontSize: 20,
+                            color: '#fff !important',
+                            '& path': { fill: '#fff !important' },
+                          }}
+                        />
                       </IconButton>
                     </label>
                   </foreignObject>
@@ -1323,9 +1330,12 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               label={protein.name}
               onClick={() => onToggleProtein(protein)}
               sx={{
-                backgroundColor: isSelected ? protein.color : 'var(--highlight)',
-                color: 'white',
-                fontWeight: 'bold'
+                backgroundColor: isSelected ? protein.color : 'var(--accent)',
+                color: 'var(--background)',
+                fontWeight: 'bold',
+                '&:hover': {
+                  filter: 'brightness(1.1)'
+                }
               }}
             />
           )
