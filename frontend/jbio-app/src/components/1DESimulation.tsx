@@ -51,7 +51,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const [zoom, setZoom] = useState(1);
   const [anchor, setAnchor] = useState(0.5);
   const [isDragging, setIsDragging] = useState(false);
-  const [lastY, setwellWastY] = useState<number | null>(null);
+  const [lastY, setwellLastY] = useState<number | null>(null);
   const rafRef = React.useRef<number | null>(null);
 
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -96,9 +96,10 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   const chipsRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
 
+  // TODO: Review and refactor if needed. Fix magic numbers
   React.useEffect(() => {
     const updateHeight = () => {
-      const toolbarHeight = toolbarRef.current?.offsetHeight || 0; // This jank needs to be fixed...
+      const toolbarHeight = toolbarRef.current?.offsetHeight || 0;
       const chipsHeight = chipsRef.current?.offsetHeight || 0;
       const reservedSpace = toolbarHeight + chipsHeight + 200;
 
@@ -136,7 +137,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
 
   const bandW = wellW * 0.8;
   const bandH = wellH * 0.2;
-  
+
   const simDelay = 250; // ms
   const maxWells = 11;
 
@@ -154,7 +155,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
   }
 
 
-  const valueToY = (v: number) => {
+  const valueToY = React.useCallback((v: number) => {
     const norm = v / ticks;
     const a = anchor;
     let mapped;
@@ -165,10 +166,10 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       mapped = 1 - (1 - a) * Math.pow((1 - norm) / Math.max(1 - a, 1e-9), zoom);
     }
     return (wellH * 2) + (mapped * (slabH - wellH));
-  }
+  }, [ticks, anchor, zoom, slabH]);
   const bandMin = valueToY(0) + (bandH * 0.25)
 
-  
+
   const GoogleScatterModal: React.FC<{
     open: boolean;
     onClose: () => void;
@@ -191,7 +192,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     const [inputValue, setInputValue] = React.useState('0.5');
 
     const accentColor = '#e9edff';
-    
+
     React.useEffect(() => {
       const g = (window as any).google;
       const script = document.createElement('script');
@@ -244,7 +245,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       const b = meanY - m * meanX;
       return [rows, { m, b }] as const;
 
-    }, [open, positions, selectedStandards, ticks]);
+    }, [positions, selectedStandards, ticks]);
 
     React.useEffect(() => {
       setSlope(trend.m);
@@ -463,7 +464,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     }
   }
 
-  
+
   const onToggleRun = () => {
     if (isRunning) {
       onStop();
@@ -503,7 +504,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       }, 10)
     }
   }
-  
+
 
   const onReset = () => {
     onStop();
@@ -527,7 +528,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     setUploadedProteins({});
     setTooltipData(null);
     setZoom(1);
-    
+
     setPositions(() => ({
       0: Object.fromEntries(standards.map(p => [p.id_num, 0]))
     }));
@@ -680,7 +681,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     setDragOverWell(null);
   };
 
-  
+
   const onDragEnd = () => {
     setDraggedWell(null);
     setDragOverWell(null);
@@ -731,7 +732,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     if (!container || !container.contains(eventTarget)) return;
 
     setIsDragging(true);
-    setwellWastY(e.clientY);
+    setwellLastY(e.clientY);
   }
 
 
@@ -745,15 +746,15 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       rafRef.current = null;
       const dy = clientY - lastY;
       const normShift = dy / (slabH - wellH);
-      setwellWastY(clientY);
+      setwellLastY(clientY);
       setAnchor(a => Math.max(0, Math.min(1, a - normShift)));
     })
   }
 
-  
+
   const onMouseUp = () => {
     setIsDragging(false);
-    setwellWastY(null);
+    setwellLastY(null);
   }
 
 
@@ -804,7 +805,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             [1, 2].map(j => {
               const subY = valueToY(i + j / subTicks)
               const subOpacity = Math.pow(Math.max(0, Math.min(1, (subY - y) / (minTickH / 2))), 2)
-              const fadeNearN = Math.pow(Math.max(0, Math.min(1, valueToY(ticks) - subY / (minTickH / 2))), 2)
+              const fadeNearN = Math.pow(Math.max(0, Math.min(1, (valueToY(ticks) - subY) / (minTickH / 2))), 2)
 
               return (
                 <g key={`sub-${i}-${j}`} opacity={subOpacity * fadeNearN}>
@@ -824,7 +825,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         </g>
       )
     })
-  }, [ticks, zoom, anchor, totalH, wellsCount, windowWidth]);
+  },  [ticks, valueToY, slabW]);
 
 
   const dots = React.useMemo(() => {
@@ -871,7 +872,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           key={`well-dot-${rIdx}-${j}`}
           fill='var(--sub-text)'
           opacity={opacity}
-          
+
           cx={j * spacingX + spacingX / 2}
           cy={y} r={poreSize * 0.25}
         />
@@ -879,7 +880,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
     })
 
     return [...wellDots, ...slabDots];
-  }, [acrylamidePct, ticks, zoom, anchor, totalH, wellsCount]);
+  }, [acrylamidePct, ticks, zoom, valueToY, slabW, wellW]);
 
 
   return (
@@ -897,19 +898,14 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
         }}
       >
         {[
-            { 
+            {
               label: isRunning ? 'Pause' : hasStarted ? 'Resume' : 'Start',
               icon: isRunning ? <StopIcon /> : <PlayArrowIcon />,
               onClick: onToggleRun
             },
             { label: 'Plot',  icon: <InsertChartIcon />, onClick: onPlot },
             { label: 'Reset', icon: <RestartAltIcon />,  onClick: onReset },
-            { label: 'Clear', icon: <ClearAllIcon />,    onClick: onClear },
-            { 
-              label: 'Upload',
-              icon: <UploadIcon />,
-              onClick: () => document.getElementById('bulk-upload-input')?.click()
-            }
+            { label: 'Clear', icon: <ClearAllIcon />,    onClick: onClear }
           ]
           .map(btn => (
             <Button
@@ -1105,10 +1101,10 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                   strokeWidth={0.5}
                   style={{ cursor: 'pointer' }}
                   onClick={(e) => {
-                    if (tooltipData?.protein != protein) {
+                    if (tooltipData?.protein !== protein) {
                       e.stopPropagation();
                       const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
-                      
+
                       setTooltipData({
                         protein,
                         x: rect.left + rect.width / 2,
@@ -1148,10 +1144,10 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                       strokeWidth={0.5}
                       style={{ cursor: 'pointer' }}
                       onClick={(e) => {
-                        if (tooltipData?.protein != protein) {
+                        if (tooltipData?.protein !== protein) {
                           e.stopPropagation();
                           const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
-                          
+
                           setTooltipData({
                             protein,
                             x: rect.left + rect.width / 2,
@@ -1178,11 +1174,11 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               const label = wi === 0 ? 'Standard Proteins' : uploadedProteins[wi]?.name || `File ${wi}`;
 
               if (!hasProteins) return null;
-              
+
               const isDragging = draggedWell === wi;
               const isDropTarget = dragOverWell === wi && draggedWell !== null && draggedWell !== wi;
               const canDrag = wi !== 0 && !!uploadedProteins[wi];
-              
+
               return (
                 <g key={`filename-band-${wi}`}>
                   <foreignObject
@@ -1194,9 +1190,9 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                     title={label}
                     slotProps={{
                       tooltip: {
-                        sx: { // This needs to be fixed later (I'm crunchin to finish on time)
-                          backgroundColor: '#282b30',
-                          color: '#f6f6f6',
+                        sx: {
+                          backgroundColor: 'var(--background)',
+                          color: 'var(--text)',
                           fontWeight: 'normal',
                           boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)'
                         },
@@ -1261,8 +1257,8 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               return (
                 <g key={`upload-btn-${wi}`}>
                   <foreignObject
-                    x={centerX - 12} y={centerY - 12}
-                    width={24} height={24}
+                    x={centerX - 18} y={centerY - 18}
+                    width={36} height={36}
                     style={{ overflow: 'visible' }}
                   >
                     <label
@@ -1285,14 +1281,26 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                       />
                       <IconButton
                         component='span'
+                        aria-label={`Load well ${wi}`}
                         sx={{
-                          backgroundColor: 'var(--highlight)',
-                          color: 'var(--text)',
-                          width: 24, height: 24, padding: 0,
-                          '&:hover': { backgroundColor: 'var(--accent)' },
+                          backgroundColor: 'var(--accent)',
+                          color: 'var(--background)',
+                          width: 36, height: 36, padding: 0,
+                          border: '2px solid var(--accent)',
+                          '&:hover': {
+                            backgroundColor: 'var(--accent)',
+                            filter: 'brightness(1.1)',
+                            transform: 'scale(1.08)',
+                          },
                         }}
                       >
-                        <UploadIcon sx={{ fontSize: 14 }} />
+                        <UploadIcon
+                          sx={{
+                            fontSize: 20,
+                            color: '#fff !important',
+                            '& path': { fill: '#fff !important' },
+                          }}
+                        />
                       </IconButton>
                     </label>
                   </foreignObject>
@@ -1323,9 +1331,12 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               label={protein.name}
               onClick={() => onToggleProtein(protein)}
               sx={{
-                backgroundColor: isSelected ? protein.color : 'var(--highlight)',
-                color: 'white',
-                fontWeight: 'bold'
+                backgroundColor: isSelected ? protein.color : 'var(--accent)',
+                color: 'var(--background)',
+                fontWeight: 'bold',
+                '&:hover': {
+                  filter: 'brightness(1.1)'
+                }
               }}
             />
           )
