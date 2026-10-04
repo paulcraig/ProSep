@@ -105,4 +105,98 @@ class Protein():
         if match:
             return {'id': match.group(1), 'name': match.group(2), 'organism': match.group(3)}
         return {'id': 'unknown', 'name': header, 'organism': 'Unknown organism'}
-    
+
+    @staticmethod
+    def matches_prosite(sequence: str, prosite: str) -> bool:
+        """
+        True if the given sequence matches the given prosite at any point, false otherwise
+
+        Args:
+            sequence (str): the amino acid sequence to search
+            prosite (str): the prosite string to query for
+
+        Returns:
+            bool: True if the given sequence matches the given prosite at any point, false otherwise
+        """
+        regex = Protein.prosite_to_regex(prosite)
+        match = re.search(regex, sequence)
+        return match is not None
+
+    # Credits to domainator, registered & commandeered under MIT license
+    # https://github.com/nebiolabs/domainator/blob/main/src/domainator/find_features.py
+    @staticmethod
+    def prosite_to_regex(pattern: str) -> str:
+        """
+        Convert a PROSITE pattern to a Python regex pattern.
+        
+        PROSITE syntax:
+        - x: any amino acid
+        - [ABC]: any of A, B, C
+        - {ABC}: any except A, B, C  
+        - -: separator (optional)
+        - (n): repeat n times
+        - (n,m): repeat n to m times
+        - <: N-terminal anchor
+        - >: C-terminal anchor
+        - .: end of pattern (optional)
+        
+        Args:
+            pattern: PROSITE pattern string
+        
+        Returns:
+            Python regex pattern string
+        """
+        # Remove trailing period and whitespace
+        pattern = pattern.strip().rstrip('.')
+        
+        result = []
+        i = 0
+        
+        while i < len(pattern):
+            c = pattern[i]
+            
+            if c == '<':
+                # N-terminal anchor
+                result.append('^')
+                i += 1
+            elif c == '>':
+                # C-terminal anchor
+                result.append('$')
+                i += 1
+            elif c == '-':
+                # Separator, ignore
+                i += 1
+            elif c == 'x' or c == 'X':
+                # Any amino acid
+                result.append('.')
+                i += 1
+            elif c == '[':
+                # Character class (allowed residues)
+                end = pattern.index(']', i)
+                result.append(pattern[i:end+1].upper())
+                i = end + 1
+            elif c == '{':
+                # Negated character class (disallowed residues)
+                end = pattern.index('}', i)
+                chars = pattern[i+1:end].upper()
+                result.append(f'[^{chars}]')
+                i = end + 1
+            elif c == '(':
+                # Repetition
+                end = pattern.index(')', i)
+                rep = pattern[i+1:end]
+                if ',' in rep:
+                    n, m = rep.split(',')
+                    result.append(f'{{{n.strip()},{m.strip()}}}')
+                else:
+                    result.append(f'{{{rep.strip()}}}')
+                i = end + 1
+            elif c.isalpha():
+                # Single amino acid
+                result.append(c.upper())
+                i += 1
+            else:
+                # Skip unknown characters
+                i += 1
+        
+        return ''.join(result)
