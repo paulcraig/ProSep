@@ -5,6 +5,7 @@ import random
 from dataclasses import dataclass
 from io import StringIO
 from typing import Any, Dict, List
+from backend.utility.protein import Protein
 
 from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
@@ -276,10 +277,10 @@ class IonExchangeFractionation:
                     "fractionIndex": index + 1,
                     "proteinCount": len(fraction),
                     "hitCount": len([
-                        entry for entry in fraction if IonExchangeFractionation._param_of_interest(entry.sequence)
+                        entry for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
                     ]),
                     "hitProteinIds": [
-                        entry.seq_id for entry in fraction if IonExchangeFractionation._param_of_interest(entry.sequence)
+                        entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
                     ],
                     "proteins": [pack(entry) for entry in fraction],
                 }
