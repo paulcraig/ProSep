@@ -2,13 +2,14 @@ import './Dashboard.css';
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 
-import { IconButton } from '@mui/material';
+import { IconButton, ThemeProvider } from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import MenuOpenRoundedIcon from '@mui/icons-material/MenuOpenRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 
 import ArtifactList from './ArtifactList';
+import { darkTheme, lightTheme } from '../Theme'
 
 
 type Page = {
@@ -86,85 +87,87 @@ const Dashboard: React.FC<DashboardProps> = ({ pages, homepage, darkmode = false
   }, [isDarkMode]);
 
   return (
-    <Router>
-      <div className='dashboard' data-theme={isDarkMode ? 'dark' : 'light'}>
+    <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <Router>
+        <div className='dashboard' data-theme={isDarkMode ? 'dark' : 'light'}>
 
-        {/* Sidebar */}
-        <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-          <div className='sidebar-nav'>
-            {normPages.map((page) => {
-              if (page.link) {
+          {/* Sidebar */}
+          <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+            <div className='sidebar-nav'>
+              {normPages.map((page) => {
+                if (page.link) {
+                  return (
+                    <a
+                      key={page.slug}
+                      href={page.link}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='nav-link'
+                    >
+                      <div className='icon'>{page.icon}</div>
+                      {!collapsed && <span>{page.label ?? page.slug}</span>}
+                    </a>
+                  );
+                }
+                if (page.onClick) {
+                  return (
+                    <button key={page.slug} onClick={page.onClick} className='nav-link'>
+                      <div className='icon'>{page.icon}</div>
+                      {!collapsed && <span>{page.label ?? page.slug}</span>}
+                    </button>
+                  );
+                }
                 return (
-                  <a
+                  <NavLink
                     key={page.slug}
-                    href={page.link}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='nav-link'
+                    to={`/${page.slug}`}
+                    className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}
                   >
                     <div className='icon'>{page.icon}</div>
                     {!collapsed && <span>{page.label ?? page.slug}</span>}
-                  </a>
+                  </NavLink>
                 );
-              }
-              if (page.onClick) {
-                return (
-                  <button key={page.slug} onClick={page.onClick} className='nav-link'>
-                    <div className='icon'>{page.icon}</div>
-                    {!collapsed && <span>{page.label ?? page.slug}</span>}
-                  </button>
-                );
-              }
-              return (
-                <NavLink
-                  key={page.slug}
-                  to={`/${page.slug}`}
-                  className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}
-                >
-                  <div className='icon'>{page.icon}</div>
-                  {!collapsed && <span>{page.label ?? page.slug}</span>}
-                </NavLink>
-              );
-            })}
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* Main content */}
-        <div className='main'>
-          <div className='header'>
-            <div className='header-left'>
-              <IconButton className='collapse-btn' onClick={() => setCollapsed(!collapsed)} size='large'>
-                {collapsed ? <MenuRoundedIcon /> : <MenuOpenRoundedIcon />}
-              </IconButton>
-              <div className='logo-container'>
-                <img src={logo} alt='logo' className='logo' />
+          {/* Main content */}
+          <div className='main'>
+            <div className='header'>
+              <div className='header-left'>
+                <IconButton className='collapse-btn' onClick={() => setCollapsed(!collapsed)} size='large'>
+                  {collapsed ? <MenuRoundedIcon /> : <MenuOpenRoundedIcon />}
+                </IconButton>
+                <div className='logo-container'>
+                  <img src={logo} alt='logo' className='logo' />
+                </div>
+              </div>
+              <div className='header-right'>
+                <IconButton onClick={() => setIsDarkMode(!isDarkMode)} size='large'>
+                  {isDarkMode ? (
+                    <LightModeRoundedIcon className='sun-btn' />
+                  ) : (
+                    <DarkModeIcon className='moon-btn' />
+                  )}
+                </IconButton>
               </div>
             </div>
-            <div className='header-right'>
-              <IconButton onClick={() => setIsDarkMode(!isDarkMode)} size='large'>
-                {isDarkMode ? (
-                  <LightModeRoundedIcon className='sun-btn' />
-                ) : (
-                  <DarkModeIcon className='moon-btn' />
+
+            <div className='content'>
+              <Routes>
+                {normPages.map((page) =>
+                  page.component ? (
+                    <Route key={page.slug} path={`/${page.slug}`} element={page.component} />
+                  ) : null
                 )}
-              </IconButton>
+                <Route path='*' element={<Navigate to={`/${defaultHome}`} replace />} />
+              </Routes>
+              <PageArtifacts pages={normPages} />
             </div>
           </div>
-
-          <div className='content'>
-            <Routes>
-              {normPages.map((page) =>
-                page.component ? (
-                  <Route key={page.slug} path={`/${page.slug}`} element={page.component} />
-                ) : null
-              )}
-              <Route path='*' element={<Navigate to={`/${defaultHome}`} replace />} />
-            </Routes>
-            <PageArtifacts pages={normPages} />
-          </div>
         </div>
-      </div>
-    </Router>
+      </Router>
+    </ThemeProvider>
   );
 };
 

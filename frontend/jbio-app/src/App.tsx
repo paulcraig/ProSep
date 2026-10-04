@@ -22,8 +22,6 @@ import PeptideRetention from "./pages/PeptideRetention";
 import IonExchangeFractionation from "./pages/IonExchangeFractionation";
 import HydrophobicInteractionFractionation from "./pages/HydrophobicInteractionFractionation";
 import SizeExclusionPage from './pages/SizeExclusion';
-import { ThemeProvider } from '@mui/material'
-import theme from './Theme'
 
 function App() {
   const pages = [
@@ -85,9 +83,7 @@ function App() {
   ];
 
   return (
-    <ThemeProvider theme={theme}>
-      <Dashboard pages={pages} homepage={1} darkmode={true} logo={logo} />
-    </ThemeProvider>
+    <Dashboard pages={pages} homepage={1} darkmode={true} logo={logo} />
   )
 }
 

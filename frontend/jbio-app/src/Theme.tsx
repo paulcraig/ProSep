@@ -1,7 +1,12 @@
-import { createTheme } from '@mui/material'
+import { createTheme, Theme, ThemeOptions } from '@mui/material'
 
-let theme = createTheme({
+let darkThemeBase = createTheme({
     palette: {
+        mode: 'dark',
+        common: {
+            white: "#ffffff",
+            black: "#000000"
+        },
         text: {
             primary: '#ffffff',
             secondary: '#ffffff',
@@ -20,7 +25,32 @@ let theme = createTheme({
     },
 })
 
-theme = createTheme(
+let lightThemeBase = createTheme({
+    palette: {
+        mode: 'light',
+        common: {
+            white: "#ffffff",
+            black: "#000000"
+        },
+        text: {
+            primary: '#000000',
+            secondary: '#000000',
+        },
+        primary: {
+            main: '#4f6edb',
+        },
+        secondary: {
+            main: '#4f6edb',
+            light: '#f1f3f9',
+        },
+        background: {
+            default: '#ffffff',
+            paper: '#f1f3f9',
+        },
+    },
+})
+
+const createFullTheme = (theme: Theme, extra: ThemeOptions = {}) => createTheme(
     {
         components: {
             MuiCard: {
@@ -55,7 +85,7 @@ theme = createTheme(
                         width: 260,
                     },
                     icon: {
-                        color: '#ffffff',
+                        color: theme.palette.text.primary,
                     },
                 },
             },
@@ -73,17 +103,19 @@ theme = createTheme(
                 styleOverrides: {
                     track: {
                         border: 'none',
+                        color: theme.palette.primary.main,
                     },
                     thumb: {
-                        color: '#ffffff',
-                    },
+                        color: theme.palette.common.white,
+                    }
                 },
             },
             MuiButton: {
                 styleOverrides: {
                     root: {
                         fontWeight: 600,
-                        color: '#ffffff'
+                        color: theme.palette.common.white,
+                        backgroundColor: theme.palette.primary.main,
                     },
                 },
             },
@@ -135,6 +167,19 @@ theme = createTheme(
         },
     },
     theme,
+    extra,
 )
 
-export default theme
+export const darkTheme = createFullTheme(darkThemeBase)
+export const lightTheme = createFullTheme(lightThemeBase, {
+    palette: lightThemeBase.palette,
+    components: {
+        MuiSlider: {
+            styleOverrides: {
+                thumb: {
+                    color: lightThemeBase.palette.primary.main,
+                },
+            },
+        },
+    },
+})
