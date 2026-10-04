@@ -1013,6 +1013,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                 value={voltageAmt}
                 onChange={(e) => setVoltageAmt(Number(e.target.value))}
                 sx={{
+                  backgroundColor: "#0000",
                   fontWeight: 'bold',
                   color: 'var(--text)',
                   textAlign: 'center',
@@ -1051,6 +1052,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               value={acrylamidePct}
               onChange={(e) => setAcrylamidePct(Number(e.target.value))}
               sx={{
+                backgroundColor: "#0000",
                 fontWeight: 'bold',
                 color: 'var(--sub-text)',
                 '& .MuiSelect-icon': { color: 'var(--sub-text)' },
