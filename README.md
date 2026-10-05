@@ -58,7 +58,7 @@ This will install all the hooks. Any freshly committed files should have the hoo
 ### Software Requirements
 
 - Python 3.7 or higher
-- Node.js 20.11.0 or higher
+- Node.js 20.11.0 (not higher)
 - React 18.2.0 or higher
 
 ---
