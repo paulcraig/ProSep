@@ -17,9 +17,9 @@ const TwoDE = () => {
   const canvasRef = useRef(null);
 
   // ── Controls state ───────────────────────────────────────────────────────────
-  const [phRange,              setPhRange]              = useState({ min: 0, max: 14 });
+  const [phRange,              setPhRange]              = useState({ min: 3, max: 10 });
   const [yAxisMode,            setYAxisMode]            = useState('mw');
-  const [acrylamidePercentage, setAcrylamidePercentage] = useState(7.5);
+  const [acrylamidePercentage, setAcrylamidePercentage] = useState(10);
   const [isProteinListCollapsed, setIsProteinListCollapsed] = useState(false);
   const [showDigestion,        setShowDigestion]        = useState(false);
   const [isDragging,           setIsDragging]           = useState(false);
@@ -55,7 +55,11 @@ const TwoDE = () => {
   // Dynamically track MW range for axis scaling
   useEffect(() => {
     const mws = simulation.dots.map(p => Number(p.mw)).filter(mw => !isNaN(mw) && mw > 0);
-    if (mws.length === 0) return;
+    if (mws.length === 0) {
+      setMinMW(0);
+      setMaxMW(1);
+      return;
+    }
     setMinMW(mws.length > 1 ? Math.min(...mws) : 0);
     setMaxMW(Math.max(...mws));
   }, [simulation.dots]);
@@ -82,8 +86,15 @@ const TwoDE = () => {
   // ── Event handlers ───────────────────────────────────────────────────────────
   const handleReset = () => {
     simulation.reset();
-    interaction.setSelectedDot(null);
+    interaction.clearSelection();
     resetPanZoom();
+    setPhRange({ min: 3, max: 10 });
+    setYAxisMode('mw');
+    setAcrylamidePercentage(10);
+    setIsProteinListCollapsed(false);
+    setShowDigestion(false);
+    setIsDragging(false);
+    setDragCounter(0);
   };
 
   const handlePhRangeChange = (type, value) => {
@@ -101,7 +112,8 @@ const TwoDE = () => {
   const handleDragOver  = (e) => { e.preventDefault(); e.stopPropagation(); };
   const handleDrop      = async (e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); setDragCounter(0); await simulation.uploadFASTA(e.dataTransfer.files); };
 
-  const isReady = simulation.simulationState === 'ready';
+  const canStartIEF = simulation.simulationState === 'ready' && simulation.dots.length > 0;
+  const canStartSDS = simulation.simulationState === 'ief-complete';
 
   return (
     <div className="simulatorBoxTwoDE">
@@ -110,8 +122,9 @@ const TwoDE = () => {
         {/* ── Toolbar ── */}
         <Toolbar
           simulationState={simulation.simulationState}
+          hasProteins={simulation.dots.length > 0}
           yAxisMode={yAxisMode}
-          onUpload={e => simulation.uploadFASTA(e.target.files)}
+          onUpload={files => simulation.uploadFASTA(files)}
           onStartIEF={() => simulation.startIEF({ dots: simulation.dots, phRange })}
           onStartSDS={() => simulation.startSDS({ dots: simulation.dots, yAxisMode, acrylamidePercentage })}
           onReset={handleReset}
@@ -121,12 +134,12 @@ const TwoDE = () => {
         {/* ── pH Range ── */}
         <div className="control-group">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <label className="twoDE-control-label" style={{ opacity: isReady ? 1 : 0.4 }}>pH Range</label>
+            <label className="twoDE-control-label" style={{ opacity: canStartIEF ? 1 : 0.4 }}>pH Range</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-              <input type="number" min="0" max="14" step="0.1" value={phRange.min} onChange={e => handlePhRangeChange('min', e.target.value)} className="twoDE-input" disabled={!isReady} />
-              <input type="range"  id="ph-min-slider" min="0" max="14" step="0.1" value={phRange.min} onChange={e => handlePhRangeChange('min', e.target.value)} className="twoDE-range" disabled={!isReady} />
-              <input type="range"  id="ph-max-slider" min="0" max="14" step="0.1" value={phRange.max} onChange={e => handlePhRangeChange('max', e.target.value)} className="twoDE-range" disabled={!isReady} />
-              <input type="number" min="0" max="14" step="0.1" value={phRange.max} onChange={e => handlePhRangeChange('max', e.target.value)} className="twoDE-input" disabled={!isReady} />
+              <input type="number" min="0" max="14" step="0.1" value={phRange.min} onChange={e => handlePhRangeChange('min', e.target.value)} className="twoDE-input" disabled={!canStartIEF} />
+              <input type="range"  id="ph-min-slider" min="0" max="14" step="0.1" value={phRange.min} onChange={e => handlePhRangeChange('min', e.target.value)} className="twoDE-range" disabled={!canStartIEF} />
+              <input type="range"  id="ph-max-slider" min="0" max="14" step="0.1" value={phRange.max} onChange={e => handlePhRangeChange('max', e.target.value)} className="twoDE-range" disabled={!canStartIEF} />
+              <input type="number" min="0" max="14" step="0.1" value={phRange.max} onChange={e => handlePhRangeChange('max', e.target.value)} className="twoDE-input" disabled={!canStartIEF} />
             </div>
           </div>
         </div>
@@ -134,16 +147,18 @@ const TwoDE = () => {
         {/* ── Acrylamide ── */}
         <div className="control-group">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <label className="twoDE-control-label" style={{ opacity: isReady ? 1 : 0.4 }}>Acrylamide</label>
+            <label className="twoDE-control-label" style={{ opacity: canStartSDS ? 1 : 0.4 }}>Acrylamide</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <select id="acrylamide-percentage-dropdown" onChange={e => isReady && setAcrylamidePercentage(parseFloat(e.target.value))} disabled={!isReady} value={acrylamidePercentage}>
-                <option value={7.5}>7.5%</option>
+              <select id="acrylamide-percentage-dropdown" onChange={e => setAcrylamidePercentage(e.target.value === 'gradient-8-16' ? e.target.value : Number(e.target.value))} disabled={!canStartSDS} value={acrylamidePercentage}>
+                <option value={8}>8%</option>
                 <option value={10}>10%</option>
-                <option value={12.5}>12.5%</option>
-                <option value={15}>15%</option>
+                <option value={12}>12%</option>
+                <option value={14}>14%</option>
+                <option value={16}>16%</option>
+                <option value="gradient-8-16">8-16% gradient</option>
               </select>
-              <div className="twoDE-acrylic-desc" style={{ opacity: isReady ? 0.8 : 0.4 }}>
-                {acrylamidePercentage < 7 ? 'Resolves large proteins' : acrylamidePercentage < 12 ? 'Medium range separation' : 'Resolves small proteins'}
+              <div className="twoDE-acrylic-desc" style={{ opacity: canStartSDS ? 0.8 : 0.4 }}>
+                {acrylamidePercentage === 'gradient-8-16' ? 'Broad-range separation' : acrylamidePercentage < 10 ? 'Resolves large proteins' : acrylamidePercentage < 14 ? 'Medium range separation' : 'Resolves small proteins'}
               </div>
             </div>
           </div>
