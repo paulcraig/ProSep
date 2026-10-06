@@ -1,6 +1,6 @@
 import { Search } from '@mui/icons-material'
 import { Card, CardHeader, TextField, InputAdornment, CardContent, TablePagination, TableContainer, Table, TableHead, TableRow, TableCell, TableSortLabel, TableBody, Box, Chip } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FractionDto } from '../../../pages/IonExchangeFractionation'
 import { SortDirection } from './Common'
 
@@ -58,6 +58,10 @@ export function HitTable({ fractionRows }: HitTableProps) {
         const start = fractionPage * fractionRowsPerPage
         return sortedFractionRows.slice(start, start + fractionRowsPerPage)
     }, [sortedFractionRows, fractionPage, fractionRowsPerPage])
+
+    useEffect(() => {
+        setFractionPage(0)
+    }, [fractionRows])
 
     return (
         <Card>

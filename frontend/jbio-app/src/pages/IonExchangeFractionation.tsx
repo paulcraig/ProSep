@@ -114,8 +114,6 @@ const IonExchangeFractionation: React.FC = () => {
             }
 
             setData(json)
-            // setProteinPage(0)
-            // setFractionPage(0)
         } catch (err) {
             setData(null)
             setError(err instanceof Error ? err.message : 'Unexpected error')
