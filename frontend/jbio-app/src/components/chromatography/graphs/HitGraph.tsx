@@ -3,14 +3,17 @@ import { ChartLoadingPlaceholder, LazyBar, useDownloadChart } from './Common'
 import { Chart as ChartJS } from 'chart.js'
 import { Box, Button } from '@mui/material'
 import { Download } from '@mui/icons-material'
-import { FractionDto, IonExchangeResponse } from '../../../pages/IonExchangeFractionation'
+import { FractionDto, IonExchangeResponse, ProteinDto } from '../../../pages/IonExchangeFractionation'
 
 const MAX_STACKED_SERIES = 200
+
+export type HitGraphProteinDto = Pick<ProteinDto, "amount" | "id" | "color">
+export type HitGraphFractionDto = Pick<FractionDto, "fractionIndex" | "hitProteinIds"> & { proteins: HitGraphProteinDto[] }
 
 export type ChromatographyHitChartProps = {
     showWash: boolean
     useLogScale: boolean
-    fractionRows: FractionDto[]
+    fractionRows: HitGraphFractionDto[]
     data: IonExchangeResponse
 }
 

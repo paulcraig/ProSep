@@ -7,10 +7,12 @@ import {
     CardContent,
     CardHeader,
     FormControl,
+    FormControlLabel,
     InputLabel,
     MenuItem,
     Select,
     Slider,
+    Switch,
     Table,
     TableBody,
     TableCell,
@@ -24,6 +26,8 @@ import { Line } from 'react-chartjs-2'
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LineElement, LinearScale, LogarithmicScale, PointElement, Tooltip } from 'chart.js'
 import { API_URL } from '../config'
 import NumberField from '../components/ui/NumberField'
+import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
+import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
 
 /*
  * Register the chart components we need for Chart.js.
@@ -603,6 +607,11 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         }
     }, [data])
 
+    
+    const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
+    const [useLogScale, setUseLogScale] = useState<boolean>(true)
+    const [showWash, setShowWash] = useState<boolean>(false)
+
     return (
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Card>
@@ -656,6 +665,17 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     )}
                 </CardContent>
             </Card>
+
+            {data && fractionRows && (
+                <>
+                    <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
+                    <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
+                    <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
+
+                    <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale }} />
+                    <ProteinTable {...{ fractionRows, ph: 0 }} />
+                </>
+            )}
 
             {/* Only show results after a successful run */}
             {data && (
