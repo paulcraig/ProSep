@@ -94,6 +94,7 @@ type FractionDto = {
   fractionIndex: number;
   proteinCount?: number;
   hitCount?: number;
+  absorbanceScore?: number;
   hitProteinIds?: string[];
   proteins: ProteinDto[];
 };
@@ -401,7 +402,7 @@ const IonExchangeFractionation: React.FC = () => {
     for (const fraction of fractionRows) {
       points.push({
         x: fraction.fractionIndex,
-        y: fraction.proteins.map((p) => p.amount).reduce((a, b) => a + b, 0),
+        y: fraction.absorbanceScore ?? 0
       });
     }
     const maxY = Math.max(...points.map((p) => p.y), 1);
@@ -415,7 +416,7 @@ const IonExchangeFractionation: React.FC = () => {
     return {
       datasets: [
         {
-          label: "Proteins per fraction",
+          label: "UV Absorbances",
           data: proteinSeriesPoints,
           backgroundColor: "rgba(107, 224, 57, 0.8)",
           pointRadius: 4,
@@ -428,7 +429,7 @@ const IonExchangeFractionation: React.FC = () => {
     return {
       datasets: [
         {
-          label: "Proteins per fraction",
+          label: "UV Absorbance",
           data: proteinSeriesPoints,
           borderColor: "rgba(107, 224, 57, 1)",
           backgroundColor: "rgba(107, 224, 57, 0.8)",
