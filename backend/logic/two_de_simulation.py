@@ -9,7 +9,7 @@ from Bio import SeqIO
 from backend.utility.protein import Protein
 
 
-class Simulation_2de():
+class Simulation_2de:
     COLOR_PALETTE = [
         '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
         '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#808080'
@@ -81,25 +81,64 @@ class Simulation_2de():
             for i, protein in enumerate(proteins):
                 protein_data = protein.copy()
                 prev_data = simulation_results[step - 1][i]
-                if y_axis_mode == 'mw':
-                    targetPosY = Simulation_2de.get_mw_position(protein['mw'], canvas_height, acrylamide_percentage, min_mw=min(mws), max_mw=max(mws))
+                if acrylamide_percentage == "gradient-8-16":
+                    targetPosY = Simulation_2de.get_gradient_position(
+                        protein["mw"],
+                        y_axis_mode,
+                        canvas_height,
+                        min_mw=min(mws),
+                        max_mw=max(mws),
+                    )
+                elif y_axis_mode == "mw":
+                    targetPosY = Simulation_2de.get_mw_position(
+                        protein["mw"],
+                        canvas_height,
+                        acrylamide_percentage,
+                        min_mw=min(mws),
+                        max_mw=max(mws),
+                    )
                 else:
-                    targetPosY = Simulation_2de.get_distance_position(protein['mw'], canvas_height, acrylamide_percentage, min_mw=min(mws), max_mw=max(mws))
+                    targetPosY = Simulation_2de.get_distance_position(
+                        protein["mw"],
+                        canvas_height,
+                        acrylamide_percentage,
+                        min_mw=min(mws),
+                        max_mw=max(mws),
+                    )
 
                 if targetPosY >= 600:
                     targetPosY = 600
 
-                protein_data.update({
-                    'x': prev_data['x'],
-                    'y': prev_data['y'] + (targetPosY - prev_data['y']) * 0.1,
-                    'condensing': False,
-                    'bandWidth': prev_data['bandWidth']
-                })
+                protein_data.update(
+                    {
+                        "x": prev_data["x"],
+                        "y": prev_data["y"] + (targetPosY - prev_data["y"]) * 0.1,
+                        "condensing": False,
+                        "bandWidth": prev_data["bandWidth"],
+                    }
+                )
                 step_results.append(protein_data)
             simulation_results.append(step_results)
 
         return simulation_results
-    
+
+    @staticmethod
+    def get_gradient_position(mw, y_axis_mode, canvas_height, min_mw, max_mw):
+        position_function = (
+            Simulation_2de.get_mw_position
+            if y_axis_mode == "mw"
+            else Simulation_2de.get_distance_position
+        )
+        acrylamide_percentage = 12
+        for _ in range(8):
+            position = position_function(
+                mw, canvas_height, acrylamide_percentage, min_mw=min_mw, max_mw=max_mw
+            )
+            depth = (position - 170) / (canvas_height - 220)
+            acrylamide_percentage = 8 + 8 * min(max(depth, 0), 1)
+        return position_function(
+            mw, canvas_height, acrylamide_percentage, min_mw=min_mw, max_mw=max_mw
+        )
 
     @staticmethod
     def parse_fasta(sequences, new_proteins):
