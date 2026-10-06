@@ -15,7 +15,7 @@ import {
     TextField,
     Typography,
 } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FractionDto, ProteinDto } from '../../../pages/IonExchangeFractionation'
 import { Search } from '@mui/icons-material'
 import { SortDirection } from './Common'
@@ -85,6 +85,10 @@ export function ProteinTable({ fractionRows, ph }: ProteinTableProps) {
         const start = proteinPage * proteinRowsPerPage
         return sortedRetainedRows.slice(start, start + proteinRowsPerPage)
     }, [sortedRetainedRows, proteinPage, proteinRowsPerPage])
+
+    useEffect(() => {
+        setProteinPage(0)
+    }, [fractionRows])
 
     return (
         <Card>
