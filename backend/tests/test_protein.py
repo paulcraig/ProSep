@@ -180,6 +180,18 @@ class TestProtein(unittest.TestCase):
         achual = Protein.get_amino_acid_count("backend/tests/data/twoProteins.fasta")
         self.assertEqual(expected, achual)
 
+    # Using Trypsin-family serine proteases as an example
+    def test_prosite_full_to_regex(self):
+        expected = "[DNSTAGC][GSTAPIMVQH].{2}G[DE]SG[GS][SAPHV][LIVMFYWH][LIVMFYSTANQH]"
+        actual = Protein.prosite_to_regex("[DNSTAGC]-[GSTAPIMVQH]-x(2)-G-[DE]-S-G-[GS]-[SAPHV]-[LIVMFYWH]-[LIVMFYSTANQH]")
+        self.assertEqual(expected, actual)
+
+    # Using Trypsin-family serine proteases as an example
+    def test_prosite_short_to_regex(self):
+        expected = "G[DE]SG"
+        actual = Protein.prosite_to_regex("G-[DE]-S-G")
+        self.assertEqual(expected, actual)
+
 
 if __name__ == "__main__":
     file = "backend/tests/data/singleProtein.fasta"
