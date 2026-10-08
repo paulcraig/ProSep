@@ -6,7 +6,6 @@ import random
 from dataclasses import dataclass
 from io import StringIO
 from typing import Any, Dict, List
-from backend.utility.protein import Protein
 
 from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
