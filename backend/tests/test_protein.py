@@ -191,6 +191,14 @@ class TestProtein(unittest.TestCase):
         expected = "G[DE]SG"
         actual = Protein.prosite_to_regex("G-[DE]-S-G")
         self.assertEqual(expected, actual)
+        
+    def test_calculate_absorbance(self):
+        file = "backend/tests/data/singleProtein.fasta"
+        first_seq = next(iter(Protein.parse_protein(file).values()))[1]
+        expected = 740
+        actual = Protein.calculate_absorbance(first_seq)
+
+        self.assertEqual(actual, expected)
 
 
 if __name__ == "__main__":

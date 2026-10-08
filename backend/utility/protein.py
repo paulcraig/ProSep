@@ -8,26 +8,26 @@ from Bio import SeqIO
 class Protein():
 
     AMINO_ACIDS = {
-        'A': {'mass': 71.07,  'pKa': 0},
-        'R': {'mass': 156.18, 'pKa': 12.48},
-        'N': {'mass': 114.08, 'pKa': 0},
-        'D': {'mass': 115.08, 'pKa': 3.65},
-        'C': {'mass': 103.14, 'pKa': 8.18},
-        'E': {'mass': 129.11, 'pKa': 4.25},
-        'Q': {'mass': 128.13, 'pKa': 0},
-        'G': {'mass': 57.05,  'pKa': 0},
-        'H': {'mass': 137.14, 'pKa': 6.00},
-        'I': {'mass': 113.16, 'pKa': 0},
-        'L': {'mass': 113.16, 'pKa': 0},
-        'K': {'mass': 128.17, 'pKa': 10.53},
-        'M': {'mass': 131.19, 'pKa': 0},
-        'F': {'mass': 147.17, 'pKa': 0},
-        'P': {'mass': 97.11,  'pKa': 0},
-        'S': {'mass': 87.07,  'pKa': 0},
-        'T': {'mass': 101.10, 'pKa': 0},
-        'W': {'mass': 186.21, 'pKa': 0},
-        'Y': {'mass': 163.17, 'pKa': 10.07},
-        'V': {'mass': 99.13,  'pKa': 0}
+        'A': {'mass': 71.07,  'pKa': 0,     'absorbance': 1},
+        'R': {'mass': 156.18, 'pKa': 12.48, 'absorbance': 1},
+        'N': {'mass': 114.08, 'pKa': 0,     'absorbance': 1},
+        'D': {'mass': 115.08, 'pKa': 3.65,  'absorbance': 1},
+        'C': {'mass': 103.14, 'pKa': 8.18,  'absorbance': 1},
+        'E': {'mass': 129.11, 'pKa': 4.25,  'absorbance': 1},
+        'Q': {'mass': 128.13, 'pKa': 0,     'absorbance': 1},
+        'G': {'mass': 57.05,  'pKa': 0,     'absorbance': 1},
+        'H': {'mass': 137.14, 'pKa': 6.00,  'absorbance': 1},
+        'I': {'mass': 113.16, 'pKa': 0,     'absorbance': 1},
+        'L': {'mass': 113.16, 'pKa': 0,     'absorbance': 1},
+        'K': {'mass': 128.17, 'pKa': 10.53, 'absorbance': 1},
+        'M': {'mass': 131.19, 'pKa': 0,     'absorbance': 1},
+        'F': {'mass': 147.17, 'pKa': 0,     'absorbance': 3},
+        'P': {'mass': 97.11,  'pKa': 0,     'absorbance': 1},
+        'S': {'mass': 87.07,  'pKa': 0,     'absorbance': 1},
+        'T': {'mass': 101.10, 'pKa': 0,     'absorbance': 1},
+        'W': {'mass': 186.21, 'pKa': 0,     'absorbance': 10},
+        'Y': {'mass': 163.17, 'pKa': 10.07, 'absorbance': 4},
+        'V': {'mass': 99.13,  'pKa': 0,     'absorbance': 1}
     }
     
     # Utilizes Biopython SeqIO library to parse through a fasta file given by the user and collect
@@ -70,6 +70,13 @@ class Protein():
             sequence = ProteinAnalysis(protein[1])
             amino_acid_list.append(sequence.count_amino_acids())
         return amino_acid_list
+
+    @staticmethod
+    def calculate_absorbance(sequence: str) -> int:
+        '''
+        Simulate the "UV Absorbance" of a protein as the sum of its amino acids' absorbances
+        '''
+        return sum(Protein.AMINO_ACIDS[amino_acid]['absorbance'] for amino_acid in sequence)
 
 
     @staticmethod
