@@ -81,45 +81,6 @@ class IonExchangeFractionation:
         return chain_dict
 
     @staticmethod
-    def _hist_score(protstring: str) -> int:
-        last4 = ""
-        last8 = ""
-        cd4 = 0
-        cd8 = 0
-        score = 0
-        for aa in protstring:
-            if len(last4) < 4:
-                last4 += aa
-            else:
-                last4 = last4[1:] + aa
-
-            if len(last8) < 8:
-                last8 += aa
-            else:
-                last8 = last8[1:] + aa
-
-            if IonExchangeFractionation._get_hist_percent(last4) >= 0.5 and cd4 < 1:
-                score += 2
-                cd4 = 4
-            else:
-                cd4 -= 1
-
-            if IonExchangeFractionation._get_hist_percent(last8) >= 0.375 and cd8 < 1:
-                score += 6
-                cd8 = 8
-            else:
-                cd8 -= 1
-
-        hist_chains = IonExchangeFractionation._find_hist_chains(protstring)
-        for key in hist_chains:
-            score += hist_chains[key] * (int(key) ** 2)
-        return score
-
-    @staticmethod
-    def _param_of_interest(protdata: str) -> bool:
-        return bool(IonExchangeFractionation._hist_score(protdata) >= 4)
-
-    @staticmethod
     def _normalize_sequence(sequence: str) -> str:
         seq = sequence.strip().upper()
         for bad, replacement in IonExchangeFractionation.NORMALIZATION_MAP.items():
@@ -278,10 +239,10 @@ class IonExchangeFractionation:
                     "proteinCount": len(fraction),
                     "absorbanceScore": sum(Protein.calculate_absorbance(entry.sequence) for entry in fraction),
                     "hitCount": len([
-                        entry for entry in fraction if IonExchangeFractionation._param_of_interest(entry.sequence)
+                        entry for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
                     ]),
                     "hitProteinIds": [
-                        entry.seq_id for entry in fraction if IonExchangeFractionation._param_of_interest(entry.sequence)
+                        entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
                     ],
                     "proteins": [pack(entry) for entry in fraction],
                 }
