@@ -14,7 +14,7 @@ export const ProteinInfoCard = ({ dot, mousePos, onDigestClick }) => {
       <div className="meta">
         <div>
           {dot.Link && dot.Link !== 'N/A'
-            ? <><span style={{ color: 'var(--text-dim)' }}>Link: </span><a href={dot.Link}>{dot.Link}</a></>
+            ? <><span style={{ color: 'var(--text-dim)' }}>Link: </span><a href={dot.Link} target="_blank" rel="noopener noreferrer">{dot.Link}</a></>
             : <span style={{ color: 'var(--text-dim)' }}>No link available</span>}
         </div>
         <div>
