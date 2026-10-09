@@ -14,7 +14,6 @@ import HiddenIcon from '@mui/icons-material/Terminal';
 import Hidden, { useHiddenUnlock } from './pages/Hidden';
 
 import SwapVertIcon from '@mui/icons-material/SwapVert';
-import AlignHorizontalCenterIcon from '@mui/icons-material/AlignHorizontalCenter';
 
 import { ReactComponent as OneDEIcon } from "./assets/electrophoresis/1DE.svg";
 import { ReactComponent as TwoDEIcon } from "./assets/electrophoresis/2DE.svg";
@@ -83,7 +82,9 @@ function App() {
     },
   ];
 
-  return <Dashboard pages={pages} homepage={1} darkmode={true} logo={logo} />;
+  return (
+    <Dashboard pages={pages} homepage={1} darkmode={true} logo={logo} />
+  )
 }
 
 export default App;
