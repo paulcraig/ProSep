@@ -1,15 +1,18 @@
-import { Suspense, useCallback, useMemo, useRef } from 'react'
+import { Suspense, useMemo, useRef } from 'react'
 import { ChartLoadingPlaceholder, LazyLine, LazyScatter, useDownloadChart } from './Common'
-import { ChartData, Chart as ChartJS } from 'chart.js'
-import { FractionDto, IonExchangeResponse } from '../../../pages/IonExchangeFractionation'
+import { Chart as ChartJS } from 'chart.js'
+import { FractionDto, IonExchangeResponse, ProteinDto } from '../../../pages/IonExchangeFractionation'
 import { Box, Button } from '@mui/material'
 import { Download } from '@mui/icons-material'
+
+export type ChromatogramProteinDto = Pick<ProteinDto, "amount">
+export type ChromatogramFractionDto = Pick<FractionDto, "fractionIndex"> & { proteins: ChromatogramProteinDto[] }
 
 export type ChromatogramProps = {
     showLineGraph: boolean
     useLogScale: boolean
     showWash: boolean
-    fractionRows: FractionDto[]
+    fractionRows: ChromatogramFractionDto[]
     data: IonExchangeResponse
 }
 
