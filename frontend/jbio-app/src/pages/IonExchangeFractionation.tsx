@@ -7,18 +7,21 @@ import {
     CardContent,
     CardHeader,
     FormControl,
+    FormControlLabel,
     InputLabel,
     MenuItem,
     Select,
     Slider,
+    Switch,
     Typography,
 } from '@mui/material'
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LineElement, LinearScale, LogarithmicScale, PointElement, Tooltip } from 'chart.js'
 import { API_URL } from '../config'
 import NumberField from '../components/ui/NumberField'
-import { ChromatographyGraphs } from '../components/chromatography/graphs/ChromatographyGraphs'
 import { HitTable } from '../components/chromatography/tables/HitTable'
 import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
+import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
+import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
 
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, LineElement, PointElement, Tooltip, Legend)
 
@@ -78,6 +81,10 @@ const IonExchangeFractionation: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string>('')
     const [data, setData] = useState<IonExchangeResponse | null>(null)
+
+    const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
+    const [useLogScale, setUseLogScale] = useState<boolean>(true)
+    const [showWash, setShowWash] = useState<boolean>(false)
 
     const handleLoadFasta = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0]
@@ -177,7 +184,24 @@ const IonExchangeFractionation: React.FC = () => {
 
             {data && fractionRows && (
                 <>
-                    <ChromatographyGraphs {...{ data, fractionCount, fractionRows }} />
+                    <Card>
+                        <CardHeader title='Fractionation' />
+                        <CardContent>
+                            <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
+                            <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
+                            <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
+
+                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale }} />
+                            <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
+                            
+                            <Box>
+                                <Typography variant='body2'>
+                                    Total: {data.counts.total} | Retained: {data.counts.retained} | Wash: {data.counts.wash} | Exchanger:{' '}
+                                    <span style={{ textTransform: 'capitalize' }}>{data.params.exchanger}</span>
+                                </Typography>
+                            </Box>
+                        </CardContent>
+                    </Card>
                     <HitTable {...{ fractionRows }} />
                     <ProteinTable {...{ fractionRows, ph }} />
                 </>

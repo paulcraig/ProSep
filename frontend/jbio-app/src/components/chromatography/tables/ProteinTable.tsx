@@ -22,8 +22,13 @@ import { SortDirection } from './Common'
 
 type ProteinSortKey = 'charge' | 'molecularWeight'
 
+type ProteinTableProteinDto = Pick<ProteinDto, "id" | "name" | "description" | "sequence" | "molecularWeight" | "charge" | "color">
+type ProteinTableFractionDto = Omit<Pick<ProteinDto, "amount">, "proteins"> & {
+    proteins: ProteinTableProteinDto[]
+}
+
 export type ProteinTableProps = {
-    fractionRows: FractionDto[]
+    fractionRows: ProteinTableFractionDto[]
     ph: number
 }
 
@@ -47,7 +52,7 @@ export function ProteinTable({ fractionRows, ph }: ProteinTableProps) {
     }
 
     const retainedRows = useMemo(() => {
-        const byKey = new Map<string, ProteinDto>()
+        const byKey = new Map<string, ProteinTableProteinDto>()
         for (const fraction of fractionRows) {
             for (const protein of fraction.proteins) {
                 byKey.set(`${protein.id}::${protein.sequence}`, protein)

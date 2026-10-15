@@ -1,12 +1,16 @@
 import { Search } from '@mui/icons-material'
 import { Card, CardHeader, TextField, InputAdornment, CardContent, TablePagination, TableContainer, Table, TableHead, TableRow, TableCell, TableSortLabel, TableBody, Box, Chip } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
-import { FractionDto } from '../../../pages/IonExchangeFractionation'
+import { FractionDto, ProteinDto } from '../../../pages/IonExchangeFractionation'
 import { SortDirection } from './Common'
 
 type FractionSortKey = 'fractionIndex' | 'proteinCount' | 'hitCount'
 
-export type HitTableProps = { fractionRows: FractionDto[] }
+type HitTableFractionDto = 
+    Omit<FractionDto, "proteins">
+    & { proteins: Pick<ProteinDto, "id" | "color" | "sequence">[] }
+
+export type HitTableProps = { fractionRows: HitTableFractionDto[] }
 
 export function HitTable({ fractionRows }: HitTableProps) {
     const [fractionSearch, setFractionSearch] = useState<string>('')
