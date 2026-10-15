@@ -1,5 +1,6 @@
 from fastapi import UploadFile
 import numpy as np
+import re
 from io import StringIO
 from typing import Any
 from typing import List
@@ -12,13 +13,8 @@ import random
 class ProteolyticDigestion:
     @staticmethod
     def breakUpProtein(sequence: str, two_animno_acids: str) -> List:
-        seperated: list = sequence.split(two_animno_acids)
-        i = 0
-        while i < len(seperated) - 1:
-            seperated[i] = seperated[i] + two_animno_acids
-            i += 1
-
-        return seperated
+        seperated = re.split(f"(?<=[{re.escape(two_animno_acids)}])", sequence)
+        return [fragment for fragment in seperated if fragment]
 
     @staticmethod
     def fileGetProteinInfo(file: UploadFile) -> Any:
