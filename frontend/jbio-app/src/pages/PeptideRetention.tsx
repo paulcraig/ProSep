@@ -673,7 +673,7 @@ const PeptideRetention: React.FC = () => {
               <TableHead>
                 <TableRow className="results-header">
                   <TableCell>Peptide</TableCell>
-                  <TableCell>Predicted tR (min)</TableCell>
+                  <TableCell>Predicted tᵣ (min)</TableCell>
                   <TableCell>SMILES</TableCell>
                   <TableCell>log SumAA</TableCell>
                   <TableCell>log VDW Vol</TableCell>
