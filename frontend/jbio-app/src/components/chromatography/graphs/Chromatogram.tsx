@@ -1,12 +1,11 @@
 import { Suspense, useMemo, useRef } from 'react'
 import { ChartLoadingPlaceholder, LazyLine, LazyScatter, useDownloadChart } from './Common'
 import { Chart as ChartJS } from 'chart.js'
-import { FractionDto, IonExchangeResponse, ProteinDto } from '../../../pages/IonExchangeFractionation'
+import { FractionDto, IonExchangeResponse } from '../../../pages/IonExchangeFractionation'
 import { Box, Button } from '@mui/material'
 import { Download } from '@mui/icons-material'
 
-export type ChromatogramProteinDto = Pick<ProteinDto, "amount">
-export type ChromatogramFractionDto = Pick<FractionDto, "fractionIndex"> & { proteins: ChromatogramProteinDto[] }
+export type ChromatogramFractionDto = Pick<FractionDto, "fractionIndex" | "absorbanceScore">
 
 export type ChromatogramProps = {
     showLineGraph: boolean
@@ -30,7 +29,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
         for (const fraction of fractionRows) {
             points.push({
                 x: fraction.fractionIndex,
-                y: fraction.proteins.map(p => p.amount).reduce((a, b) => a + b, 0),
+                y: fraction.absorbanceScore ?? 0,
             })
         }
         const maxY = Math.max(...points.map(p => p.y), 1)
@@ -44,7 +43,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
         return {
             datasets: [
                 {
-                    label: 'Proteins per fraction',
+                    label: 'UV Absorbances',
                     data: proteinSeriesPoints,
                     backgroundColor: 'rgba(107, 224, 57, 0.8)',
                     pointRadius: 4,
@@ -57,7 +56,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
         return {
             datasets: [
                 {
-                    label: 'Proteins per fraction',
+                    label: 'UV Absorbance',
                     data: proteinSeriesPoints,
                     borderColor: 'rgba(107, 224, 57, 1)',
                     backgroundColor: 'rgba(107, 224, 57, 0.8)',
