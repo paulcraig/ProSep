@@ -1,7 +1,7 @@
 import { Search } from '@mui/icons-material'
 import { Card, CardHeader, TextField, InputAdornment, CardContent, TablePagination, TableContainer, Table, TableHead, TableRow, TableCell, TableSortLabel, TableBody, Box, Chip } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
-import { FractionDto, ProteinDto } from '../../../pages/IonExchangeFractionation'
+import { FractionDto, ProteinDto } from '../types'
 import { SortDirection } from './Common'
 
 type FractionSortKey = 'fractionIndex' | 'proteinCount' | 'hitCount'

@@ -22,28 +22,17 @@ import { HitTable } from '../components/chromatography/tables/HitTable'
 import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
 import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
 import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
+import type * as ChromatographyTypes from '../components/chromatography/types'
 
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, LineElement, PointElement, Tooltip, Legend)
 
 type MediaType = 'Q' | 'S'
 
-export type ProteinDto = {
-    id: string
-    name: string
-    description: string
-    sequence: string
-    molecularWeight: number
+export type ProteinDto = ChromatographyTypes.ProteinDto & {
     charge: number
-    color: string
-    amount: number
 }
 
-export type FractionDto = {
-    fractionIndex: number
-    proteinCount?: number
-    hitCount?: number
-    hitProteinIds?: string[]
-    absorbanceScore?: number
+export type FractionDto = Omit<ChromatographyTypes.FractionDto, "proteins"> & {
     proteins: ProteinDto[]
 }
 
