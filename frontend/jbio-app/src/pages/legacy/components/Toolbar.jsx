@@ -29,11 +29,11 @@ const AxisIcon = () => (
 );
 
 export const Toolbar = ({
-  simulationState, yAxisMode,
+  simulationState, hasProteins, yAxisMode,
   onUpload, onStartIEF, onStartSDS, onReset, onToggleYAxis,
 }) => {
-  const isReady      = simulationState === 'ready';
-  const isIEFDone    = simulationState === 'ief-complete';
+  const canStartIEF = simulationState === 'ready' && hasProteins;
+  const canStartSDS = simulationState === 'ief-complete';
 
   return (
     <div className="twoDE-controls-row">
@@ -42,11 +42,11 @@ export const Toolbar = ({
         <input type="file" accept=".fasta,.fa,.faa,.FAA" multiple onChange={onUpload} style={{ display: 'none' }} />
       </label>
 
-      <button className="twoDE-button icon" onClick={onStartIEF} disabled={!isReady}>
+      <button className="twoDE-button icon" onClick={onStartIEF} disabled={!canStartIEF}>
         <HorizontalLinesIcon /> 1st Dimension
       </button>
 
-      <button className="twoDE-button icon" onClick={onStartSDS} disabled={!isIEFDone}>
+      <button className="twoDE-button icon" onClick={onStartSDS} disabled={!canStartSDS}>
         <VerticalLinesIcon /> 2nd Dimension
       </button>
 

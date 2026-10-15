@@ -43,6 +43,7 @@ export type FractionDto = {
     proteinCount?: number
     hitCount?: number
     hitProteinIds?: string[]
+    absorbanceScore?: number
     proteins: ProteinDto[]
 }
 
