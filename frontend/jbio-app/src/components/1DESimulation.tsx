@@ -1312,35 +1312,41 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       </div>
 
       {/* Proteins */}
-      <div
-        ref={chipsRef}
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          paddingLeft: '3.75rem',
-          gap: '0.5rem',
-          width: slabW
-        }}
-      >
-        {standards.map(protein => {
-          const isSelected = selectedStandards.some(p => p.id_num === protein.id_num)
-          return (
-            <Chip
-              key={protein.id_num}
-              label={protein.name}
-              onClick={() => onToggleProtein(protein)}
-              sx={{
-                backgroundColor: isSelected ? protein.color : 'var(--accent)',
-                color: 'var(--background)',
-                fontWeight: 'bold',
-                '&:hover': {
-                  filter: 'brightness(1.1)'
-                }
-              }}
-            />
-          )
-        })}
+      <div role="group" aria-labelledby="standards-label" style={{ marginTop: '1rem'}}>
+        <div id="standards-label" style={{ color: 'var(--text)', fontWeight: 600, marginBottom: '0.5rem', paddingLeft: '3.75rem' }}>
+          Standards in Well One:
+        </div>
+        <div
+          ref={chipsRef}
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            paddingLeft: '3.75rem',
+            gap: '0.5rem',
+            width: slabW
+          }}
+        >
+          {standards.map(protein => {
+            const isSelected = selectedStandards.some(p => p.id_num === protein.id_num)
+            return (
+              <Chip
+                key={protein.id_num}
+                label={protein.name}
+                onClick={() => onToggleProtein(protein)}
+                sx={{
+                  backgroundColor: isSelected ? protein.color : 'var(--accent)',
+                  color: 'var(--background)',
+                  fontWeight: 'bold',
+                  '&:hover': {
+                    filter: 'brightness(1.1)',
+                    color: 'var(--text)',
+                  }
+                }}
+              />
+            )
+          })}
+        </div>
       </div>
 
       {/* Protein Tooltip */}
