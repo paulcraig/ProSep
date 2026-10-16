@@ -1,5 +1,5 @@
 import { Suspense, useMemo, useRef } from 'react'
-import { ChartLoadingPlaceholder, LazyLine, LazyScatter, useDownloadChart } from './Common'
+import { ChartLoadingPlaceholder, LazyLine, LazyScatter, useChartTheme, useDownloadChart } from './Common'
 import { Chart as ChartJS, ChartDataset } from 'chart.js'
 import { FractionDto, FractionationResponse, ProteinDto } from '../types'
 import { Box, Button } from '@mui/material'
@@ -22,6 +22,7 @@ export type ChromatogramProps = {
 export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, afterWashLabel, fractionRows, data, afterWash, saltGradient }: ChromatogramProps) {
     const lineChartRef = useRef<ChartJS<'line'> | null>(null)
     const scatterChartRef = useRef<ChartJS<'scatter'> | null>(null)
+    const chartTheme = useChartTheme()
 
     const lastFractionX = fractionRows.length > 0 ? Math.max(...fractionRows.map(f => f.fractionIndex)) : 0
     const showAfterWash = !!afterWash && afterWash.length > 0
@@ -130,16 +131,28 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                             options={{
                                 responsive: true,
                                 maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        labels: {
+                                            color: chartTheme.text,
+                                        },
+                                    },
+                                },
                                 scales: {
                                     x: {
                                         type: 'linear',
                                         title: {
                                             display: true,
                                             text: 'Fractions',
+                                            color: chartTheme.text,
                                         },
                                         beginAtZero: true,
                                         ticks: {
                                             callback: fractionTickLabel,
+                                            color: chartTheme.text,
+                                        },
+                                        grid: {
+                                            color: chartTheme.grid,
                                         },
                                     },
                                     y: {
@@ -147,8 +160,15 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                                         title: {
                                             display: true,
                                             text: showWash ? 'Retained+Wash' : 'Retained',
+                                            color: chartTheme.text,
                                         },
                                         beginAtZero: !useLogScale,
+                                        ticks: {
+                                            color: chartTheme.text,
+                                        },
+                                        grid: {
+                                            color: chartTheme.grid,
+                                        },
                                     },
                                     ...(saltGradient && saltGradient.length > 0 ? {
                                         y1: {
@@ -157,8 +177,13 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                                             title: {
                                                 display: true,
                                                 text: 'Salt Concentration',
+                                                color: chartTheme.text,
+                                            },
+                                            ticks: {
+                                                color: chartTheme.text,
                                             },
                                             grid: {
+                                                color: chartTheme.grid,
                                                 drawOnChartArea: false,
                                             },
                                         },
@@ -175,15 +200,27 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                             options={{
                                 responsive: true,
                                 maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        labels: {
+                                            color: chartTheme.text,
+                                        },
+                                    },
+                                },
                                 scales: {
                                     x: {
                                         title: {
                                             display: true,
                                             text: 'Fractions',
+                                            color: chartTheme.text,
                                         },
                                         beginAtZero: true,
                                         ticks: {
                                             callback: fractionTickLabel,
+                                            color: chartTheme.text,
+                                        },
+                                        grid: {
+                                            color: chartTheme.grid,
                                         },
                                     },
                                     y: {
@@ -191,8 +228,15 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                                         title: {
                                             display: true,
                                             text: showWash ? 'Retained+Wash' : 'Retained',
+                                            color: chartTheme.text,
                                         },
                                         beginAtZero: !useLogScale,
+                                        ticks: {
+                                            color: chartTheme.text,
+                                        },
+                                        grid: {
+                                            color: chartTheme.grid,
+                                        },
                                     },
                                 },
                             }}
