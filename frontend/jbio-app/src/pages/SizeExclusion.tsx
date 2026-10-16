@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Line } from 'react-chartjs-2'
-import { Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend } from 'chart.js'
+import { Chart as ChartJS, CategoryScale, LinearScale, LogarithmicScale, BarElement, LineElement, PointElement, Tooltip, Legend } from 'chart.js'
 import { API_URL } from '../config'
 import {
     Alert,
@@ -10,19 +9,18 @@ import {
     CardContent,
     CardHeader,
     FormControl,
+    FormControlLabel,
     InputLabel,
     MenuItem,
     Select,
     SelectChangeEvent,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
+    Switch,
     Typography,
 } from '@mui/material'
 import NumberField from '../components/ui/NumberField'
+import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
+import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
+import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
 
 // Gel dictionary
 const gelDict: { [key: string]: [number, number] } = {
@@ -40,25 +38,45 @@ const gelDict: { [key: string]: [number, number] } = {
     'Bio-A 10.0 - 1500 kDA': [10000, 1500000],
 }
 
-ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, LineElement, PointElement, Tooltip, Legend)
 
 type ProteinDto = {
     id: string
     name: string
+    description: string
+    sequence: string
     molecularWeight: number
-    hydrophobicity: number
-    bindingStrength: number
+    color: string
+    amount: number
+}
+
+type FractionDto = {
+    fractionIndex: number
+    proteinCount?: number
+    absorbanceScore?: number
+    hitCount?: number
+    hitProteinIds?: string[]
+    proteins: ProteinDto[]
 }
 
 type SizeExclusionResponse = {
     ok: boolean
+    params: {
+        gelName: string
+        minSize: number
+        maxSize: number
+        fractions: number
+    }
     counts: {
         total: number
         to_small: number
         to_big: number
         inside: number
+        skipped: number
     }
-    proteins: ProteinDto[]
+    wash: ProteinDto[]
+    fractions: FractionDto[]
+    afterWash: ProteinDto[]
     error?: string
 }
 
@@ -73,6 +91,10 @@ const SizeExclusionPage: React.FC = () => {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [data, setData] = useState<SizeExclusionResponse | null>(null)
+
+    const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
+    const [useLogScale, setUseLogScale] = useState<boolean>(false)
+    const [showWash, setShowWash] = useState<boolean>(true)
 
     const handleLoadFasta = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0]
@@ -99,6 +121,7 @@ const SizeExclusionPage: React.FC = () => {
                     fasta_content: fastaText,
                     gel_name: selectedGel,
                     proteinList: [],
+                    fraction_count: fractionCount,
                 }),
             })
             const json = (await res.json()) as SizeExclusionResponse
@@ -114,58 +137,7 @@ const SizeExclusionPage: React.FC = () => {
         }
     }
 
-    const fractionCounts = useMemo(() => {
-        if (!data) return []
-        const fractions = Array(fractionCount + 2).fill(0)
-        fractions[0] = data.counts.to_big
-        fractions[fractionCount + 1] = data.counts.to_small
-        const step = (maxSize - minSize) / fractionCount
-        data.proteins.forEach(p => {
-            if (p.molecularWeight >= minSize && p.molecularWeight <= maxSize) {
-                let idx = Math.floor((p.molecularWeight - minSize) / step) + 1
-                if (idx > fractionCount) idx = fractionCount // Clamp
-                fractions[idx]++
-            }
-        })
-        return fractions
-    }, [data, minSize, maxSize, fractionCount])
-
-    const chartData = useMemo(() => {
-        if (!data) return { labels: [], datasets: [] }
-        const labels = [
-            'Too Big',
-            ...Array.from({ length: fractionCount }, (_, i) => {
-                const start = minSize + (i * (maxSize - minSize)) / fractionCount
-                const end = minSize + ((i + 1) * (maxSize - minSize)) / fractionCount
-                return `${start.toFixed(0)}-${end.toFixed(0)}`
-            }),
-            'Too Small',
-        ]
-        return {
-            labels,
-            datasets: [
-                {
-                    label: 'Protein Count',
-                    data: fractionCounts,
-                    backgroundColor: '#66d1b2',
-                },
-            ],
-        }
-    }, [fractionCounts, minSize, maxSize, fractionCount, data])
-
-    const chartOptions = {
-        responsive: true,
-        scales: {
-            x: {
-                title: { display: true, text: 'Fraction' },
-            },
-            y: {
-                title: { display: true, text: 'Protein Count' },
-                beginAtZero: true,
-                ticks: { stepSize: 1 },
-            },
-        },
-    }
+    const fractionRows = useMemo(() => data?.fractions ?? [], [data])
 
     return (
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -204,42 +176,39 @@ const SizeExclusionPage: React.FC = () => {
 
             {data && (
                 <>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ height: 320, display: 'flex', justifyContent: 'center' }}>
-                                <Line data={chartData} options={chartOptions} />
-                            </Box>
-                            <Box>
-                                <Typography variant='body2'>
-                                    Total: {data.counts.total} | Too Small: {data.counts.to_small} | Too Big: {data.counts.to_big} | Inside: {data.counts.inside}
-                                </Typography>
-                            </Box>
-                        </CardContent>
-                    </Card>
+                    <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
+                    <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
+                    <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
 
-                    <Card>
-                        <CardHeader title='Proteins (Inside Range)' />
-                        <CardContent>
-                            <TableContainer>
-                                <Table size='small'>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Name</TableCell>
-                                            <TableCell>Molecular Weight</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {data.proteins.map(p => (
-                                            <TableRow key={p.id}>
-                                                <TableCell>{p.name}</TableCell>
-                                                <TableCell>{p.molecularWeight}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        </CardContent>
-                    </Card>
+                    <Chromatogram
+                        {...{
+                            data,
+                            fractionRows,
+                            showLineGraph,
+                            showWash,
+                            useLogScale,
+                            afterWash: data.afterWash,
+                            washLabel: 'Too Big',
+                            afterWashLabel: 'Too Small',
+                        }}
+                    />
+                    <ChromatographyHitGraph
+                        {...{
+                            data,
+                            fractionRows,
+                            showWash,
+                            useLogScale,
+                            afterWash: data.afterWash,
+                            washLabel: 'Too Big',
+                            afterWashLabel: 'Too Small',
+                        }}
+                    />
+                    <Box sx={{ my: 1 }}>
+                        <Typography variant='body2'>
+                            Total: {data.counts.total} | Too Small: {data.counts.to_small} | Too Big: {data.counts.to_big} | Inside: {data.counts.inside} | Skipped: {data.counts.skipped}
+                        </Typography>
+                    </Box>
+                    <ProteinTable {...{ fractionRows }} />
                 </>
             )}
         </Box>
