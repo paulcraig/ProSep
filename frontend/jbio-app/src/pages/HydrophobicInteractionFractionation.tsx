@@ -53,6 +53,7 @@ type ProteinDto = {
     hydrophobicity: number
     bindingStrength: number
     color: string
+    amount: number
 }
 
 /*
@@ -61,6 +62,9 @@ type ProteinDto = {
 type FractionDto = {
     fractionIndex: number
     proteinCount?: number
+    absorbanceScore?: number
+    hitCount?: number
+    hitProteinIds?: string[]
     proteins: ProteinDto[]
 }
 
