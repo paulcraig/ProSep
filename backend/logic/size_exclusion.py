@@ -1,12 +1,13 @@
-from typing import Any, Dict, List
+import math
+from typing import Any, Dict, List, Tuple
 
 from Bio.SeqUtils.ProtParam import ProteinAnalysis as PA
 from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
 class SizeExclusionFractionation:
-  def _set_protien_list(fasta_content,proteins:IonExchangeFractionation.ProteinEntry) -> List[IonExchangeFractionation.ProteinEntry]:
+  def _set_protien_list(fasta_content,proteins:IonExchangeFractionation.ProteinEntry) -> Tuple[List[IonExchangeFractionation.ProteinEntry], int]:
     records = IonExchangeFractionation._parse_fasta_text(fasta_content)
     if len(proteins) > 0:
-        return proteins
+        return proteins, 0
     entries: List[IonExchangeFractionation.ProteinEntry] = []
     skipped = 0
 
@@ -31,7 +32,7 @@ class SizeExclusionFractionation:
                     charge="n/a",
                     molecular_weight=molecular_weight,
                 ))
-    return entries
+    return entries, skipped
     
   def process(
          
@@ -46,7 +47,7 @@ class SizeExclusionFractionation:
         
         """
         print(fasta_content)
-        entries = SizeExclusionFractionation._set_protien_list(fasta_content,proteinList)
+        entries, skipped = SizeExclusionFractionation._set_protien_list(fasta_content,proteinList)
 
         to_big: List[IonExchangeFractionation.ProteinEntry] = []
         to_small: List[IonExchangeFractionation.ProteinEntry] = []
@@ -75,6 +76,7 @@ class SizeExclusionFractionation:
                 "molecularWeight": round(entry.molecular_weight, 2),
                 "charge":"n/a",
                 "color": IonExchangeFractionation._stable_color(entry.seq_id),
+                "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
             }
 
         return {
@@ -85,9 +87,12 @@ class SizeExclusionFractionation:
                 "to_small": len(to_small),
                 "to_big": len(to_big),
                 "inside": len(inside),
+                "skipped": skipped,
             },
           
            
+            "wash": [pack(entry) for entry in to_big],
+            "afterWash": [pack(entry) for entry in to_small],
             "proteins": [pack(entry) for entry in inside],
                 }
                
