@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Tuple
 
 from Bio.SeqUtils.ProtParam import ProteinAnalysis as PA
 from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
+from backend.utility.protein import Protein
 class SizeExclusionFractionation:
   def _set_protien_list(fasta_content,proteins:List[IonExchangeFractionation.ProteinEntry]) -> Tuple[List[IonExchangeFractionation.ProteinEntry], int]:
     records = IonExchangeFractionation._parse_fasta_text(fasta_content)
@@ -48,6 +49,9 @@ class SizeExclusionFractionation:
         will parse fasta file unless giving a protein list of size 1 or more.
         
         """
+        if fraction_count < 1:
+            raise ValueError("fraction_count must be at least 1")
+
         entries, skipped = SizeExclusionFractionation._set_protien_list(fasta_content,proteinList)
 
         to_big: List[IonExchangeFractionation.ProteinEntry] = []
@@ -63,6 +67,15 @@ class SizeExclusionFractionation:
                 to_big.append(entry)
             else:
                 inside.append(entry)
+
+        # Largest elutes first
+        elution_order = sorted(inside, key=lambda item: item.molecular_weight, reverse=True)
+
+        fraction_lists = IonExchangeFractionation._fractionate_with_overlap(
+            items=elution_order,
+            n_fractions=fraction_count,
+            overlap=0.0,
+        )
 
         def pack(entry: IonExchangeFractionation.ProteinEntry) -> Dict[str, Any]:
             name = " ".join(entry.description.split(" ")[1:]) if " " in entry.description else entry.description
@@ -95,6 +108,21 @@ class SizeExclusionFractionation:
           
            
             "wash": [pack(entry) for entry in to_big],
+            "fractions": [
+                {
+                    "fractionIndex": index + 1,
+                    "proteinCount": len(fraction),
+                    "absorbanceScore": sum(Protein.calculate_absorbance(entry.sequence) for entry in fraction),
+                    "hitCount": len([
+                        entry for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
+                    ]),
+                    "hitProteinIds": [
+                        entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
+                    ],
+                    "proteins": [pack(entry) for entry in fraction],
+                }
+                for index, fraction in enumerate(fraction_lists)
+            ],
             "afterWash": [pack(entry) for entry in to_small],
             "proteins": [pack(entry) for entry in inside],
                 }
