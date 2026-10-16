@@ -1,7 +1,7 @@
 import { Suspense, useMemo, useRef } from 'react'
 import { ChartLoadingPlaceholder, LazyLine, LazyScatter, useDownloadChart } from './Common'
 import { Chart as ChartJS } from 'chart.js'
-import { FractionDto, IonExchangeResponse } from '../../../pages/IonExchangeFractionation'
+import { FractionDto, FractionationResponse } from '../types'
 import { Box, Button } from '@mui/material'
 import { Download } from '@mui/icons-material'
 
@@ -12,7 +12,7 @@ export type ChromatogramProps = {
     useLogScale: boolean
     showWash: boolean
     fractionRows: ChromatogramFractionDto[]
-    data: IonExchangeResponse
+    data: FractionationResponse
 }
 
 export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRows, data }: ChromatogramProps) {
