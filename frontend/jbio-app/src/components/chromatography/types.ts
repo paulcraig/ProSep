@@ -16,3 +16,13 @@ export type FractionDto = {
     absorbanceScore?: number
     proteins: ProteinDto[]
 }
+
+export type FractionationResponse = {
+    ok: boolean
+    params: Record<string, unknown>
+    counts: Record<string, number>
+    wash: ProteinDto[]
+    afterWash?: ProteinDto[]
+    fractions: FractionDto[]
+    error?: string
+}
