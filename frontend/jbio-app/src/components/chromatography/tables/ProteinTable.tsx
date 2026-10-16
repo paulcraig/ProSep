@@ -16,28 +16,33 @@ import {
     Typography,
 } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
-import { FractionDto, ProteinDto } from '../../../pages/IonExchangeFractionation'
+import { FractionDto, ProteinDto } from '../types'
 import { Search } from '@mui/icons-material'
 import { SortDirection } from './Common'
 
-type ProteinSortKey = 'charge' | 'molecularWeight'
+type ProteinTableProteinDto = Pick<ProteinDto, "id" | "name" | "description" | "sequence" | "molecularWeight" | "color">
 
-type ProteinTableProteinDto = Pick<ProteinDto, "id" | "name" | "description" | "sequence" | "molecularWeight" | "charge" | "color">
-type ProteinTableFractionDto = Omit<Pick<ProteinDto, "amount">, "proteins"> & {
-    proteins: ProteinTableProteinDto[]
+export type ProteinTableMetricDto<P> = {
+    label: string
+    value: (protein: P) => number
+    format?: (value: number) => string
 }
 
-export type ProteinTableProps = {
-    fractionRows: ProteinTableFractionDto[]
-    ph: number
+type ProteinTableFractionDto<P> = Pick<FractionDto, "fractionIndex"> & {
+    proteins: P[]
 }
 
-export function ProteinTable({ fractionRows, ph }: ProteinTableProps) {
+export type ProteinTableProps<P> = {
+    fractionRows: ProteinTableFractionDto<P>[]
+    metrics?: ProteinTableMetricDto<P>[]
+}
+
+export function ProteinTable<P extends ProteinTableProteinDto>({ fractionRows, metrics = [] }: ProteinTableProps<P>) {
     const [proteinSort, setProteinSort] = useState<{
-        key: ProteinSortKey
+        key: string
         direction: SortDirection
     }>({
-        key: 'charge',
+        key: 'molecularWeight',
         direction: 'asc',
     })
 
@@ -46,19 +51,19 @@ export function ProteinTable({ fractionRows, ph }: ProteinTableProps) {
 
     const [proteinSearch, setProteinSearch] = useState<string>('')
 
-    const handleProteinSort = (key: ProteinSortKey, direction: SortDirection) => {
+    const handleProteinSort = (key: string, direction: SortDirection) => {
         setProteinSort({ key, direction })
         setProteinPage(0)
     }
 
     const retainedRows = useMemo(() => {
-        const byKey = new Map<string, ProteinTableProteinDto>()
+        const byKey = new Map<string, P>()
         for (const fraction of fractionRows) {
             for (const protein of fraction.proteins) {
                 byKey.set(`${protein.id}::${protein.sequence}`, protein)
             }
         }
-        return Array.from(byKey.values()).sort((a, b) => Math.abs(a.charge) - Math.abs(b.charge))
+        return Array.from(byKey.values())
     }, [fractionRows])
 
     const filteredRetainedRows = useMemo(() => {
@@ -72,19 +77,24 @@ export function ProteinTable({ fractionRows, ph }: ProteinTableProps) {
         })
     }, [retainedRows, proteinSearch])
 
+    const getSortValue = (row: P, key: string) => {
+        if (key === 'molecularWeight') {
+            return row.molecularWeight
+        }
+        const metric = metrics.find(m => m.label === key)
+        return metric ? metric.value(row) : 0
+    }
+
     const sortedRetainedRows = useMemo(() => {
         const rows = [...filteredRetainedRows]
         const directionMultiplier = proteinSort.direction === 'asc' ? 1 : -1
 
         rows.sort((a, b) => {
-            const aValue = proteinSort.key === 'charge' ? a.charge : a.molecularWeight
-            const bValue = proteinSort.key === 'charge' ? b.charge : b.molecularWeight
-
-            return (aValue - bValue) * directionMultiplier
+            return (getSortValue(a, proteinSort.key) - getSortValue(b, proteinSort.key)) * directionMultiplier
         })
 
         return rows
-    }, [filteredRetainedRows, proteinSort])
+    }, [filteredRetainedRows, proteinSort, metrics])
 
     const pagedProteins = useMemo(() => {
         const start = proteinPage * proteinRowsPerPage
@@ -94,6 +104,10 @@ export function ProteinTable({ fractionRows, ph }: ProteinTableProps) {
     useEffect(() => {
         setProteinPage(0)
     }, [fractionRows])
+
+    const formatMetricValue = (metric: ProteinTableMetricDto<P>, value: number) => {
+        return metric.format ? metric.format(value) : value.toFixed(2)
+    }
 
     return (
         <Card>
@@ -139,15 +153,17 @@ export function ProteinTable({ fractionRows, ph }: ProteinTableProps) {
                             <TableRow>
                                 <TableCell>ID</TableCell>
                                 <TableCell>Name</TableCell>
-                                <TableCell>
-                                    <TableSortLabel
-                                        active={proteinSort.key === 'charge'}
-                                        direction={proteinSort.key === 'charge' ? proteinSort.direction : 'asc'}
-                                        onClick={() => handleProteinSort('charge', proteinSort.key === 'charge' && proteinSort.direction === 'asc' ? 'desc' : 'asc')}
-                                    >
-                                        Charge at pH {ph.toFixed(1)}
-                                    </TableSortLabel>
-                                </TableCell>
+                                {metrics.map(metric => (
+                                    <TableCell key={metric.label}>
+                                        <TableSortLabel
+                                            active={proteinSort.key === metric.label}
+                                            direction={proteinSort.key === metric.label ? proteinSort.direction : 'asc'}
+                                            onClick={() => handleProteinSort(metric.label, proteinSort.key === metric.label && proteinSort.direction === 'asc' ? 'desc' : 'asc')}
+                                        >
+                                            {metric.label}
+                                        </TableSortLabel>
+                                    </TableCell>
+                                ))}
                                 <TableCell>
                                     <TableSortLabel
                                         active={proteinSort.key === 'molecularWeight'}
@@ -192,7 +208,9 @@ export function ProteinTable({ fractionRows, ph }: ProteinTableProps) {
                                         </Box>
                                     </TableCell>
                                     <TableCell>{row.name || '-'}</TableCell>
-                                    <TableCell>{row.charge.toFixed(2)}</TableCell>
+                                    {metrics.map(metric => (
+                                        <TableCell key={metric.label}>{formatMetricValue(metric, metric.value(row))}</TableCell>
+                                    ))}
                                     <TableCell>{row.molecularWeight.toFixed(2)}</TableCell>
                                     <TableCell
                                         title={row.sequence}

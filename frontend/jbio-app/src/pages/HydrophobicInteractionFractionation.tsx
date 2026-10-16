@@ -677,7 +677,12 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
 
                     <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale }} />
-                    <ProteinTable {...{ fractionRows, ph: 0 }} />
+                    <ProteinTable {...{
+                        fractionRows,
+                        metrics: [
+                            { label: 'Hydrophobicity', value: (p: ProteinDto) => p.hydrophobicity },
+                            { label: 'Binding Strength', value: (p: ProteinDto) => p.bindingStrength }]
+                    }} />
                 </>
             )}
 

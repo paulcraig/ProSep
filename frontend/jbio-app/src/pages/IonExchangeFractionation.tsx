@@ -193,7 +193,10 @@ const IonExchangeFractionation: React.FC = () => {
                         </CardContent>
                     </Card>
                     <HitTable {...{ fractionRows }} />
-                    <ProteinTable {...{ fractionRows, ph }} />
+                    <ProteinTable {...{
+                        fractionRows,
+                        metrics: [{ label: `Charge at pH ${ph.toFixed(1)}`, value: (p: ProteinDto) => p.charge }]
+                    }} />
                 </>
             )}
         </Box>
