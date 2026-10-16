@@ -13,20 +13,15 @@ import {
     Select,
     Slider,
     Switch,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
     Typography,
 } from '@mui/material'
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LineElement, LinearScale, LogarithmicScale, PointElement, Tooltip } from 'chart.js'
 import { API_URL } from '../config'
 import NumberField from '../components/ui/NumberField'
+import { HitTable } from '../components/chromatography/tables/HitTable'
 import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
 import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
+import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
 
 /*
  * Register the chart components we need for Chart.js.
@@ -138,12 +133,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
     const [data, setData] = useState<HICResponse | null>(null)
 
     /*
-     * Pagination state for the fractions table.
-     */
-    const [fractionPage, setFractionPage] = useState<number>(0)
-    const [fractionRowsPerPage, setFractionRowsPerPage] = useState<number>(10)
-
-    /*
      * Reads an uploaded FASTA file into text and stores it in state.
      */
     const handleLoadFasta = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -180,23 +169,12 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                 }),
             })
 
-            // Read raw text first so debugging bad responses is easier.
-            const text = await response.text()
-            console.log('HIC raw response:', text)
-
-            let json: HICResponse
-            try {
-                json = JSON.parse(text) as HICResponse
-            } catch {
-                throw new Error(`Backend returned non-JSON response: ${text.slice(0, 200)}`)
-            }
-
+            const json = (await response.json()) as HICResponse
             if (!response.ok || !json.ok || json.error) {
                 throw new Error(json.error || 'Failed to process HIC fractionation.')
             }
 
             setData(json)
-            setFractionPage(0)
         } catch (err) {
             setData(null)
             setError(err instanceof Error ? err.message : 'Unexpected error')
@@ -260,15 +238,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
      * Used throughout the graphs and table.
      */
     const fractionRows = useMemo(() => data?.fractions ?? [], [data])
-
-    /*
-     * Slice the fractions list for table pagination.
-     */
-    const pagedFractions = useMemo(() => {
-        const start = fractionPage * fractionRowsPerPage
-        const end = start + fractionRowsPerPage
-        return fractionRows.slice(start, end)
-    }, [fractionRows, fractionPage, fractionRowsPerPage])
 
     /*
      * Build the salt gradient overlay for the chromatogram.
@@ -358,16 +327,20 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 
             {data && fractionRows && (
                 <>
-                    <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
-                    <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
-                    <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
+                    <Box>
+                        <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
+                        <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
+                        <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
+                    </Box>
 
                     <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient: saltGradientPoints }} />
+                    <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
                     <Box sx={{ my: 1 }}>
                         <Typography variant='body2'>
                             Total: {data.counts.total} | Retained: {data.counts.retained} | Wash: {data.counts.wash} | Skipped: {data.counts.skipped} | Ligand: {data.params.ligandType} | Salt Range: [{data.params.saltStart}, {data.params.saltEnd}]
                         </Typography>
                     </Box>
+                    <HitTable {...{ fractionRows }} />
                     <ProteinTable {...{
                         fractionRows,
                         metrics: [
@@ -377,68 +350,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                 </>
             )}
 
-            {/* Only show results after a successful run */}
-            {data && (
-                <>
-                    {/* Results table for individual fractions */}
-                    <Card>
-                        <CardHeader title='Fractions' />
-                        <CardContent>
-                            <TableContainer>
-                                <Table size='small'>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Fraction</TableCell>
-                                            <TableCell align='right'>Protein Count</TableCell>
-                                            <TableCell align='right'>Avg Hydrophobicity</TableCell>
-                                            <TableCell align='right'>Avg Binding Strength</TableCell>
-                                            <TableCell>Example Proteins</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {pagedFractions.map(f => {
-                                            const proteins = f.proteins ?? []
-                                            const avgHydrophobicity = proteins.length > 0 ? proteins.reduce((sum, p) => sum + p.hydrophobicity, 0) / proteins.length : 0
-
-                                            const avgBindingStrength = proteins.length > 0 ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length : 0
-
-                                            return (
-                                                <TableRow key={f.fractionIndex}>
-                                                    <TableCell>{f.fractionIndex}</TableCell>
-                                                    <TableCell align='right'>{f.proteinCount ?? proteins.length}</TableCell>
-                                                    <TableCell align='right'>{avgHydrophobicity.toFixed(3)}</TableCell>
-                                                    <TableCell align='right'>{avgBindingStrength.toFixed(3)}</TableCell>
-                                                    <TableCell>
-                                                        {proteins
-                                                            .slice(0, 3)
-                                                            .map(p => p.id)
-                                                            .join(', ')}
-                                                    </TableCell>
-                                                </TableRow>
-                                            )
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-
-                            <Box sx={{ my: 1 }}>
-                                <TablePagination
-                                    component='div'
-                                    count={fractionRows.length}
-                                    page={fractionPage}
-                                    onPageChange={(_, newPage) => setFractionPage(newPage)}
-                                    rowsPerPage={fractionRowsPerPage}
-                                    onRowsPerPageChange={e => {
-                                        setFractionRowsPerPage(parseInt(e.target.value, 10))
-                                        setFractionPage(0)
-                                    }}
-                                    rowsPerPageOptions={[5, 10, 25, 50]}
-                                />
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </>
-            )}
         </Box>
     )
 }
