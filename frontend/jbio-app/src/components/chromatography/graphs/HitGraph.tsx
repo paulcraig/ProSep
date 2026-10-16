@@ -3,7 +3,7 @@ import { ChartLoadingPlaceholder, LazyBar, useDownloadChart } from './Common'
 import { Chart as ChartJS } from 'chart.js'
 import { Box, Button } from '@mui/material'
 import { Download } from '@mui/icons-material'
-import { FractionDto, IonExchangeResponse, ProteinDto } from '../../../pages/IonExchangeFractionation'
+import { FractionDto, FractionationResponse, ProteinDto } from '../types'
 
 const MAX_STACKED_SERIES = 200
 
@@ -15,12 +15,16 @@ export type HitGraphFractionDto =
 export type ChromatographyHitChartProps = {
     showWash: boolean
     useLogScale: boolean
+    washLabel?: string
+    afterWashLabel?: string
     fractionRows: HitGraphFractionDto[]
-    data: IonExchangeResponse
+    data: FractionationResponse
+    afterWash?: ProteinDto[]
 }
 
-export function ChromatographyHitGraph({ showWash, useLogScale, data, fractionRows }: ChromatographyHitChartProps) {
+export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, afterWashLabel, data, fractionRows, afterWash }: ChromatographyHitChartProps) {
     const stackedChartRef = useRef<ChartJS<'bar'> | null>(null)
+    const showAfterWash = !!afterWash && afterWash.length > 0
 
     const downloadChart = useDownloadChart()
     const exportStackedProteins = () => {
@@ -41,7 +45,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, data, fractionRo
         }
 
         if (showWash) {
-            labels.push('Wash')
+            labels.push(washLabel ?? 'Wash')
             fractionAmountMaps.push(washAmountByProteinId)
             baseOtherData.push(washOtherTotal)
         }
@@ -74,6 +78,16 @@ export function ChromatographyHitGraph({ showWash, useLogScale, data, fractionRo
 
             fractionAmountMaps.push(amountByProteinId)
             baseOtherData.push(fractionOtherTotal)
+        }
+
+        if (showAfterWash) {
+            let afterWashOtherTotal = 0
+            for (const protein of afterWash) {
+                afterWashOtherTotal += protein.amount
+            }
+            labels.push(afterWashLabel ?? 'After Wash')
+            fractionAmountMaps.push(new Map())
+            baseOtherData.push(afterWashOtherTotal)
         }
 
         const sortedProteinIds = Array.from(proteinTotals.entries())
@@ -121,7 +135,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, data, fractionRo
             datasets,
             hiddenProteinCount: Math.max(sortedProteinIds.length - MAX_STACKED_SERIES, 0),
         }
-    }, [data, fractionRows, showWash])
+    }, [data, fractionRows, showWash, washLabel, showAfterWash, afterWash, afterWashLabel])
 
     return (
         <div>
