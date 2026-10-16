@@ -22,7 +22,6 @@ import {
     TableRow,
     Typography,
 } from '@mui/material'
-import { Line } from 'react-chartjs-2'
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LineElement, LinearScale, LogarithmicScale, PointElement, Tooltip } from 'chart.js'
 import { API_URL } from '../config'
 import NumberField from '../components/ui/NumberField'
@@ -89,14 +88,6 @@ type CountsDto = {
     wash: number
     retained: number
     skipped: number
-}
-
-/*
- * Simple x/y point used to build chart datasets.
- */
-type XYPoint = {
-    x: number
-    y: number
 }
 
 /*
@@ -214,54 +205,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         }
     }
 
-    /*
-     * Exports the current HIC fraction table as a CSV file.
-     *
-     * For each fraction, this function:
-     * - Calculates average hydrophobicity
-     * - Calculates average binding strength
-     * - Collects all protein IDs in that fraction
-     *
-     * The data is formatted into CSV rows, converted into a Blob,
-     * and downloaded in the browser as "hic_fractions.csv".
-     *
-     * Only runs if valid HIC data exists.
-     */
-    const handleCsv = () => {
-        if (!data || !data.fractions || data.fractions.length === 0) return
-
-        const rows: string[] = []
-
-        // CSV header
-        rows.push(['Fraction', 'Protein Count', 'Avg Hydrophobicity', 'Avg Binding Strength', 'Protein IDs'].join(', '))
-
-        // One row per fraction
-        data.fractions.forEach(f => {
-            const proteins = f.proteins ?? []
-
-            const avgHydrophobicity = proteins.length > 0 ? proteins.reduce((sum, p) => sum + p.hydrophobicity, 0) / proteins.length : 0
-
-            const avgBindingStrength = proteins.length > 0 ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length : 0
-
-            const proteinIds = proteins.map(p => p.id).join('; ')
-
-            rows.push([f.fractionIndex, f.proteinCount ?? proteins.length, avgHydrophobicity.toFixed(4), avgBindingStrength.toFixed(4), `"${proteinIds.replace(/"/g, '""')}"`].join(', '))
-        })
-
-        const csvContent = rows.join('\n')
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-        const url = window.URL.createObjectURL(blob)
-
-        const link = document.createElement('a')
-        link.href = url
-        link.setAttribute('download', 'hic_fractions.csv')
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-
-        window.URL.revokeObjectURL(url)
-    }
-
     // Keep salt start non-negative, but do not force any relationship to salt end
     const handleSaltStartChange = (value: number | null) => {
         if (value == null) {
@@ -319,91 +262,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
     const fractionRows = useMemo(() => data?.fractions ?? [], [data])
 
     /*
-     * First graph:
-     * Plot average binding strength for each fraction.
-     * This gives a quick summary of retention strength across the run.
-     */
-    const proteinSeriesPoints = useMemo(() => {
-        return fractionRows.map(f => {
-            const proteins = f.proteins ?? []
-            const avgBindingStrength = proteins.length > 0 ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length : 0
-
-            return {
-                x: f.fractionIndex,
-                y: avgBindingStrength,
-            }
-        })
-    }, [fractionRows])
-
-    /*
-     * Dataset for the first graph.
-     */
-    const chartData = useMemo(() => {
-        return {
-            datasets: [
-                {
-                    label: 'Average Binding Strength per Fraction',
-                    data: proteinSeriesPoints,
-                    fill: false,
-                    showLine: true,
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
-                    borderWidth: 3,
-                    borderColor: '#8ea2ff',
-                    backgroundColor: '#8ea2ff',
-                    tension: 0.25,
-                },
-            ],
-        }
-    }, [proteinSeriesPoints])
-
-    /*
-     * Display options for the first graph.
-     */
-    const chartOptions = useMemo(() => {
-        return {
-            responsive: true,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: '#ffffff',
-                    },
-                },
-            },
-            scales: {
-                x: {
-                    type: 'linear' as const,
-                    title: {
-                        display: true,
-                        text: 'Fraction',
-                        color: '#ffffff',
-                    },
-                    ticks: {
-                        color: '#ffffff',
-                    },
-                    grid: {
-                        color: 'rgba(255,255,255,0.15)',
-                    },
-                },
-                y: {
-                    type: 'linear' as const,
-                    title: {
-                        display: true,
-                        text: 'Average Binding Strength',
-                        color: '#ffffff',
-                    },
-                    ticks: {
-                        color: '#ffffff',
-                    },
-                    grid: {
-                        color: 'rgba(255,255,255,0.15)',
-                    },
-                },
-            },
-        }
-    }, [])
-
-    /*
      * Slice the fractions list for table pagination.
      */
     const pagedFractions = useMemo(() => {
@@ -413,54 +271,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
     }, [fractionRows, fractionPage, fractionRowsPerPage])
 
     /*
-     * Second graph:
-     * Build a smooth chromatogram-style protein signal curve.
-     *
-     * For each fraction, we:
-     * - compute average binding strength
-     * - treat that as the peak height
-     * - place a gaussian-like peak centered on the fraction index
-     * - sum contributions across all fractions
-     *
-     * This creates a smooth signal trace similar to a chromatography plot.
-     */
-    const chromatogramSignalPoints = useMemo(() => {
-        if (!data) return []
-
-        const fractions = data.fractions ?? []
-        if (fractions.length === 0) return []
-
-        const minX = 1
-        const maxX = fractions.length
-        const step = 0.02 // Smaller step = smoother curve
-        const width = 0.18 // Controls how wide each peak is
-
-        const points: XYPoint[] = []
-
-        for (let x = minX; x <= maxX; x += step) {
-            let y = 0
-
-            fractions.forEach(f => {
-                const proteins = f.proteins ?? []
-                const avgBindingStrength = proteins.length > 0 ? proteins.reduce((sum, p) => sum + p.bindingStrength, 0) / proteins.length : 0
-
-                const center = f.fractionIndex
-
-                // Add gaussian contribution from this fraction's peak.
-                y += avgBindingStrength * Math.exp(-((x - center) ** 2) / (2 * width * width))
-            })
-
-            points.push({
-                x: Number(x.toFixed(2)),
-                y,
-            })
-        }
-
-        return points
-    }, [data])
-
-    /*
-     * Build the salt gradient overlay for the second graph.
+     * Build the salt gradient overlay for the chromatogram.
      * It stays flat initially, then transitions toward saltEnd across later fractions.
      */
     const saltGradientPoints = useMemo(() => {
@@ -487,131 +298,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         })
     }, [data])
 
-    /*
-     * Combined dataset for the second graph:
-     * - Protein signal on left y-axis
-     * - Salt gradient on right y-axis
-     */
-    const saltChartData = useMemo(() => {
-        return {
-            datasets: [
-                {
-                    label: 'Protein Signal',
-                    data: chromatogramSignalPoints,
-                    parsing: false as const,
-                    borderColor: '#66d1b2',
-                    backgroundColor: '#66d1b2',
-                    yAxisID: 'y',
-                    tension: 0.35,
-                    borderWidth: 3,
-                    pointRadius: 0,
-                    pointHoverRadius: 5,
-                    fill: false as const,
-                },
-                {
-                    label: 'Salt Gradient',
-                    data: saltGradientPoints,
-                    parsing: false as const,
-                    borderColor: '#ff6b6b',
-                    backgroundColor: '#ff6b6b',
-                    yAxisID: 'y1',
-                    tension: 0,
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    pointHoverRadius: 5,
-                    borderDash: [6, 6],
-                    fill: false as const,
-                },
-            ],
-        }
-    }, [chromatogramSignalPoints, saltGradientPoints])
-
-    /*
-     * Display and interaction options for the second graph.
-     */
-    const saltChartOptions = useMemo(() => {
-        return {
-            responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 2.5,
-            animation: false as const,
-            interaction: {
-                mode: 'nearest' as const,
-                intersect: false,
-            },
-            plugins: {
-                tooltip: {
-                    enabled: true,
-                    mode: 'nearest' as const,
-                    intersect: false,
-                },
-                legend: {
-                    labels: {
-                        color: '#ffffff',
-                    },
-                },
-            },
-            elements: {
-                line: {
-                    tension: 0,
-                },
-                point: {
-                    radius: 0,
-                },
-            },
-            scales: {
-                x: {
-                    type: 'linear' as const,
-                    min: 1,
-                    max: data?.fractions.length ?? 1,
-                    title: {
-                        display: true,
-                        text: 'Fraction',
-                        color: '#ffffff',
-                    },
-                    ticks: {
-                        color: '#ffffff',
-                        stepSize: 1,
-                    },
-                    grid: {
-                        color: 'rgba(255,255,255,0.12)',
-                    },
-                },
-                y: {
-                    type: 'linear' as const,
-                    position: 'left' as const,
-                    title: {
-                        display: true,
-                        text: 'Protein Signal',
-                        color: '#66d1b2',
-                    },
-                    ticks: {
-                        color: '#ffffff',
-                    },
-                    grid: {
-                        color: 'rgba(255,255,255,0.12)',
-                    },
-                },
-                y1: {
-                    type: 'linear' as const,
-                    position: 'right' as const,
-                    title: {
-                        display: true,
-                        text: 'Salt Concentration',
-                        color: '#ff6b6b',
-                    },
-                    ticks: {
-                        color: '#ffffff',
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                },
-            },
-        }
-    }, [data])
-
-    
     const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
     const [useLogScale, setUseLogScale] = useState<boolean>(true)
     const [showWash, setShowWash] = useState<boolean>(false)
@@ -676,7 +362,12 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
                     <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
 
-                    <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale }} />
+                    <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient: saltGradientPoints }} />
+                    <Box sx={{ my: 1 }}>
+                        <Typography variant='body2'>
+                            Total: {data.counts.total} | Retained: {data.counts.retained} | Wash: {data.counts.wash} | Skipped: {data.counts.skipped} | Ligand: {data.params.ligandType} | Salt Range: [{data.params.saltStart}, {data.params.saltEnd}]
+                        </Typography>
+                    </Box>
                     <ProteinTable {...{
                         fractionRows,
                         metrics: [
@@ -689,34 +380,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
             {/* Only show results after a successful run */}
             {data && (
                 <>
-                    {/* First graph: average binding strength by fraction */}
-                    <Card>
-                        <CardHeader title='Chromatogram' />
-                        <CardContent>
-                            <Box sx={{ height: 320, display: 'flex', justifyContent: 'center' }}>
-                                <Line data={chartData} options={chartOptions} />
-                            </Box>
-                            <Box>
-                                <Typography variant='body2'>
-                                    Ligand: {data.params.ligandType} | Salt Start: {data.params.saltStart} | Salt End: {data.params.saltEnd} | Deadband: {data.params.deadband}
-                                </Typography>
-                                <Typography variant='body2'>
-                                    Total: {data.counts.total} | Wash: {data.counts.wash} | Retained: {data.counts.retained} | Skipped: {data.counts.skipped}
-                                </Typography>
-                            </Box>
-                        </CardContent>
-                    </Card>
-
-                    {/* Second graph: smooth signal trace plus salt gradient overlay */}
-                    <Card>
-                        <CardHeader title='Chromatogram (Signal + Salt Gradient)' />
-                        <CardContent>
-                            <Box sx={{ height: 320, display: 'flex', justifyContent: 'center' }}>
-                                <Line data={saltChartData} options={saltChartOptions} />
-                            </Box>
-                        </CardContent>
-                    </Card>
-
                     {/* Results table for individual fractions */}
                     <Card>
                         <CardHeader title='Fractions' />
@@ -758,11 +421,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                                 </Table>
                             </TableContainer>
 
-                            {/* Download the currently generated fraction summary as a CSV file */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 1 }}>
-                                <Button variant='contained' onClick={handleCsv} disabled={!data || !data.fractions || data.fractions.length === 0} sx={{ height: 'min-content' }}>
-                                    Download CSV
-                                </Button>
+                            <Box sx={{ my: 1 }}>
                                 <TablePagination
                                     component='div'
                                     count={fractionRows.length}
