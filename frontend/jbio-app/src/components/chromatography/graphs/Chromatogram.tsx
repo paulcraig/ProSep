@@ -1,7 +1,7 @@
 import { Suspense, useMemo, useRef } from 'react'
 import { ChartLoadingPlaceholder, LazyLine, LazyScatter, useDownloadChart } from './Common'
-import { Chart as ChartJS } from 'chart.js'
-import { FractionDto, FractionationResponse } from '../types'
+import { Chart as ChartJS, ChartDataset } from 'chart.js'
+import { FractionDto, FractionationResponse, ProteinDto } from '../types'
 import { Box, Button } from '@mui/material'
 import { Download } from '@mui/icons-material'
 
@@ -11,13 +11,20 @@ export type ChromatogramProps = {
     showLineGraph: boolean
     useLogScale: boolean
     showWash: boolean
+    washLabel?: string
+    afterWashLabel?: string
     fractionRows: ChromatogramFractionDto[]
     data: FractionationResponse
+    afterWash?: ProteinDto[]
+    saltGradient?: Array<{ x: number; y: number }>
 }
 
-export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRows, data }: ChromatogramProps) {
+export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, afterWashLabel, fractionRows, data, afterWash, saltGradient }: ChromatogramProps) {
     const lineChartRef = useRef<ChartJS<'line'> | null>(null)
     const scatterChartRef = useRef<ChartJS<'scatter'> | null>(null)
+
+    const lastFractionX = fractionRows.length > 0 ? Math.max(...fractionRows.map(f => f.fractionIndex)) : 0
+    const showAfterWash = !!afterWash && afterWash.length > 0
 
     const proteinSeriesPoints = useMemo(() => {
         const points: Array<{ x: number; y: number }> = []
@@ -32,12 +39,27 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                 y: fraction.absorbanceScore ?? 0,
             })
         }
+
+        if (showAfterWash) {
+            points.push({ x: lastFractionX + 1, y: afterWash.length })
+        }
         const maxY = Math.max(...points.map(p => p.y), 1)
         for (const point of points) {
             point.y = Math.round((point.y / maxY) * 100) / 100
         }
         return points
-    }, [data, fractionRows, showWash])
+    }, [data, fractionRows, showWash, showAfterWash, afterWash, lastFractionX])
+
+    const fractionTickLabel = (value: string | number) => {
+        const tick = Number(value)
+        if (tick === 0) {
+            return showWash ? (washLabel ?? 'Wash') : '0'
+        }
+        if (showAfterWash && tick === lastFractionX + 1) {
+            return afterWashLabel ?? String(tick)
+        }
+        return String(value)
+    }
 
     const scatterData = useMemo(() => {
         return {
@@ -53,21 +75,38 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
     }, [proteinSeriesPoints])
 
     const lineData = useMemo(() => {
-        return {
-            datasets: [
-                {
-                    label: 'UV Absorbance',
-                    data: proteinSeriesPoints,
-                    borderColor: 'rgba(107, 224, 57, 1)',
-                    backgroundColor: 'rgba(107, 224, 57, 0.8)',
-                    pointRadius: 0,
-                    pointHoverRadius: 5,
-                    tension: 0.1,
-                    fill: false,
-                },
-            ],
+        const datasets: ChartDataset<'line'>[] = [
+            {
+                label: 'UV Absorbance',
+                data: proteinSeriesPoints,
+                borderColor: 'rgba(107, 224, 57, 1)',
+                backgroundColor: 'rgba(107, 224, 57, 0.8)',
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                tension: 0.1,
+                fill: false,
+                yAxisID: 'y',
+            },
+        ]
+
+        if (saltGradient && saltGradient.length > 0) {
+            datasets.push({
+                label: 'Salt Gradient',
+                data: saltGradient,
+                borderColor: 'rgba(255, 107, 107, 1)',
+                backgroundColor: 'rgba(255, 107, 107, 1)',
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                tension: 0,
+                borderWidth: 2,
+                borderDash: [6, 6],
+                fill: false,
+                yAxisID: 'y1',
+            })
         }
-    }, [proteinSeriesPoints])
+
+        return { datasets }
+    }, [proteinSeriesPoints, saltGradient])
 
     const activeChart = showLineGraph ? lineChartRef.current : scatterChartRef.current
     const downloadChart = useDownloadChart()
@@ -100,7 +139,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                                         },
                                         beginAtZero: true,
                                         ticks: {
-                                            callback: value => (Number(value) === 0 ? (showWash ? 'Wash' : '0') : String(value)),
+                                            callback: fractionTickLabel,
                                         },
                                     },
                                     y: {
@@ -111,6 +150,19 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                                         },
                                         beginAtZero: !useLogScale,
                                     },
+                                    ...(saltGradient && saltGradient.length > 0 ? {
+                                        y1: {
+                                            type: 'linear',
+                                            position: 'right',
+                                            title: {
+                                                display: true,
+                                                text: 'Salt Concentration',
+                                            },
+                                            grid: {
+                                                drawOnChartArea: false,
+                                            },
+                                        },
+                                    } : {}),
                                 },
                             }}
                         />
@@ -131,7 +183,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                                         },
                                         beginAtZero: true,
                                         ticks: {
-                                            callback: value => (Number(value) === 0 ? (showWash ? 'Wash' : '0') : String(value)),
+                                            callback: fractionTickLabel,
                                         },
                                     },
                                     y: {
