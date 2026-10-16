@@ -1,5 +1,5 @@
 import { Suspense, useMemo, useRef } from 'react'
-import { ChartLoadingPlaceholder, LazyBar, useDownloadChart } from './Common'
+import { ChartLoadingPlaceholder, LazyBar, useChartTheme, useDownloadChart } from './Common'
 import { Chart as ChartJS } from 'chart.js'
 import { Box, Button } from '@mui/material'
 import { Download } from '@mui/icons-material'
@@ -25,6 +25,7 @@ export type ChromatographyHitChartProps = {
 export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, afterWashLabel, data, fractionRows, afterWash }: ChromatographyHitChartProps) {
     const stackedChartRef = useRef<ChartJS<'bar'> | null>(null)
     const showAfterWash = !!afterWash && afterWash.length > 0
+    const chartTheme = useChartTheme()
 
     const downloadChart = useDownloadChart()
     const exportStackedProteins = () => {
@@ -161,6 +162,13 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
                                     title: {
                                         display: true,
                                         text: showWash ? 'Wash / Fractions' : 'Fractions',
+                                        color: chartTheme.text,
+                                    },
+                                    ticks: {
+                                        color: chartTheme.text,
+                                    },
+                                    grid: {
+                                        color: chartTheme.grid,
                                     },
                                 },
                                 y: {
@@ -169,6 +177,13 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
                                     title: {
                                         display: true,
                                         text: showWash ? 'Retained+Wash Amount' : 'Retained Amount',
+                                        color: chartTheme.text,
+                                    },
+                                    ticks: {
+                                        color: chartTheme.text,
+                                    },
+                                    grid: {
+                                        color: chartTheme.grid,
                                     },
                                 },
                             },
