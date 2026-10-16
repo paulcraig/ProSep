@@ -37,9 +37,11 @@ class SizeExclusionFractionation:
   def process(
          
         fasta_content: str,
+         gel_name: str,
          min_size: int,
          max_size: int,
-         proteinList: List[IonExchangeFractionation.ProteinEntry]
+         proteinList: List[IonExchangeFractionation.ProteinEntry],
+         fraction_count: int,
     ) -> Dict[str, Any]:
         """
         based off of ion_exchange_fraction file. Uses the same protein format as what that uses to make both of these compatable with each other.
@@ -76,6 +78,12 @@ class SizeExclusionFractionation:
 
         return {
             "ok": True,
+            "params": {
+                "gelName": gel_name,
+                "minSize": min_size,
+                "maxSize": max_size,
+                "fractions": fraction_count,
+            },
            
             "counts": {
                 "total": len(entries),
