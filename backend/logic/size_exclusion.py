@@ -124,7 +124,6 @@ class SizeExclusionFractionation:
                 for index, fraction in enumerate(fraction_lists)
             ],
             "afterWash": [pack(entry) for entry in to_small],
-            "proteins": [pack(entry) for entry in inside],
                 }
                
       
