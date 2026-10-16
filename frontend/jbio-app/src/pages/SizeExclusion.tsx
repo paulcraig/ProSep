@@ -20,6 +20,7 @@ import {
 import NumberField from '../components/ui/NumberField'
 import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
 import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
+import { HitTable } from '../components/chromatography/tables/HitTable'
 import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
 
 // Gel dictionary
@@ -208,6 +209,7 @@ const SizeExclusionPage: React.FC = () => {
                             Total: {data.counts.total} | Too Small: {data.counts.to_small} | Too Big: {data.counts.to_big} | Inside: {data.counts.inside} | Skipped: {data.counts.skipped}
                         </Typography>
                     </Box>
+                    <HitTable {...{ fractionRows }} />
                     <ProteinTable {...{ fractionRows }} />
                 </>
             )}
