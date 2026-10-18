@@ -22,6 +22,8 @@ import PeptideRetention from "./pages/PeptideRetention";
 import IonExchangeFractionation from "./pages/IonExchangeFractionation";
 import HydrophobicInteractionFractionation from "./pages/HydrophobicInteractionFractionation";
 import SizeExclusionPage from './pages/SizeExclusion';
+import TandemMS from './pages/TandemMS';
+import ScienceIcon from '@mui/icons-material/Science';
 
 function App() {
   const pages = [
@@ -73,6 +75,12 @@ function App() {
       icon: <SwapVertIcon />,
       component: <HydrophobicInteractionFractionation />,
       label: "Hydrophobic Interaction Fractionation",
+    },
+    {
+      id: 9,
+      icon: <ScienceIcon />,
+      component: <TandemMS />,
+      label: "Tandem MS",
     },
     {
       id: 8,
