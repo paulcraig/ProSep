@@ -14,10 +14,48 @@ import {
 	TextField,
 	Typography,
 } from '@mui/material'
+import { Chart as ChartJS, ChartData, ChartOptions, LinearScale, PointElement, ScatterDataPoint, Tooltip } from 'chart.js'
+import { Scatter } from 'react-chartjs-2'
 import { API_URL } from '../config'
 import NumberField from '../components/ui/NumberField'
 
+ChartJS.register(LinearScale, PointElement, Tooltip)
+
 const PROTEASES = ['Trypsin', 'Chymostrypsin', 'Thermolysin', 'ProteinaseK'] as const
+
+type TandemMSResponse = {
+	peaks: Record<string, {
+		sequence: string[]
+		IonHits: number
+	}>
+	hits: number
+}
+
+type SpectrumPoint = ScatterDataPoint & {
+	mzLabel: string
+	ionHits: number
+	sequences: string[]
+}
+
+const isTandemMSResponse = (value: unknown): value is TandemMSResponse => {
+	if (typeof value !== 'object' || value === null || !('peaks' in value) || !('hits' in value)) {
+		return false
+	}
+	const response = value as { peaks: unknown; hits: unknown }
+	if (typeof response.peaks !== 'object' || response.peaks === null || typeof response.hits !== 'number') {
+		return false
+	}
+	return Object.values(response.peaks).every((peak) => {
+		if (typeof peak !== 'object' || peak === null || !('sequence' in peak) || !('IonHits' in peak)) {
+			return false
+		}
+		const typedPeak = peak as { sequence: unknown; IonHits: unknown }
+		return Array.isArray(typedPeak.sequence) &&
+			typedPeak.sequence.every((sequence) => typeof sequence === 'string') &&
+			typeof typedPeak.IonHits === 'number' &&
+			Number.isFinite(typedPeak.IonHits)
+	})
+}
 
 const TandemMS: React.FC = () => {
 	const [proteinString, setProteinString] = useState<string>('')
@@ -27,9 +65,10 @@ const TandemMS: React.FC = () => {
 	const [loading, setLoading] = useState<boolean>(false)
 	const [error, setError] = useState<string>('')
 	const [requestBodyText, setRequestBodyText] = useState<string | null>(null)
+	const [responseData, setResponseData] = useState<TandemMSResponse | null>(null)
 
 	const sanitizedProteinString = proteinString.toUpperCase()
-	const proteinIsValid = /^[A-Z]+$/.test(sanitizedProteinString) || sanitizedProteinString.length == 0
+	const proteinIsValid = /^[A-Z]+$/.test(sanitizedProteinString) || sanitizedProteinString.length === 0
 	const proteaseIsValid = PROTEASES.some((allowedProtease) => allowedProtease === protease)
 	const boundsAreValid =
 		lowerBound !== null &&
@@ -52,6 +91,7 @@ const TandemMS: React.FC = () => {
 
 		setLoading(true)
 		setError('')
+		setResponseData(null)
 		const requestBody = {
 			protein_string: sanitizedProteinString,
 			protease,
@@ -70,6 +110,12 @@ const TandemMS: React.FC = () => {
 			if (!response.ok) {
 				throw new Error(`Request failed with status ${response.status}`)
 			}
+
+			const data: unknown = await response.json()
+			if (!isTandemMSResponse(data)) {
+				throw new Error('Backend returned an unexpected Tandem MS response.')
+			}
+			setResponseData(data)
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Unexpected error')
 		} finally {
@@ -79,6 +125,87 @@ const TandemMS: React.FC = () => {
 
 	const handleProteaseChange = (event: SelectChangeEvent<string>) => {
 		setProtease(event.target.value)
+	}
+
+	const spectrumPoints: SpectrumPoint[] = responseData
+		? Object.entries(responseData.peaks)
+			.map(([mzLabel, peak]) => ({
+				x: Number(mzLabel),
+				y: peak.IonHits,
+				mzLabel,
+				ionHits: peak.IonHits,
+				sequences: peak.sequence,
+			}))
+			.filter((point) => Number.isFinite(point.x))
+			.sort((left, right) => left.x - right.x)
+		: []
+
+	const chartData: ChartData<'scatter', SpectrumPoint[]> = {
+		datasets: [{
+			label: 'Ion hits',
+			data: spectrumPoints,
+			showLine: false,
+			pointRadius: 0,
+			pointHitRadius: 10,
+			backgroundColor: '#75d6c2',
+		}],
+	}
+
+	const drawPeakStems = {
+		id: 'tandemMsPeakStems',
+		beforeDatasetsDraw(chart: ChartJS<'scatter'>) {
+			const dataset = chart.data.datasets[0]
+			if (!dataset) return
+
+			const xScale = chart.scales.x
+			const yScale = chart.scales.y
+			const context = chart.ctx
+			context.save()
+			context.strokeStyle = '#75d6c2'
+			context.lineWidth = 1.5
+			for (const rawPoint of dataset.data) {
+				const point = rawPoint as SpectrumPoint
+				const mz = Number(point.x)
+				const intensity = Number(point.y)
+				context.beginPath()
+				context.moveTo(xScale.getPixelForValue(mz), yScale.getPixelForValue(0))
+				context.lineTo(xScale.getPixelForValue(mz), yScale.getPixelForValue(intensity))
+				context.stroke()
+			}
+			context.restore()
+		},
+	}
+
+	const chartOptions: ChartOptions<'scatter'> = {
+		responsive: true,
+		maintainAspectRatio: false,
+		interaction: { mode: 'nearest', intersect: false, axis: 'x' },
+		scales: {
+			x: {
+				type: 'linear',
+				min: 0,
+				title: { display: true, text: 'm/e' },
+			},
+			y: {
+				beginAtZero: true,
+				title: { display: true, text: 'I' },
+				ticks: { precision: 0 },
+			},
+		},
+		plugins: {
+			tooltip: {
+				callbacks: {
+					title: (items) => {
+						const point = items[0]?.raw as SpectrumPoint | undefined
+						return point ? `m/e: ${point.mzLabel}` : ''
+					},
+					label: (item) => {
+						const point = item.raw as SpectrumPoint
+						return [`Ion hits: ${point.ionHits}`, 'Sequences:', ...point.sequences.map((sequence) => `  ${sequence}`)]
+					},
+				},
+			},
+		},
 	}
 
 	return (
@@ -164,6 +291,17 @@ const TandemMS: React.FC = () => {
 						>
 							{requestBodyText}
 						</Typography>
+					</CardContent>
+				</Card>
+			)}
+
+			{responseData && (
+				<Card>
+					<CardHeader title='Tandem MS Mass Spectrum' />
+					<CardContent>
+						<Box sx={{ height: 420, minWidth: 0 }}>
+							<Scatter data={chartData} options={chartOptions} plugins={[drawPeakStems]} />
+						</Box>
 					</CardContent>
 				</Card>
 			)}
