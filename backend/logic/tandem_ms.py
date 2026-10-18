@@ -91,7 +91,28 @@ SpecAminoAcids = {
         "mass" : 121.16000
     }
 }
-            
+
+MassLetters = {
+    71: "A",
+    156: "R",
+    114: "N",
+    115: "D",
+    103: "C",
+    129: "E",
+    57: "G",
+    137: "H",
+    131: "M",
+    147: "F",
+    97: "P",
+    87: "S",
+    101: "T",
+    186: "W",
+    163: "Y",
+    99: "V",
+    128: "Q or K",
+    113: "I or L"
+}
+
 class Ion:
     def __init__(self):
         self.totalMass = 0
@@ -103,7 +124,7 @@ class Ion:
     def addAminoAcid(self, aminoAcid: str):
         aminoAcid = aminoAcid.upper()
         self.aminoAcids.append(aminoAcid)
-        self.totalMass += SpecAminoAcids[aminoAcid].mass
+        self.totalMass += SpecAminoAcids[aminoAcid]["mass"]
 
         # if this is the second or greater amino acid added to the chain
         if len(self.aminoAcids) > 1:
@@ -111,7 +132,7 @@ class Ion:
             self.totalMass -= 18.01528
 
     def getMassChargeRatio(self):
-        return self.totalMass / self.Charge
+        return self.totalMass / self.charge
 
 '''
  * Contains the methods needed for a Protease who cuts before or after apecific proteins without any other conditions. Otherwise the method cut needs to be overwritten and new conditions added
@@ -185,7 +206,7 @@ class TandemMS:
         self.ions = []
         self.sequence = ""
         self.totalMass = 0
-        self.Charge = 0
+        self.charge = 0
         self.hits = 0
 
     def convert_string_to_ion(self, aminoAcidSequence: str):
@@ -193,8 +214,7 @@ class TandemMS:
         ion = Ion()
         for acid in aminoAcids:
             try:
-                newAcid = SpecAminoAcid(acid)
-                ion.addAminoAcid(newAcid)
+                ion.addAminoAcid(acid)
             except ValueError as ex:
                 print(ex)
         return ion
@@ -236,31 +256,27 @@ class TandemMS:
             ionStrings = protease.cut(sequence);
             for ion in ionStrings:
                 newIon = self.convert_string_to_ion(ion)
-                newIon.Charge = 1
+                newIon.charge = 1
                 newIon.sequence = ion
                 if newIon.totalMass != 0:
                     ions.append(newIon)
         except ValueError: #ProteaseException ex:
             ions=[] #raise ProteaseException("Error cutting sequence with protease " + proteaseChoice + ": " + ex.getMessage())
 
-        # Count up the number of ions with the same mass charge rotios to find intensity of each peak.
-        mostHits = 0
-        for i in range(len(ions)):
-            hits = 0
-            for j in range(len(ions)):
-                if (ions[i].getMassChargeRatio() == ions[j].getMassChargeRatio()):
-                    hits += 1
-            
-            ions[i].hits = hits
-            if mostHits < hits:
-                mostHits = hits
-
-        # from OutputGraphGUI.setPeaks: only keep peaks inside the m/z window
-        peaks = []
+        # Group ions by mass charge ratio, the number of ions sharing an m/z is the intensity of that peak.
+        peaks = {}
         for ion in ions:
             mz = ion.getMassChargeRatio()
-            if lowerLimit <= mz <= upperLimit:
-                peaks.append({"sequence": ion.sequence, "mz": mz, "hits": ion.hits})
+            
+            # from OutputGraphGUI.setPeaks: only keep peaks inside the m/z window
+            if not lowerLimit <= mz <= upperLimit: continue
+            
+            peak = peaks.setdefault(mz, {"sequences": [], "hits": 0})
+            
+            peak["sequences"].append(ion.sequence)
+            peak["hits"] += 1
+
+        mostHits = max((peak["hits"] for peak in peaks.values()), default=0)
         return {"peaks": peaks, "mostHits": mostHits}
 
     '''
@@ -282,7 +298,7 @@ class TandemMS:
                 bIon.addAminoAcid(ion.aminoAcids[j])
             bIon.addAminoAcid(ion.aminoAcids[i])
             bIon.totalMass = bIon.totalMass - 17.00734
-            bIon.Charge = 1
+            bIon.charge = 1
             bIon.type = "b"
             peakLines.append(bIon)
 
@@ -293,7 +309,7 @@ class TandemMS:
                 yIon.addAminoAcid(ion.aminoAcids[j])
             yIon.addAminoAcid(ion.aminoAcids[i])
             yIon.totalMass = yIon.totalMass + 1.00794
-            yIon.Charge = 1
+            yIon.charge = 1
             yIon.type = "y"
             peakLines.append(yIon)
 
@@ -307,51 +323,8 @@ class TandemMS:
                                  "fromMz": peakLines[i].getMassChargeRatio(),
                                  "toMz": peakLines[j].getMassChargeRatio(),
                                  "difference": meDifference,
-                                 "letter": self.retrieve_letter(meDifference)})
+                                 "letter": MassLetters.get(int(meDifference), "X")})
                     break  # only go until you find the next ion with the same type
 
         fragments = [{"type": p.type, "mz": p.getMassChargeRatio()} for p in peakLines]
         return {"fragments": fragments, "gaps": gaps}
-
-    def retrieve_letter(self, meDifference):
-        diff = int(meDifference)
-        letter = ""
-        if diff == 71:
-            letter = "A"
-        elif diff == 156:
-            letter = "R"
-        elif diff == 114:
-            letter = "N"
-        elif diff == 115:
-            letter = "D"
-        elif diff == 103:
-            letter = "C"
-        elif diff == 129:
-            letter = "E"
-        elif diff == 57:
-            letter = "G"
-        elif diff == 137:
-            letter = "H"
-        elif diff == 131:
-            letter = "M"
-        elif diff == 147:
-            letter = "F"
-        elif diff == 97:
-            letter = "P"
-        elif diff == 87:
-            letter = "S"
-        elif diff == 101:
-            letter = "T"
-        elif diff == 186:
-            letter = "W"
-        elif diff == 163:
-            letter = "Y"
-        elif diff == 99:
-            letter = "V"
-        elif diff == 128:
-            letter = "Q or K"
-        elif diff == 113:
-            letter = "I or L"
-        else:
-            letter = "X"
-        return letter
