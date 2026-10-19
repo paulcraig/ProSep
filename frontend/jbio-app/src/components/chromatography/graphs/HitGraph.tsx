@@ -140,11 +140,6 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
 
     return (
         <div>
-            <Box>
-                <Button variant='contained' onClick={exportStackedProteins} startIcon={<Download />}>
-                    Download
-                </Button>
-            </Box>
             <div>
                 <Suspense fallback={<ChartLoadingPlaceholder chartName='Stacked Proteins' />}>
                     <LazyBar
@@ -196,6 +191,11 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
                     />
                 </Suspense>
             </div>
+            <Box sx={{ marginBottom: 4 }}>
+                <Button variant='contained' onClick={exportStackedProteins} startIcon={<Download />}>
+                    Download
+                </Button>
+            </Box>
         </div>
     )
 }

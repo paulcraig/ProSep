@@ -117,11 +117,6 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
 
     return (
         <div>
-            <Box>
-                <Button variant='contained' onClick={exportChromatogram} startIcon={<Download />}>
-                    Download
-                </Button>
-            </Box>
             <div>
                 {showLineGraph ? (
                     <Suspense fallback={<ChartLoadingPlaceholder chartName='Chromatogram' />}>
@@ -244,6 +239,11 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                     </Suspense>
                 )}
             </div>
+            <Box sx={{ marginBottom: 4 }}>
+                <Button variant='contained' onClick={exportChromatogram} startIcon={<Download />}>
+                    Download
+                </Button>
+            </Box>
         </div>
     )
 }
