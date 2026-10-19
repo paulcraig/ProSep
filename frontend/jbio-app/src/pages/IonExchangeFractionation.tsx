@@ -30,6 +30,7 @@ type MediaType = 'Q' | 'S'
 
 export type ProteinDto = ChromatographyTypes.ProteinDto & {
     charge: number
+    bindingStrength: number
 }
 
 export type FractionDto = Omit<ChromatographyTypes.FractionDto, "proteins"> & {
@@ -40,6 +41,9 @@ type ParamsDto = {
     pH: number
     mediaType: MediaType
     exchanger: 'anion' | 'cation'
+    saltStart: number
+    saltEnd: number
+    saltAlpha: number
     fractions: number
     overlap: number
     deadband: number
@@ -68,6 +72,11 @@ const IonExchangeFractionation: React.FC = () => {
     const [fractionCount, setFractionCount] = useState<number>(80)
     const [noise, setNoise] = useState<number>(0.1)
     const [deadband, setDeadband] = useState<number>(0.05)
+    
+    const [saltStart, setSaltStart] = useState<number>(0.0)
+    const [saltEnd, setSaltEnd] = useState<number>(1.5)
+    const [saltAlpha, setSaltAlpha] = useState<number>(1.2)
+    
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string>('')
     const [data, setData] = useState<IonExchangeResponse | null>(null)
@@ -99,6 +108,9 @@ const IonExchangeFractionation: React.FC = () => {
                     fasta_content: fastaText,
                     ph,
                     media_type: mediaType,
+                    salt_start: saltStart,
+                    salt_end: saltEnd,
+                    salt_alpha: saltAlpha,
                     fraction_count: fractionCount,
                     noise,
                     deadband,
@@ -119,7 +131,65 @@ const IonExchangeFractionation: React.FC = () => {
         }
     }
 
+    // Keep salt start non-negative, but do not force any relationship to salt end
+    const handleSaltStartChange = (value: number | null) => {
+        if (value == null) {
+            setSaltStart(0)
+            return
+        }
+
+        setSaltStart(Math.max(0, value))
+    }
+
+    // Keep salt end non-negative, but do not force any relationship to salt start
+    const handleSaltEndChange = (value: number | null) => {
+        if (value == null) {
+            setSaltEnd(0)
+            return
+        }
+
+        setSaltEnd(Math.max(0, value))
+    }
+
+    // Keep salt alpha non-negative
+    const handleSaltAlphaChange = (value: number | null) => {
+        if (value == null) {
+            setSaltAlpha(0)
+            return
+        }
+
+        setSaltAlpha(Math.max(0, value))
+    }
+
     const fractionRows = useMemo(() => data?.fractions ?? [], [data])
+
+    /*
+     * Build the salt gradient overlay for the chromatogram.
+     * It stays flat initially, then transitions toward saltEnd across later fractions.
+     */
+    const saltGradientPoints = useMemo(() => {
+        if (!data) return []
+
+        const fractions = data.fractions ?? []
+        const totalFractions = Math.max(1, fractions.length)
+
+        // Start the gradient after an initial loading/binding region.
+        const gradientStartFraction = Math.max(2, Math.floor(totalFractions * 0.18))
+
+        return fractions.map((f, index) => {
+            let y = data.params.saltStart
+
+            if (index + 1 > gradientStartFraction) {
+                const progress = (index + 1 - gradientStartFraction) / Math.max(1, totalFractions - gradientStartFraction)
+                y = data.params.saltStart + (data.params.saltEnd - data.params.saltStart) * progress
+            }
+
+            return {
+                x: f.fractionIndex,
+                y,
+            }
+        })
+    }, [data])
 
     return (
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -136,6 +206,12 @@ const IonExchangeFractionation: React.FC = () => {
                         </FormControl>
 
                         <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={value => setFractionCount(value == null ? 80 : Math.max(1, value))} />
+
+                        <NumberField label='Salt Start' value={saltStart} min={0} onValueChange={handleSaltStartChange} />
+
+                        <NumberField label='Salt End' value={saltEnd} min={0} onValueChange={handleSaltEndChange} />
+
+                        <NumberField label='Salt Alpha' value={saltAlpha} min={0} onValueChange={handleSaltAlphaChange} />
 
                         <NumberField label='Deadband (Charge)' value={Number(deadband.toFixed(2))} onValueChange={value => setDeadband(Number(value))} min={0} max={1} step={0.01} />
                     </Box>
@@ -181,13 +257,14 @@ const IonExchangeFractionation: React.FC = () => {
                             <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
                             <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
 
-                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale }} />
+                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient: saltGradientPoints }} />
                             <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
                             
                             <Box>
                                 <Typography variant='body2'>
                                     Total: {data.counts.total} | Retained: {data.counts.retained} | Wash: {data.counts.wash} | Exchanger:{' '}
-                                    <span style={{ textTransform: 'capitalize' }}>{data.params.exchanger}</span>
+                                    <span style={{ textTransform: 'capitalize' }}>{data.params.exchanger}</span>{' '}
+                                    | Salt Range: [{data.params.saltStart}, {data.params.saltEnd}]
                                 </Typography>
                             </Box>
                         </CardContent>
@@ -195,7 +272,10 @@ const IonExchangeFractionation: React.FC = () => {
                     <HitTable {...{ fractionRows }} />
                     <ProteinTable {...{
                         fractionRows,
-                        metrics: [{ label: `Charge at pH ${ph.toFixed(1)}`, value: (p: ProteinDto) => p.charge }]
+                        metrics: [
+                            { label: `Charge at pH ${ph.toFixed(1)}`, value: (p: ProteinDto) => p.charge },
+                            { label: 'Binding Strength', value: (p: ProteinDto) => p.bindingStrength },
+                        ]
                     }} />
                 </>
             )}
