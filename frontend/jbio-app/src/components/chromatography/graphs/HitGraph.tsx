@@ -140,7 +140,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
 
     return (
         <div>
-            <div>
+            <div style={{ height: 300 }}>
                 <Suspense fallback={<ChartLoadingPlaceholder chartName='Stacked Proteins' />}>
                     <LazyBar
                         ref={stackedChartRef}

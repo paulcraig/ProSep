@@ -117,7 +117,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
 
     return (
         <div>
-            <div>
+            <div style={{ height: 300 }}>
                 {showLineGraph ? (
                     <Suspense fallback={<ChartLoadingPlaceholder chartName='Chromatogram' />}>
                         <LazyLine
