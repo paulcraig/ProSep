@@ -22,6 +22,8 @@ import { HitTable } from '../components/chromatography/tables/HitTable'
 import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
 import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
 import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
+import { SaltSettings } from '../components/chromatography/salts/SaltSettings'
+import { saltGradientPoints } from '../components/chromatography/salts/saltGradientPoints'
 
 /*
  * Register the chart components we need for Chart.js.
@@ -183,36 +185,6 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         }
     }
 
-    // Keep salt start non-negative, but do not force any relationship to salt end
-    const handleSaltStartChange = (value: number | null) => {
-        if (value == null) {
-            setSaltStart(0)
-            return
-        }
-
-        setSaltStart(Math.max(0, value))
-    }
-
-    // Keep salt end non-negative, but do not force any relationship to salt start
-    const handleSaltEndChange = (value: number | null) => {
-        if (value == null) {
-            setSaltEnd(0)
-            return
-        }
-
-        setSaltEnd(Math.max(0, value))
-    }
-
-    // Keep salt alpha non-negative
-    const handleSaltAlphaChange = (value: number | null) => {
-        if (value == null) {
-            setSaltAlpha(0)
-            return
-        }
-
-        setSaltAlpha(Math.max(0, value))
-    }
-
     // Keep fraction count at least 1
     const handleFractionCountChange = (value: number | null) => {
         if (value == null) {
@@ -239,33 +211,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
      */
     const fractionRows = useMemo(() => data?.fractions ?? [], [data])
 
-    /*
-     * Build the salt gradient overlay for the chromatogram.
-     * It stays flat initially, then transitions toward saltEnd across later fractions.
-     */
-    const saltGradientPoints = useMemo(() => {
-        if (!data) return []
-
-        const fractions = data.fractions ?? []
-        const totalFractions = Math.max(1, fractions.length)
-
-        // Start the gradient after an initial loading/binding region.
-        const gradientStartFraction = Math.max(2, Math.floor(totalFractions * 0.18))
-
-        return fractions.map((f, index) => {
-            let y = data.params.saltStart
-
-            if (index + 1 > gradientStartFraction) {
-                const progress = (index + 1 - gradientStartFraction) / Math.max(1, totalFractions - gradientStartFraction)
-                y = data.params.saltStart + (data.params.saltEnd - data.params.saltStart) * progress
-            }
-
-            return {
-                x: f.fractionIndex,
-                y,
-            }
-        })
-    }, [data])
+    const saltGradient = useMemo(() => (data ? saltGradientPoints(data) : []), [data])
 
     const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
     const [useLogScale, setUseLogScale] = useState<boolean>(true)
@@ -289,11 +235,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 
                         <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={handleFractionCountChange} />
 
-                        <NumberField label='Salt Start' value={saltStart} min={0} onValueChange={handleSaltStartChange} />
-
-                        <NumberField label='Salt End' value={saltEnd} min={0} onValueChange={handleSaltEndChange} />
-
-                        <NumberField label='Salt Alpha' value={saltAlpha} min={0} onValueChange={handleSaltAlphaChange} />
+                        <SaltSettings saltStart={saltStart} setSaltStart={setSaltStart} saltEnd={saltEnd} setSaltEnd={setSaltEnd} saltAlpha={saltAlpha} setSaltAlpha={setSaltAlpha} />
 
                         <NumberField label='Deadband (Binding Strength)' value={deadband} min={0} onValueChange={handleDeadbandChange} />
                     </Box>
@@ -336,7 +278,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                                 <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
                             </Box>
 
-                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient: saltGradientPoints }} />
+                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient }} />
                             <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
                             <Box sx={{ my: 1 }}>
                                 <Typography variant='body2'>

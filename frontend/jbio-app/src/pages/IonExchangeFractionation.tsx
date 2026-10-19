@@ -23,6 +23,8 @@ import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
 import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
 import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
 import type * as ChromatographyTypes from '../components/chromatography/types'
+import { SaltSettings } from '../components/chromatography/salts/SaltSettings'
+import { saltGradientPoints } from '../components/chromatography/salts/saltGradientPoints'
 
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, LineElement, PointElement, Tooltip, Legend)
 
@@ -131,62 +133,9 @@ const IonExchangeFractionation: React.FC = () => {
         }
     }
 
-    const handleSaltStartChange = (value: number | null) => {
-        if (value == null) {
-            setSaltStart(0)
-            return
-        }
-
-        setSaltStart(value)
-    }
-
-    const handleSaltEndChange = (value: number | null) => {
-        if (value == null) {
-            setSaltEnd(0)
-            return
-        }
-
-        setSaltEnd(value)
-    }
-
-    const handleSaltAlphaChange = (value: number | null) => {
-        if (value == null) {
-            setSaltAlpha(0)
-            return
-        }
-
-        setSaltAlpha(value)
-    }
-
     const fractionRows = useMemo(() => data?.fractions ?? [], [data])
 
-    /*
-     * Build the salt gradient overlay for the chromatogram.
-     * It stays flat initially, then transitions toward saltEnd across later fractions.
-     */
-    const saltGradientPoints = useMemo(() => {
-        if (!data) return []
-
-        const fractions = data.fractions ?? []
-        const totalFractions = Math.max(1, fractions.length)
-
-        // Start the gradient after an initial loading/binding region.
-        const gradientStartFraction = Math.max(2, Math.floor(totalFractions * 0.18))
-
-        return fractions.map((f, index) => {
-            let y = data.params.saltStart
-
-            if (index + 1 > gradientStartFraction) {
-                const progress = (index + 1 - gradientStartFraction) / Math.max(1, totalFractions - gradientStartFraction)
-                y = data.params.saltStart + (data.params.saltEnd - data.params.saltStart) * progress
-            }
-
-            return {
-                x: f.fractionIndex,
-                y,
-            }
-        })
-    }, [data])
+    const saltGradient = useMemo(() => (data ? saltGradientPoints(data) : []), [data])
 
     return (
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -204,11 +153,7 @@ const IonExchangeFractionation: React.FC = () => {
 
                         <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={value => setFractionCount(value == null ? 80 : Math.max(1, value))} />
 
-                        <NumberField label='Salt Start' value={saltStart} min={0} max={2} onValueCommitted={handleSaltStartChange} />
-
-                        <NumberField label='Salt End' value={saltEnd} min={0} max={2} onValueCommitted={handleSaltEndChange} />
-
-                        <NumberField label='Salt Alpha' value={saltAlpha} min={0} max={2} onValueCommitted={handleSaltAlphaChange} />
+                        <SaltSettings saltStart={saltStart} setSaltStart={setSaltStart} saltEnd={saltEnd} setSaltEnd={setSaltEnd} saltAlpha={saltAlpha} setSaltAlpha={setSaltAlpha} />
 
                         <NumberField label='Deadband (Binding Strength)' value={Number(deadband.toFixed(2))} onValueChange={value => setDeadband(Number(value))} min={0} max={1} step={0.01} />
                     </Box>
@@ -254,7 +199,7 @@ const IonExchangeFractionation: React.FC = () => {
                             <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
                             <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
 
-                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient: saltGradientPoints }} />
+                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient }} />
                             <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
                             
                             <Box>
