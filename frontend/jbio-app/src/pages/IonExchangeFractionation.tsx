@@ -175,7 +175,7 @@ const IonExchangeFractionation: React.FC = () => {
             {data && fractionRows && (
                 <>
                     <Card>
-                        <CardHeader title='Fractionation' />
+                        <CardHeader title='Graphs' />
                         <CardContent>
                             <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
                             <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />

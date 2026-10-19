@@ -327,19 +327,25 @@ const HydrophobicInteractionFractionation: React.FC = () => {
 
             {data && fractionRows && (
                 <>
-                    <Box>
-                        <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
-                        <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
-                        <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
-                    </Box>
+                    <Card>
+                        <CardHeader title='Graphs' />
+                        <CardContent>
+                            <Box>
+                                <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
+                                <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
+                                <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
+                            </Box>
 
-                    <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient: saltGradientPoints }} />
-                    <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
-                    <Box sx={{ my: 1 }}>
-                        <Typography variant='body2'>
-                            Total: {data.counts.total} | Retained: {data.counts.retained} | Wash: {data.counts.wash} | Skipped: {data.counts.skipped} | Ligand: {data.params.ligandType} | Salt Range: [{data.params.saltStart}, {data.params.saltEnd}]
-                        </Typography>
-                    </Box>
+                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient: saltGradientPoints }} />
+                            <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
+                            <Box sx={{ my: 1 }}>
+                                <Typography variant='body2'>
+                                    Total: {data.counts.total} | Retained: {data.counts.retained} | Wash: {data.counts.wash} | Skipped: {data.counts.skipped} | Ligand: {data.params.ligandType} | Salt Range: [{data.params.saltStart}, {data.params.saltEnd}]
+                                </Typography>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                    
                     <HitTable {...{ fractionRows }} />
                     <ProteinTable {...{
                         fractionRows,
