@@ -131,34 +131,31 @@ const IonExchangeFractionation: React.FC = () => {
         }
     }
 
-    // Keep salt start non-negative, but do not force any relationship to salt end
     const handleSaltStartChange = (value: number | null) => {
         if (value == null) {
             setSaltStart(0)
             return
         }
 
-        setSaltStart(Math.max(0, value))
+        setSaltStart(value)
     }
 
-    // Keep salt end non-negative, but do not force any relationship to salt start
     const handleSaltEndChange = (value: number | null) => {
         if (value == null) {
             setSaltEnd(0)
             return
         }
 
-        setSaltEnd(Math.max(0, value))
+        setSaltEnd(value)
     }
 
-    // Keep salt alpha non-negative
     const handleSaltAlphaChange = (value: number | null) => {
         if (value == null) {
             setSaltAlpha(0)
             return
         }
 
-        setSaltAlpha(Math.max(0, value))
+        setSaltAlpha(value)
     }
 
     const fractionRows = useMemo(() => data?.fractions ?? [], [data])
@@ -207,11 +204,11 @@ const IonExchangeFractionation: React.FC = () => {
 
                         <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={value => setFractionCount(value == null ? 80 : Math.max(1, value))} />
 
-                        <NumberField label='Salt Start' value={saltStart} min={0} onValueChange={handleSaltStartChange} />
+                        <NumberField label='Salt Start' value={saltStart} min={0} max={2} onValueCommitted={handleSaltStartChange} />
 
-                        <NumberField label='Salt End' value={saltEnd} min={0} onValueChange={handleSaltEndChange} />
+                        <NumberField label='Salt End' value={saltEnd} min={0} max={2} onValueCommitted={handleSaltEndChange} />
 
-                        <NumberField label='Salt Alpha' value={saltAlpha} min={0} onValueChange={handleSaltAlphaChange} />
+                        <NumberField label='Salt Alpha' value={saltAlpha} min={0} max={2} onValueCommitted={handleSaltAlphaChange} />
 
                         <NumberField label='Deadband (Binding Strength)' value={Number(deadband.toFixed(2))} onValueChange={value => setDeadband(Number(value))} min={0} max={1} step={0.01} />
                     </Box>
