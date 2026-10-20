@@ -219,8 +219,6 @@ class TandemMS:
                 print(ex)
         return ion
 
-    # skip src/main/java/MassSpec/AminoAcidTranslator.java because it's for displaying ?
-
     '''
     for graph 1: digestion spectrum
     
