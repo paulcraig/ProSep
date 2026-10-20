@@ -104,6 +104,27 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                 fill: false,
                 yAxisID: 'y1',
             })
+
+            const saltGradientScale = {
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Salt Concentration',
+                        color: chartTheme.text,
+                    },
+                    ticks: {
+                        color: chartTheme.text,
+                    },
+                    grid: {
+                        color: chartTheme.grid,
+                        drawOnChartArea: false,
+                    },
+                },
+            } as const
+
+            return { datasets, saltGradientScale }
         }
 
         return { datasets }
@@ -165,24 +186,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                                             color: chartTheme.grid,
                                         },
                                     },
-                                    ...(saltGradient && saltGradient.length > 0 ? {
-                                        y1: {
-                                            type: 'linear',
-                                            position: 'right',
-                                            title: {
-                                                display: true,
-                                                text: 'Salt Concentration',
-                                                color: chartTheme.text,
-                                            },
-                                            ticks: {
-                                                color: chartTheme.text,
-                                            },
-                                            grid: {
-                                                color: chartTheme.grid,
-                                                drawOnChartArea: false,
-                                            },
-                                        },
-                                    } : {}),
+                                    ...(lineData.saltGradientScale ?? {})
                                 },
                             }}
                         />
@@ -233,6 +237,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                                             color: chartTheme.grid,
                                         },
                                     },
+                                    ...(lineData.saltGradientScale ?? {})
                                 },
                             }}
                         />
