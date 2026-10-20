@@ -196,7 +196,7 @@ const IonExchangeFractionation: React.FC = () => {
             <Card>
                 <CardHeader title='Ion Exchange Fractionation' />
                 <CardContent>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                         <FormControl>
                             <InputLabel id='media-type-label'>Media</InputLabel>
                             <Select labelId='media-type-label' value={mediaType} label='Media' onChange={e => setMediaType(e.target.value as MediaType)}>
@@ -213,7 +213,7 @@ const IonExchangeFractionation: React.FC = () => {
 
                         <NumberField label='Salt Alpha' value={saltAlpha} min={0} onValueChange={handleSaltAlphaChange} />
 
-                        <NumberField label='Deadband (Charge)' value={Number(deadband.toFixed(2))} onValueChange={value => setDeadband(Number(value))} min={0} max={1} step={0.01} />
+                        <NumberField label='Deadband (Binding Strength)' value={Number(deadband.toFixed(2))} onValueChange={value => setDeadband(Number(value))} min={0} max={1} step={0.01} />
                     </Box>
 
                     <Box sx={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
