@@ -23,7 +23,7 @@
             "name": "Zachary Van Horn",
             "title": "Project Leader",
             "role": "Developer",
-            "current": true,
+            "current": false,
             "email": "zjv4576@rit.edu",
             "phone": "None",
             "location": "Rochester, NY"
@@ -32,7 +32,7 @@
             "name": "Shreyes Gadwalkar",
             "title": "Head of Communications",
             "role": "Developer",
-            "current": true,
+            "current": false,
             "email": "ssg9922@rit.edu",
             "phone": "None",
             "location": "Rochester, NY"
@@ -41,7 +41,7 @@
             "name": "Luke Knofczynski",
             "title": "Technical Lead",
             "role": "Developer",
-            "current": true,
+            "current": false,
             "email": "ldk7811@rit.edu",
             "phone": "None",
             "location": "Rochester, NY"
@@ -50,7 +50,7 @@
             "name": "Aditya Vikram",
             "title": "Scrum Master",
             "role": "Developer",
-            "current": true,
+            "current": false,
             "email": "av9242@rit.edu",
             "phone": "(585) 410-7894",
             "location": "Rochester, NY"
@@ -59,7 +59,7 @@
             "name": "Jacob Fay",
             "title": "Testing Lead",
             "role": "Developer",
-            "current": true,
+            "current": false,
             "email": "jpf5643@rit.edu",
             "phone": "None",
             "location": "Rochester, NY"
