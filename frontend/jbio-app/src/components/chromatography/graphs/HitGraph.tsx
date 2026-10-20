@@ -22,7 +22,7 @@ export type ChromatographyHitChartProps = {
     afterWash?: ProteinDto[]
 }
 
-export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, afterWashLabel, data, fractionRows, afterWash }: ChromatographyHitChartProps) {
+export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Wash', afterWashLabel = 'After Wash', data, fractionRows, afterWash = [] }: ChromatographyHitChartProps) {
     const stackedChartRef = useRef<ChartJS<'bar'> | null>(null)
     const showAfterWash = !!afterWash && afterWash.length > 0
     const chartTheme = useChartTheme()
@@ -46,7 +46,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
         }
 
         if (showWash) {
-            labels.push(washLabel ?? 'Wash')
+            labels.push(washLabel)
             fractionAmountMaps.push(washAmountByProteinId)
             baseOtherData.push(washOtherTotal)
         }
@@ -86,7 +86,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
             for (const protein of afterWash) {
                 afterWashOtherTotal += protein.amount
             }
-            labels.push(afterWashLabel ?? 'After Wash')
+            labels.push(afterWashLabel)
             fractionAmountMaps.push(new Map())
             baseOtherData.push(afterWashOtherTotal)
         }
