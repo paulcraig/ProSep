@@ -20,6 +20,60 @@
             "location": "Rochester, NY"
         },
         {
+            "name": "Albert Abaykhanov",
+            "title": "Product Lead",
+            "role": "Developer",
+            "current": true,
+            "email": "aa3569@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Jung Choi",
+            "title": "Communications Lead",
+            "role": "Developer",
+            "current": true,
+            "email": "jwc8511@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Ryan Weiner",
+            "title": "Front-End Lead",
+            "role": "Developer",
+            "current": true,
+            "email": "rjw6425@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Scott Happy",
+            "title": "Devops Lead",
+            "role": "Developer",
+            "current": true,
+            "email": "sdh8796@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Syed Rahman",
+            "title": "Back-End Lead",
+            "role": "Developer",
+            "current": true,
+            "email": "smr5717@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
+            "name": "Veronika Kirievskaya",
+            "title": "Process Lead",
+            "role": "Developer",
+            "current": true,
+            "email": "vak4215@rit.edu",
+            "phone": "None",
+            "location": "Rochester, NY"
+        },
+        {
             "name": "Zachary Van Horn",
             "title": "Project Leader",
             "role": "Developer",
