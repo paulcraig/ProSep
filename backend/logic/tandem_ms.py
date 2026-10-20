@@ -115,6 +115,13 @@ MassLetters = {
     113: "I or L"
 }
 
+Proteases = {
+    "trypsin": Trypsin,
+    "chymotrypsin": Chymotrypsin,
+    "proteinase k": ProteinaseK,
+    "thermolysin": Thermolysin,
+}
+
 class Ion:
     def __init__(self):
         self.totalMass = 0
@@ -125,6 +132,10 @@ class Ion:
 
     def addAminoAcid(self, aminoAcid: str):
         aminoAcid = aminoAcid.upper()
+
+        if aminoAcid not in SpecAminoAcids:
+            raise ValueError(f"Incorrect symbol for amino acid = {aminoAcid}")
+
         self.aminoAcids.append(aminoAcid)
         self.totalMass += SpecAminoAcids[aminoAcid]["mass"]
 
@@ -144,14 +155,11 @@ class TandemMS:
         self.charge = 0
         self.hits = 0
 
-    def convert_string_to_ion(self, aminoAcidSequence: str):
+    def convertStringToIon(self, aminoAcidSequence: str):
         aminoAcids = list(aminoAcidSequence)
         ion = Ion()
         for acid in aminoAcids:
-            try:
-                ion.addAminoAcid(acid)
-            except ValueError as ex:
-                print(ex)
+            ion.addAminoAcid(acid)
         return ion
 
     '''
@@ -173,28 +181,20 @@ class TandemMS:
         sequence = "".join(sequence.split())
 
         # Figure out which protease the user wants.
-        if proteaseChoice == "MassSpec.Trypsin":
-            protease = Trypsin()
-        elif proteaseChoice == "MassSpec.Chymotrypsin":
-            protease = Chymotrypsin()
-        elif proteaseChoice == "Proteinase K":
-            protease = ProteinaseK()
-        elif proteaseChoice == "MassSpec.Thermolysin":
-            protease = Thermolysin()
-        else: protease = Trypsin()
+        proteaseClass = Proteases.get(proteaseChoice.strip().lower())
+        if proteaseClass is None:
+            raise ValueError(f"Unknown protease: {proteaseChoice}. Choose from: {', '.join(Proteases)}")
+        protease = proteaseClass()
 
         # Begin sequencing. Each fragment must have a charge of one and only one.
         ions = []
-        try :
-            ionStrings = protease.cut(sequence);
-            for ion in ionStrings:
-                newIon = self.convert_string_to_ion(ion)
-                newIon.charge = 1
-                newIon.sequence = ion
-                if newIon.totalMass != 0:
-                    ions.append(newIon)
-        except ValueError: #ProteaseException ex:
-            ions=[] #raise ProteaseException("Error cutting sequence with protease " + proteaseChoice + ": " + ex.getMessage())
+        ionStrings = protease.cut(sequence);
+        for ion in ionStrings:
+            newIon = self.convertStringToIon(ion)
+            newIon.charge = 1
+            newIon.sequence = ion
+            if newIon.totalMass != 0:
+                ions.append(newIon)
 
         # Group ions by mass charge ratio, the number of ions sharing an m/z is the intensity of that peak.
         peaks = {}
@@ -220,8 +220,8 @@ class TandemMS:
     Input: a single peptide sequence
     Output: the b and y fragment peaks, plus the gaps between neighbors with their letters
     '''
-    def sequence_peaks(self, peptide: str):
-        ion = self.convert_string_to_ion(peptide)
+    def sequencePeaks(self, peptide: str):
+        ion = self.convertStringToIon(peptide)
         peakLines = []
         
         # First, make the b-fragment ions
