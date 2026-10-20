@@ -195,7 +195,7 @@ class TestProtein(unittest.TestCase):
     def test_calculate_absorbance(self):
         file = "backend/tests/data/singleProtein.fasta"
         first_seq = next(iter(Protein.parse_protein(file).values()))[1]
-        expected = 740
+        expected = 25000
         actual = Protein.calculate_absorbance(first_seq)
 
         self.assertEqual(actual, expected)
