@@ -32,6 +32,7 @@ class SizeExclusionRequest(BaseModel):
     )
     min_size: Optional[int] = None  # Optional for backward compatibility
     max_size: Optional[int] = None
+    fraction_count: int = 100
 @router.post("/process", response_model=Dict[str, Any])
 async def process_ion_exchange(body: SizeExclusionRequest) -> Any:
     if not body.fasta_content.strip():
@@ -40,7 +41,7 @@ async def process_ion_exchange(body: SizeExclusionRequest) -> Any:
         return {"error": f"Invalid gel name: {body.gel_name}"}
     min_size, max_size = gelDict[body.gel_name]
     try:
-        return SizeExclusionFractionation.process(body.fasta_content, min_size, max_size, body.proteinList)
+        return SizeExclusionFractionation.process(body.fasta_content, body.gel_name, min_size, max_size, body.proteinList, body.fraction_count)
     except ValueError as exc:
         return {"error": str(exc)}
     

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from backend.utility.protein import Protein
 
 import math
 import random
@@ -297,6 +298,7 @@ class HydrophobicInteractionFractionation:
                 "hydrophobicity": round(entry.hydro_effective, 4),
                 "bindingStrength": round(entry.binding_strength, 4),
                 "color": HydrophobicInteractionFractionation._stable_color(entry.seq_id),
+                "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
             }
         
         # Final response for the frontend
@@ -322,8 +324,13 @@ class HydrophobicInteractionFractionation:
                 {
                     "fractionIndex": index + 1,
                     "proteinCount": len(fraction),
-                    "hitCount": 0,
-                    "hitProteinIds": [],
+                    "absorbanceScore": sum(Protein.calculate_absorbance(entry.sequence) for entry in fraction),
+                    "hitCount": len([
+                        entry for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
+                    ]),
+                    "hitProteinIds": [
+                        entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
+                    ],
                     "proteins": [pack(entry) for entry in fraction],
                 }
                 for index, fraction in enumerate(fraction_lists)
