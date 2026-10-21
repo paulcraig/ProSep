@@ -53,6 +53,7 @@ import {
 } from "@mui/icons-material";
 import { ImageHoverPreview } from "../components/ImageHoverPreview";
 import { useLocation } from "react-router-dom";
+import { Stopwatch, useTimer } from "../components/Timer"
 
 ChartJS.register(
   CategoryScale,
@@ -103,7 +104,6 @@ const PeptideRetention: React.FC = () => {
   const [results, setResults] = useState<PredictionResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stopRequested, setStopRequested] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
   const [useCached, setUseCached] = useState(true);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -256,6 +256,7 @@ const PeptideRetention: React.FC = () => {
     }
   };
 
+  const timer = useTimer()
   const predictAll = async () => {
     if (!peptides.length) return;
 
@@ -263,14 +264,10 @@ const PeptideRetention: React.FC = () => {
     setStopRequested(false);
     setErrorMessage(null);
     setResults([]);
-    setElapsed(0);
+    timer.setTimeInSeconds(0)
+    timer.startTimer()
 
     abortRef.current = new AbortController();
-
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setElapsed((prev) => prev + 1);
-    }, 1000);
 
     try {
       const cache = getCache();
@@ -305,19 +302,8 @@ const PeptideRetention: React.FC = () => {
       if (err.name !== "AbortError") setErrorMessage(`Error: ${err.message}`);
     }
 
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    timer.stopTimer()
     setIsLoading(false);
-  };
-
-  const formatTime = (totalSec: number) => {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return secs > 0
-      ? `${mins}m ${secs.toString().padStart(2, "0")}s`
-      : `${secs}s`;
   };
 
   const exportCsv = () => {
@@ -622,20 +608,7 @@ const PeptideRetention: React.FC = () => {
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
               {(isLoading || results.length > 0) && (
                 <>
-                  <div /* Timer */
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      fontWeight: "bold",
-                      color: "var(--sub-text)",
-                    }}
-                  >
-                    <Timer
-                      fontSize="small"
-                      style={{ marginRight: "0.25rem", fill: "var(--text)" }}
-                    />
-                    {formatTime(elapsed)}
-                  </div>
+                  <Stopwatch {...timer} />
 
                   <div /* Progress */
                     style={{
