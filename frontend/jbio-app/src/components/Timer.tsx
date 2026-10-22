@@ -10,8 +10,9 @@ function formatTime(timeInSeconds: number) {
 }
 
 export function useTimer() {
-    const [timeInSeconds, setTimeInSeconds] = useState(0);
+    const [timeInSeconds, setTimeInSeconds] = useState(0)
     const [isTimerRunning, setIsTimerRunning] = useState(false)
+    const [hasTimerRanYet, setHasTimerRanYet] = useState(false)
     const timerRef = useRef<NodeJS.Timeout | null>(null)
 
     function startTimer() {
@@ -22,6 +23,7 @@ export function useTimer() {
         }, 1000)
 
         setIsTimerRunning(true)
+        setHasTimerRanYet(true)
     }
 
     function stopTimer() {
@@ -38,6 +40,7 @@ export function useTimer() {
         stopTimer,
         setTimeInSeconds,
         isTimerRunning,
+        hasTimerRanYet,
         timeInSeconds
     }
 }
@@ -45,9 +48,10 @@ export function useTimer() {
 export type StopwatchProps = {
     timeInSeconds: number
     isTimerRunning: boolean
+    hasTimerRanYet: boolean
 }
-export function Stopwatch({ timeInSeconds, isTimerRunning }: StopwatchProps) {
-    return (
+export function Stopwatch({ timeInSeconds, isTimerRunning, hasTimerRanYet }: StopwatchProps) {
+    return hasTimerRanYet ? (
         <Box
             sx={{
                 display: 'flex',
@@ -59,5 +63,7 @@ export function Stopwatch({ timeInSeconds, isTimerRunning }: StopwatchProps) {
             <Timer fontSize='small' style={{ marginRight: '0.25rem' }} />
             {formatTime(timeInSeconds)}
         </Box>
+    ): (
+        <></>
     )
 }
