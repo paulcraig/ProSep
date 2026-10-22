@@ -22,6 +22,7 @@ import { HitTable } from '../components/chromatography/tables/HitTable'
 import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
 import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
 import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
+import { Stopwatch, useTimer } from '../components/Timer'
 
 /*
  * Register the chart components we need for Chart.js.
@@ -145,12 +146,16 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         event.target.value = ''
     }
 
+    const timer = useTimer()
+
     /*
      * Sends the current form values and FASTA content to the backend.
      * On success, stores the returned HIC result in `data`.
      */
     const handleRun = async () => {
         setLoading(true)
+        timer.setTimeInSeconds(0)
+        timer.startTimer()
         setError('')
 
         try {
@@ -180,6 +185,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
             setError(err instanceof Error ? err.message : 'Unexpected error')
         } finally {
             setLoading(false)
+            timer.stopTimer()
         }
     }
 
@@ -314,6 +320,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         <Button variant='contained' onClick={handleRun} disabled={loading || !fastaText.trim()}>
                             {loading ? 'Running...' : 'Run Fractionation'}
                         </Button>
+                        <Stopwatch {...timer} />
                     </Box>
 
                     {/* Show backend or request errors */}

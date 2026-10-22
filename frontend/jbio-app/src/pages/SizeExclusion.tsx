@@ -22,6 +22,7 @@ import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
 import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
 import { HitTable } from '../components/chromatography/tables/HitTable'
 import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
+import { Stopwatch, useTimer } from '../components/Timer'
 
 // Gel dictionary
 const gelDict: { [key: string]: [number, number] } = {
@@ -111,8 +112,12 @@ const SizeExclusionPage: React.FC = () => {
         setMaxSize(gelDict[gel][1])
     }
 
+    const timer = useTimer()
+
     const handleRun = async () => {
         setLoading(true)
+        timer.setTimeInSeconds(0)
+        timer.startTimer()
         setError('')
         try {
             const res = await fetch(`${API_URL}/size_exclusion/process`, {
@@ -135,6 +140,7 @@ const SizeExclusionPage: React.FC = () => {
             setData(null)
         } finally {
             setLoading(false)
+            timer.stopTimer()
         }
     }
 
@@ -162,15 +168,16 @@ const SizeExclusionPage: React.FC = () => {
                         <NumberField label='Fractions' value={fractionCount} min={1} onValueChange={value => setFractionCount(value == null ? 1 : Math.max(1, Math.floor(value)))} />
                     </Box>
 
-                    <Box mt={2}>
+                    <Box mt={2} display='flex' gap={2}>
                         <Button variant='contained' component='label'>
                             Upload FASTA
                             <input hidden type='file' onChange={handleLoadFasta} />
                         </Button>
 
-                        <Button variant='contained' onClick={handleRun} disabled={loading || !fastaText.trim()} sx={{ ml: 2 }}>
+                        <Button variant='contained' onClick={handleRun} disabled={loading || !fastaText.trim()}>
                             {loading ? 'Running...' : 'Run Fractionation'}
                         </Button>
+                        <Stopwatch {...timer} />
                     </Box>
                 </CardContent>
             </Card>
