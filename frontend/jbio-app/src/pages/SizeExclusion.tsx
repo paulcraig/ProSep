@@ -174,7 +174,7 @@ const SizeExclusionPage: React.FC = () => {
                             <input hidden type='file' onChange={handleLoadFasta} />
                         </Button>
 
-                        <Button variant='contained' onClick={handleRun} disabled={loading || !fastaText.trim()} sx={{ ml: 2 }}>
+                        <Button variant='contained' onClick={handleRun} disabled={loading || !fastaText.trim()}>
                             {loading ? 'Running...' : 'Run Fractionation'}
                         </Button>
                         <Stopwatch {...timer} />
