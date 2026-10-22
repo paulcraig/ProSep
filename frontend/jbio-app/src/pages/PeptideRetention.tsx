@@ -51,7 +51,6 @@ import {
   RestartAlt,
   ZoomInOutlined,
 } from "@mui/icons-material";
-import { ImageHoverPreview } from "../components/ImageHoverPreview";
 import { useLocation } from "react-router-dom";
 
 ChartJS.register(
@@ -662,7 +661,7 @@ const PeptideRetention: React.FC = () => {
                 startIcon={<DownloadOutlined />}
                 style={{ marginRight: "0.75rem" }}
               >
-                Export CSV
+                Export CSV (full data)
               </Button>
             </div>
           }
@@ -674,10 +673,7 @@ const PeptideRetention: React.FC = () => {
                 <TableRow className="results-header">
                   <TableCell>Peptide</TableCell>
                   <TableCell>Predicted tR (min)</TableCell>
-                  <TableCell>SMILES</TableCell>
-                  <TableCell>log SumAA</TableCell>
-                  <TableCell>log VDW Vol</TableCell>
-                  <TableCell>clogP</TableCell>
+                  <TableCell>Structure</TableCell>
                   <TableCell></TableCell>
                 </TableRow>
               </TableHead>
@@ -711,7 +707,7 @@ const PeptideRetention: React.FC = () => {
                     </TableCell>
                     {item.result ? (
                       "error" in item.result ? (
-                        <TableCell colSpan={6} style={{ color: "red" }}>
+                        <TableCell colSpan={3} style={{ color: "red" }}>
                           {item.result.error}
                         </TableCell>
                       ) : (
@@ -719,14 +715,25 @@ const PeptideRetention: React.FC = () => {
                           <TableCell>
                             {item.result.predicted_tr.toFixed(2)}
                           </TableCell>
-                          <TableCell>{item.result.smiles}</TableCell>
                           <TableCell>
-                            {item.result.log_sum_aa.toFixed(4)}
+                            <a
+                              href={getPeptideImage(item.result.smiles)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img
+                                src={getPeptideImage(item.result.smiles)}
+                                alt={`Structure of ${item.peptide}`}
+                                height={72}
+                                loading="lazy"
+                                style={{
+                                  background: "#fff",
+                                  borderRadius: 4,
+                                  display: "block",
+                                }}
+                              />
+                            </a>
                           </TableCell>
-                          <TableCell>
-                            {item.result.log_vdw_vol.toFixed(4)}
-                          </TableCell>
-                          <TableCell>{item.result.clog_p.toFixed(4)}</TableCell>
                           <TableCell>
                             <BTooltip title="Copy Row" arrow placement="top">
                               <IconButton
@@ -738,15 +745,6 @@ const PeptideRetention: React.FC = () => {
                                 <ContentCopy />
                               </IconButton>
                             </BTooltip>
-                            <BTooltip
-                              title="View Peptide"
-                              arrow
-                              placement="top"
-                            >
-                              <ImageHoverPreview
-                                url={getPeptideImage(item.result.smiles)}
-                              />
-                            </BTooltip>
                           </TableCell>
                         </>
                       )
@@ -756,16 +754,7 @@ const PeptideRetention: React.FC = () => {
                           <Skeleton />
                         </TableCell>
                         <TableCell>
-                          <Skeleton />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton />
+                          <Skeleton variant="rectangular" height={72} />
                         </TableCell>
                         <TableCell></TableCell>
                       </>
