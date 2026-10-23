@@ -4,20 +4,18 @@ from backend.logic.fractionation.fractionation import Fractionation
 
 
 class SizeExclusionFractionation:
-    
-  @staticmethod
-  def process(
-         
+    @staticmethod
+    def process(
         fasta_content: str,
-         gel_name: str,
-         min_size: int,
-         max_size: int,
-         fraction_count: int,
+        gel_name: str,
+        min_size: int,
+        max_size: int,
+        fraction_count: int,
     ) -> dict[str, Any]:
         """
         based off of ion_exchange_fraction file. Uses the same protein format as what that uses to make both of these compatable with each other.
         will parse fasta file unless giving a protein list of size 1 or more.
-        
+
         """
         if fraction_count < 1:
             raise ValueError("fraction_count must be at least 1")
@@ -31,7 +29,7 @@ class SizeExclusionFractionation:
         for entry in entries:
             if entry.molecular_weight < min_size:
                 to_small.append(entry)  # return ID or sequence
-            elif entry.molecular_weight >max_size:
+            elif entry.molecular_weight > max_size:
                 to_big.append(entry)
             else:
                 inside.append(entry)
@@ -53,7 +51,6 @@ class SizeExclusionFractionation:
                 "maxSize": max_size,
                 "fractions": fraction_count,
             },
-           
             "counts": {
                 "total": len(entries),
                 "to_small": len(to_small),
@@ -61,9 +58,7 @@ class SizeExclusionFractionation:
                 "inside": len(inside),
                 "skipped": skipped,
             },
-          
-           
             "wash": [entry.to_json() for entry in to_big],
             "fractions": Fractionation.process_fractions(fraction_lists),
             "afterWash": [entry.to_json() for entry in to_small],
-                }
+        }
