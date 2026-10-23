@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 
 
 from backend.logic.fractionation.fractionation import Fractionation
+from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
 
 class HydrophobicInteractionFractionation:
     """
@@ -24,7 +25,7 @@ class HydrophobicInteractionFractionation:
     """
     
     @dataclass
-    class ProteinEntry(Fractionation.BindingBasedProteinEntry):
+    class ProteinEntry(BindingStrengthFractionation.ProteinEntry):
         # Computed physical / simulation properties
         hydro_total: float
         hydro_patch: float

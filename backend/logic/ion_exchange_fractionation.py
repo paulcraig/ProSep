@@ -11,11 +11,12 @@ from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
 from backend.logic.fractionation.fractionation import Fractionation
+from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
 
 
 class IonExchangeFractionation:
     @dataclass
-    class ProteinEntry(Fractionation.BindingBasedProteinEntry):
+    class ProteinEntry(BindingStrengthFractionation.ProteinEntry):
         charge: float
         
         def to_json(self):
