@@ -8,6 +8,7 @@ from io import StringIO
 from typing import Any
 
 from Bio import SeqIO
+from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
 from backend.utility.protein import Protein
 
@@ -24,7 +25,7 @@ class Fractionation:
         molecular_weight: float = field(init=False)
         
         def __post_init__(self):
-            self.molecular_weight = Fractionation.mw_simple(self.sequence)
+            self.molecular_weight = ProteinAnalysis(self.sequence).molecular_weight()
         
         def to_json(self):
             name = " ".join(self.description.split(" ")[1:]) if " " in self.description else self.description
@@ -138,21 +139,6 @@ class Fractionation:
             }
             for index, fraction in enumerate(fraction_lists)
         ]
-        
-    @staticmethod
-    def mw_simple(sequence: str) -> float:
-        """
-        Approximate molecular weight from residue masses.
-        """
-        aa_mass = {
-            "A": 89.09, "C": 121.15, "D": 133.10, "E": 147.13, "F": 165.19,
-            "G": 75.07, "H": 155.16, "I": 131.17, "K": 146.19, "L": 131.17,
-            "M": 149.21, "N": 132.12, "P": 115.13, "Q": 146.15, "R": 174.20,
-            "S": 105.09, "T": 119.12, "V": 117.15, "W": 204.23, "Y": 181.19,
-        }
-        if not sequence:
-            return 0.0
-        return float(sum(aa_mass.get(a, 0.0) for a in sequence))
 
     @staticmethod
     def convert_fasta_to_protein_entries(fasta: str):
