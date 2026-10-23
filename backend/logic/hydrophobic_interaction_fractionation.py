@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 
 from Bio import SeqIO
 
-from fractionation.fractionation import Fractionation
+from backend.logic.fractionation.fractionation import Fractionation
 
 class HydrophobicInteractionFractionation:
     """
@@ -45,17 +45,6 @@ class HydrophobicInteractionFractionation:
         "phenyl": 1.45,
     }
     
-    # Replace uncommon/ambigous residues with approximate alternatives
-    NORMALIZATION_MAP = {
-        "X": "Q",
-        "B": "D",
-        "Z": "E",
-        "J": "L",
-        "U": "C",
-        "O": "K",
-        "*": "",    
-    }
-    
     # Kyte-Doolittle hydrophobicity scale
     # Higher value = more hydrophobic
     HYDRO_SCALE = {
@@ -64,20 +53,6 @@ class HydrophobicInteractionFractionation:
         "M": 1.9,  "N": -3.5, "P": -1.6, "Q": -3.5, "R": -4.5,
         "S": -0.8, "T": -0.7, "V": 4.2,  "W": -0.9, "Y": -1.3,
     }
-        
-    @staticmethod
-    def _normalize_sequence(sequence: str) -> str:
-        """
-        Clean up an input sequence:
-        - uppercase it
-        - replace ambiguous residues
-        - remove non-letter characters
-        """
-        seq = sequence.strip().upper()
-        for bad, replacement in HydrophobicInteractionFractionation.NORMALIZATION_MAP.items():
-            seq = seq.replace(bad, replacement)
-        seq = "".join(ch for ch in seq if ch.isalpha())
-        return seq
     
     @staticmethod
     def _parse_fasta_text(fasta_content: str) -> List[Any]:
@@ -226,7 +201,7 @@ class HydrophobicInteractionFractionation:
         
         # Process each protein record
         for record in records:
-            sequence = HydrophobicInteractionFractionation._normalize_sequence(str(record.seq))
+            sequence = Fractionation.normalize_sequence(str(record.seq))
             if not sequence:
                 skipped += 1
                 continue
