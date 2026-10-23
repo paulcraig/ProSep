@@ -1,10 +1,11 @@
-from typing import Any, Dict, Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from backend.logic.hydrophobic_interaction_fractionation import HydrophobicInteractionFractionation
-
+from backend.logic.hydrophobic_interaction_fractionation import (
+    HydrophobicInteractionFractionation,
+)
 
 router = APIRouter(
     prefix="/hydrophobic_interaction_fractionation",
@@ -32,7 +33,7 @@ class HydrophobicInteractionRequest(BaseModel):
     deadband: float = Field(0.15, ge=0.0, le=1.0, description="Minimum bindingStrength to retain")
     salt_alpha: float = Field(1.2, ge=0.0, le=5.0, description="Salt-strength exponent")
 
-@router.post("/process", response_model=Dict[str, Any])
+@router.post("/process", response_model=dict[str, Any])
 async def process_hic(body: HydrophobicInteractionRequest) -> Any:
     """
     Run hydrophobic interaction fractionation and return the simulated result.

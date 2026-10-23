@@ -1,10 +1,8 @@
-import math
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
-from Bio.SeqUtils.ProtParam import ProteinAnalysis as PA
-from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
-from backend.utility.protein import Protein
 from backend.logic.fractionation.fractionation import Fractionation
+
+
 class SizeExclusionFractionation:
     
   @staticmethod
@@ -14,9 +12,9 @@ class SizeExclusionFractionation:
          gel_name: str,
          min_size: int,
          max_size: int,
-         proteinList: List[Fractionation.ProteinEntry],
+         proteinList: list[Fractionation.ProteinEntry],
          fraction_count: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         based off of ion_exchange_fraction file. Uses the same protein format as what that uses to make both of these compatable with each other.
         will parse fasta file unless giving a protein list of size 1 or more.
@@ -27,9 +25,9 @@ class SizeExclusionFractionation:
 
         entries, skipped = Fractionation.convert_fasta_to_protein_entries(fasta_content)
 
-        to_big: List[Fractionation.ProteinEntry] = []
-        to_small: List[Fractionation.ProteinEntry] = []
-        inside:List[Fractionation.ProteinEntry] = []
+        to_big: list[Fractionation.ProteinEntry] = []
+        to_small: list[Fractionation.ProteinEntry] = []
+        inside: list[Fractionation.ProteinEntry] = []
 
         for entry in entries:
             if entry.molecular_weight < min_size:

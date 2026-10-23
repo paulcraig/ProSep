@@ -1,10 +1,10 @@
-from fastapi import APIRouter
-from typing import Dict, Any, List
+from typing import Any
 
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from typing import Optional
-from backend.logic.size_exclusion import SizeExclusionFractionation
+
 from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
+from backend.logic.size_exclusion import SizeExclusionFractionation
 
 router = APIRouter(prefix="/size_exclusion", tags=["size exclusion"])
 gelDict = {
@@ -27,13 +27,13 @@ gelDict = {
 class SizeExclusionRequest(BaseModel):
     fasta_content: str = Field(..., description="FASTA content as raw text")
     gel_name: str = Field(..., description="Gel name from gelDict")
-    proteinList: List[IonExchangeFractionation.ProteinEntry] = Field(
+    proteinList: list[IonExchangeFractionation.ProteinEntry] = Field(
         ..., description="List of protein entries"
     )
-    min_size: Optional[int] = None  # Optional for backward compatibility
-    max_size: Optional[int] = None
+    min_size: int | None = None  # Optional for backward compatibility
+    max_size: int | None = None
     fraction_count: int = 100
-@router.post("/process", response_model=Dict[str, Any])
+@router.post("/process", response_model=dict[str, Any])
 async def process_ion_exchange(body: SizeExclusionRequest) -> Any:
     if not body.fasta_content.strip():
         return {"error": "No FASTA content provided."}
