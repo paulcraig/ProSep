@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
-from fractionation.fractionation import Fractionation
+from backend.logic.fractionation.fractionation import Fractionation
 
 
 class IonExchangeFractionation:
@@ -27,24 +27,6 @@ class IonExchangeFractionation:
         "Q": "anion",   # positively charged resin, binds negative proteins
         "S": "cation",  # negatively charged resin, binds positive proteins
     }
-
-    NORMALIZATION_MAP = {
-        "X": "Q",
-        "B": "D",
-        "Z": "E",
-        "J": "L",
-        "U": "C",
-        "O": "K",
-        "*": "",
-    }
-
-    @staticmethod
-    def _normalize_sequence(sequence: str) -> str:
-        seq = sequence.strip().upper()
-        for bad, replacement in IonExchangeFractionation.NORMALIZATION_MAP.items():
-            seq = seq.replace(bad, replacement)
-        seq = "".join(ch for ch in seq if ch.isalpha())
-        return seq
 
     @staticmethod
     def _parse_fasta_text(fasta_content: str) -> List[Any]:
@@ -131,7 +113,7 @@ class IonExchangeFractionation:
         skipped = 0
 
         for record in records:
-            sequence = IonExchangeFractionation._normalize_sequence(str(record.seq))
+            sequence = Fractionation.normalize_sequence(str(record.seq))
             if not sequence:
                 skipped += 1
                 continue
