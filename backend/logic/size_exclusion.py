@@ -6,34 +6,6 @@ from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
 from backend.utility.protein import Protein
 from backend.logic.fractionation.fractionation import Fractionation
 class SizeExclusionFractionation:
-  def _set_protien_list(fasta_content,proteins:List[Fractionation.ProteinEntry]) -> Tuple[List[Fractionation.ProteinEntry], int]:
-    records = Fractionation.parse_fasta_text(fasta_content)
-    if len(proteins) > 0:
-        return proteins, 0
-    entries: List[Fractionation.ProteinEntry] = []
-    skipped = 0
-
-    for record in records:
-        sequence = Fractionation.normalize_sequence(str(record.seq))
-        if not sequence:
-            skipped += 1
-            continue
-
-        try:
-            analyzer = PA(sequence)
-            
-            molecular_weight = float(analyzer.molecular_weight())
-        except Exception:
-            skipped += 1
-            continue
-        entries.append(
-                Fractionation.ProteinEntry(
-                    seq_id=record.id,
-                    description=record.description,
-                    sequence=sequence,
-                    molecular_weight=molecular_weight,
-                ))
-    return entries, skipped
     
   @staticmethod
   def process(
@@ -53,11 +25,11 @@ class SizeExclusionFractionation:
         if fraction_count < 1:
             raise ValueError("fraction_count must be at least 1")
 
-        entries, skipped = SizeExclusionFractionation._set_protien_list(fasta_content,proteinList)
+        entries, skipped = Fractionation.convert_fasta_to_protein_entries(fasta_content)
 
-        to_big: List[IonExchangeFractionation.ProteinEntry] = []
-        to_small: List[IonExchangeFractionation.ProteinEntry] = []
-        inside:List[IonExchangeFractionation.ProteinEntry] = []
+        to_big: List[Fractionation.ProteinEntry] = []
+        to_small: List[Fractionation.ProteinEntry] = []
+        inside:List[Fractionation.ProteinEntry] = []
 
         for entry in entries:
             seq = entry.sequence.replace("X", "Q")
