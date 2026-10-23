@@ -1,14 +1,13 @@
 import os
 import unittest
 
-CURRENT_DIR = os.path.dirname(__file__)
-
 from backend.logic.hydrophobic_interaction_fractionation import (
     HydrophobicInteractionFractionation as HIF,
 )
 from backend.logic.ion_exchange_fractionation import IonExchangeFractionation as IEF
 from backend.logic.size_exclusion import SizeExclusionFractionation as SEF
 
+CURRENT_DIR = os.path.dirname(__file__)
 
 class TestFractionation(unittest.TestCase):
     def setUp(self):
