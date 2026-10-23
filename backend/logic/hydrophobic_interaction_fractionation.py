@@ -20,18 +20,18 @@ class HydrophobicInteractionFractionation:
     - Retained proteins are sorted weakest -> strongest binder
     - Retained proteins are then split into fractions with optional overlap/noise
     """
-    
+
     @dataclass
     class ProteinEntry(BindingStrengthFractionation.ProteinEntry):
         # Computed physical / simulation properties
         hydro_effective: float
-        
+
         def to_json(self):
             return {
                 **super().to_json(),
                 "hydrophobicity": round(self.hydro_effective, 4),
             }
-    
+
     # Relative ligand strengths for different HIC stationary phases
     # Stronger ligand -> stronger hydrophobic interaction
     LIGAND_FACTORS: ClassVar = {
@@ -39,16 +39,32 @@ class HydrophobicInteractionFractionation:
         "octyl": 1.25,
         "phenyl": 1.45,
     }
-    
+
     # Kyte-Doolittle hydrophobicity scale
     # Higher value = more hydrophobic
     HYDRO_SCALE: ClassVar = {
-        "A": 1.8,  "C": 2.5,  "D": -3.5, "E": -3.5, "F": 2.8,
-        "G": -0.4, "H": -3.2, "I": 4.5,  "K": -3.9, "L": 3.8,
-        "M": 1.9,  "N": -3.5, "P": -1.6, "Q": -3.5, "R": -4.5,
-        "S": -0.8, "T": -0.7, "V": 4.2,  "W": -0.9, "Y": -1.3,
+        "A": 1.8,
+        "C": 2.5,
+        "D": -3.5,
+        "E": -3.5,
+        "F": 2.8,
+        "G": -0.4,
+        "H": -3.2,
+        "I": 4.5,
+        "K": -3.9,
+        "L": 3.8,
+        "M": 1.9,
+        "N": -3.5,
+        "P": -1.6,
+        "Q": -3.5,
+        "R": -4.5,
+        "S": -0.8,
+        "T": -0.7,
+        "V": 4.2,
+        "W": -0.9,
+        "Y": -1.3,
     }
-    
+
     @staticmethod
     def _hydro_score(sequence: str) -> float:
         """
@@ -60,7 +76,7 @@ class HydrophobicInteractionFractionation:
         for aa in sequence:
             total += HydrophobicInteractionFractionation.HYDRO_SCALE.get(aa, 0.0)
         return float(total)
-    
+
     @staticmethod
     def _max_patch_score(sequence: str, window: int = 10) -> float:
         """
@@ -71,14 +87,14 @@ class HydrophobicInteractionFractionation:
             return 0.0
         if len(sequence) <= window:
             return HydrophobicInteractionFractionation._hydro_score(sequence)
-        
+
         best = -1e9
         for i in range(0, len(sequence) - window + 1):
             seg = sequence[i : i + window]
             seg_score = HydrophobicInteractionFractionation._hydro_score(seg)
             best = max(best, seg_score)
         return float(best)
-    
+
     @staticmethod
     def _effective_hydrophobicity(h_total: float, h_patch: float, length: int) -> float:
         """
@@ -94,9 +110,18 @@ class HydrophobicInteractionFractionation:
         total_norm = h_total / float(length)
         patch_norm = h_patch / 10.0
         return float(0.35 * total_norm + 0.65 * patch_norm)
-    
+
     @staticmethod
-    def process (fasta_content: str, ligand_type: str = "butyl", salt_start: float = 1.5, salt_end: float = 0.0, fraction_count: int = 80, noise: float = 0.10, deadband: float = 0.15, salt_alpha: float = 1.2) -> dict[str, Any]:
+    def process(
+        fasta_content: str,
+        ligand_type: str = "butyl",
+        salt_start: float = 1.5,
+        salt_end: float = 0.0,
+        fraction_count: int = 80,
+        noise: float = 0.10,
+        deadband: float = 0.15,
+        salt_alpha: float = 1.2,
+    ) -> dict[str, Any]:
         """
         Main HIC simulation function.
 
@@ -111,7 +136,7 @@ class HydrophobicInteractionFractionation:
         ligand_type = ligand_type.lower().strip()
         if ligand_type not in HydrophobicInteractionFractionation.LIGAND_FACTORS:
             raise ValueError("ligand_type must be one of: butyl, octyl, phenyl")
-        
+
         if fraction_count < 1:
             raise ValueError("fraction_count must be at least 1")
         if noise < 0:
@@ -120,52 +145,58 @@ class HydrophobicInteractionFractionation:
             raise ValueError("deadband must be >= 0")
         if salt_start < 0 or salt_end < 0:
             raise ValueError("salt concentrations must be >= 0")
-        
+
         # Convert selected ligand into a numeric factor
         ligand_factor = HydrophobicInteractionFractionation.LIGAND_FACTORS[ligand_type]
-        
+
         # Salt increase hydrophobic binding; this is a scaling factor
         salt_factor = (salt_start + 1e-9) ** float(salt_alpha)
-        
+
         basic_entries, skipped = Fractionation.convert_fasta_to_protein_entries(fasta_content)
         entries: list[HydrophobicInteractionFractionation.ProteinEntry] = []
         for basic_entry in basic_entries:
             try:
                 hydro_total = HydrophobicInteractionFractionation._hydro_score(basic_entry.sequence)
                 hydro_patch = HydrophobicInteractionFractionation._max_patch_score(basic_entry.sequence, window=10)
-                hydro_effective = HydrophobicInteractionFractionation._effective_hydrophobicity(h_total=hydro_total, h_patch=hydro_patch, length=len(basic_entry.sequence))
-                
+                hydro_effective = HydrophobicInteractionFractionation._effective_hydrophobicity(
+                    h_total=hydro_total,
+                    h_patch=hydro_patch,
+                    length=len(basic_entry.sequence),
+                )
+
                 # Final binding score = protein hydrophobicity x ligand factor x salt factor
                 binding_strength = float(hydro_effective * ligand_factor * salt_factor)
-                            
-                entries.append(HydrophobicInteractionFractionation.ProteinEntry(
-                    description=basic_entry.description,
-                    seq_id=basic_entry.seq_id,
-                    sequence=basic_entry.sequence,
-                    binding_strength=binding_strength,
-                    hydro_effective=hydro_effective
-                ))
-                
+
+                entries.append(
+                    HydrophobicInteractionFractionation.ProteinEntry(
+                        description=basic_entry.description,
+                        seq_id=basic_entry.seq_id,
+                        sequence=basic_entry.sequence,
+                        binding_strength=binding_strength,
+                        hydro_effective=hydro_effective,
+                    )
+                )
+
             except Exception:
                 skipped += 1
-        
+
         # Split proteins into wash vs retained
         wash: list[HydrophobicInteractionFractionation.ProteinEntry] = []
         retained: list[HydrophobicInteractionFractionation.ProteinEntry] = []
-        
+
         for entry in entries:
             if entry.binding_strength < deadband:
                 wash.append(entry)
             else:
                 retained.append(entry)
-        
+
         # Weakest binder first, strongest binder last
         # This defines elution order across fractions
         retained.sort(key=lambda item: item.binding_strength)
-        
+
         # Split retained proteins into output fractions
         fraction_lists = Fractionation.fractionate_with_overlap(items=retained, n_fractions=fraction_count, overlap=noise)
-        
+
         # Final response for the frontend
         return {
             "ok": True,

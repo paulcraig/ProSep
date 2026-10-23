@@ -15,7 +15,7 @@ class IonExchangeFractionation:
     @dataclass
     class ProteinEntry(BindingStrengthFractionation.ProteinEntry):
         charge: float
-        
+
         def to_json(self):
             return {
                 **super().to_json(),
@@ -23,7 +23,7 @@ class IonExchangeFractionation:
             }
 
     MEDIA_TO_EXCHANGER: ClassVar = {
-        "Q": "anion",   # positively charged resin, binds negative proteins
+        "Q": "anion",  # positively charged resin, binds negative proteins
         "S": "cation",  # negatively charged resin, binds positive proteins
     }
 
@@ -78,17 +78,17 @@ class IonExchangeFractionation:
                 is_electrically_attracted = (exchanger == "anion" and charge < 0) or (exchanger == "cation" and charge > 0)
 
                 binding_strength = float(abs(charge) * salt_factor) if is_electrically_attracted else 0.0
-                
+
                 entries.append(
                     IonExchangeFractionation.ProteinEntry(
                         seq_id=basic_entry.seq_id,
                         description=basic_entry.description,
-                        sequence=basic_entry.sequence,  
+                        sequence=basic_entry.sequence,
                         charge=charge,
                         binding_strength=binding_strength,
                     )
                 )
-            
+
             except Exception:
                 skipped += 1
                 continue
@@ -111,7 +111,7 @@ class IonExchangeFractionation:
             n_fractions=fraction_count,
             overlap=noise,
         )
-        
+
         return {
             "ok": True,
             "params": {

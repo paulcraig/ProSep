@@ -3,7 +3,6 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
 from backend.logic.size_exclusion import SizeExclusionFractionation
 
 router = APIRouter(prefix="/size_exclusion", tags=["size exclusion"])
@@ -23,13 +22,14 @@ gelDict = {
 }
 
 
-
 class SizeExclusionRequest(BaseModel):
     fasta_content: str = Field(..., description="FASTA content as raw text")
     gel_name: str = Field(..., description="Gel name from gelDict")
     min_size: int | None = None  # Optional for backward compatibility
     max_size: int | None = None
     fraction_count: int = 100
+
+
 @router.post("/process", response_model=dict[str, Any])
 async def process_ion_exchange(body: SizeExclusionRequest) -> Any:
     if not body.fasta_content.strip():
@@ -41,7 +41,3 @@ async def process_ion_exchange(body: SizeExclusionRequest) -> Any:
         return SizeExclusionFractionation.process(body.fasta_content, body.gel_name, min_size, max_size, body.fraction_count)
     except ValueError as exc:
         return {"error": str(exc)}
-    
-
-
-   
