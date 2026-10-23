@@ -46,42 +46,6 @@ class IonExchangeFractionation:
         )
 
     @staticmethod
-    def _get_hist_percent(protstring: str) -> float:
-        if not protstring:
-            return 0.0
-        hcount = 0
-        for aa in protstring:
-            if aa == "H":
-                hcount += 1
-        return hcount / len(protstring)
-
-    @staticmethod
-    def _find_hist_chains(protstring: str) -> Dict[str, int]:
-        chain_dict: Dict[str, int] = {}
-        chainlen = 1
-        last_aa = ""
-        for aa in protstring:
-            if aa == "H":
-                if last_aa == "H":
-                    chainlen += 1
-            elif chainlen > 1 and last_aa == "H":
-                key = str(chainlen)
-                if key in chain_dict:
-                    chain_dict[key] = chain_dict[key] + 1
-                else:
-                    chain_dict[key] = 1
-                chainlen = 1
-            last_aa = aa
-
-        if chainlen > 1:
-            key = str(chainlen)
-            if key in chain_dict:
-                chain_dict[key] = chain_dict[key] + 1
-            else:
-                chain_dict[key] = 1
-        return chain_dict
-
-    @staticmethod
     def _normalize_sequence(sequence: str) -> str:
         seq = sequence.strip().upper()
         for bad, replacement in IonExchangeFractionation.NORMALIZATION_MAP.items():
