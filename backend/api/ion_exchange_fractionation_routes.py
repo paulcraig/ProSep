@@ -1,10 +1,9 @@
-from typing import Any, Dict, Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
-
 
 router = APIRouter(
     prefix="/ion_exchange_fractionation",
@@ -27,7 +26,7 @@ class IonExchangeRequest(BaseModel):
     salt_alpha: float = Field(1.2, ge=0.0, le=5.0, description="Salt-strength exponent")
 
 
-@router.post("/process", response_model=Dict[str, Any])
+@router.post("/process", response_model=dict[str, Any])
 async def process_ion_exchange(body: IonExchangeRequest) -> Any:
     if not body.fasta_content.strip():
         return {"error": "No FASTA content provided."}

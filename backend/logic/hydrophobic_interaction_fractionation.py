@@ -1,17 +1,12 @@
 from __future__ import annotations
-from backend.utility.protein import Protein
 
-import math
-import random
-from dataclasses import InitVar, dataclass
-from io import StringIO
-from typing import Any, Dict, List
+from dataclasses import dataclass
+from typing import Any, ClassVar
 
-from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
+from backend.logic.fractionation.binding_strength_fractionation import (
+    BindingStrengthFractionation,
+)
 from backend.logic.fractionation.fractionation import Fractionation
-from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
-
-
 
 
 class HydrophobicInteractionFractionation:
@@ -39,7 +34,7 @@ class HydrophobicInteractionFractionation:
     
     # Relative ligand strengths for different HIC stationary phases
     # Stronger ligand -> stronger hydrophobic interaction
-    LIGAND_FACTORS = {
+    LIGAND_FACTORS: ClassVar = {
         "butyl": 1.00,
         "octyl": 1.25,
         "phenyl": 1.45,
@@ -47,7 +42,7 @@ class HydrophobicInteractionFractionation:
     
     # Kyte-Doolittle hydrophobicity scale
     # Higher value = more hydrophobic
-    HYDRO_SCALE = {
+    HYDRO_SCALE: ClassVar = {
         "A": 1.8,  "C": 2.5,  "D": -3.5, "E": -3.5, "F": 2.8,
         "G": -0.4, "H": -3.2, "I": 4.5,  "K": -3.9, "L": 3.8,
         "M": 1.9,  "N": -3.5, "P": -1.6, "Q": -3.5, "R": -4.5,
@@ -81,8 +76,7 @@ class HydrophobicInteractionFractionation:
         for i in range(0, len(sequence) - window + 1):
             seg = sequence[i : i + window]
             seg_score = HydrophobicInteractionFractionation._hydro_score(seg)
-            if seg_score > best:
-                best = seg_score
+            best = max(best, seg_score)
         return float(best)
     
     @staticmethod
@@ -102,7 +96,7 @@ class HydrophobicInteractionFractionation:
         return float(0.35 * total_norm + 0.65 * patch_norm)
     
     @staticmethod
-    def process (fasta_content: str, ligand_type: str = "butyl", salt_start: float = 1.5, salt_end: float = 0.0, fraction_count: int = 80, noise: float = 0.10, deadband: float = 0.15, salt_alpha: float = 1.2) -> Dict[str, Any]:
+    def process (fasta_content: str, ligand_type: str = "butyl", salt_start: float = 1.5, salt_end: float = 0.0, fraction_count: int = 80, noise: float = 0.10, deadband: float = 0.15, salt_alpha: float = 1.2) -> dict[str, Any]:
         """
         Main HIC simulation function.
 
@@ -156,8 +150,8 @@ class HydrophobicInteractionFractionation:
                 skipped += 1
         
         # Split proteins into wash vs retained
-        wash: List[HydrophobicInteractionFractionation.ProteinEntry] = []
-        retained: List[HydrophobicInteractionFractionation.ProteinEntry] = []
+        wash: list[HydrophobicInteractionFractionation.ProteinEntry] = []
+        retained: list[HydrophobicInteractionFractionation.ProteinEntry] = []
         
         for entry in entries:
             if entry.binding_strength < deadband:

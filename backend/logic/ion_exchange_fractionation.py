@@ -1,18 +1,14 @@
 from __future__ import annotations
-from backend.utility.protein import Protein
 
-import math
-import random
 from dataclasses import dataclass
-from io import StringIO
-from typing import Any, Dict, List
+from typing import Any, ClassVar
 
-from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
-from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
+from backend.logic.fractionation.binding_strength_fractionation import (
+    BindingStrengthFractionation,
+)
 from backend.logic.fractionation.fractionation import Fractionation
-from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
 
 
 class IonExchangeFractionation:
@@ -26,7 +22,7 @@ class IonExchangeFractionation:
                 "charge": round(self.charge, 2),
             }
 
-    MEDIA_TO_EXCHANGER = {
+    MEDIA_TO_EXCHANGER: ClassVar = {
         "Q": "anion",   # positively charged resin, binds negative proteins
         "S": "cation",  # negatively charged resin, binds positive proteins
     }
@@ -42,7 +38,7 @@ class IonExchangeFractionation:
         noise: float = 0.10,
         deadband: float = 0.05,
         salt_alpha: float = 1.2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Main IEF simulation function.
 
@@ -97,8 +93,8 @@ class IonExchangeFractionation:
                 skipped += 1
                 continue
 
-        wash: List[IonExchangeFractionation.ProteinEntry] = []
-        retained: List[IonExchangeFractionation.ProteinEntry] = []
+        wash: list[IonExchangeFractionation.ProteinEntry] = []
+        retained: list[IonExchangeFractionation.ProteinEntry] = []
 
         for entry in entries:
             if entry.binding_strength < deadband:
