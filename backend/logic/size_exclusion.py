@@ -35,6 +35,7 @@ class SizeExclusionFractionation:
                 ))
     return entries, skipped
     
+  @staticmethod
   def process(
          
         fasta_content: str,
