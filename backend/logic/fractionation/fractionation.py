@@ -1,7 +1,7 @@
 
-from dataclasses import dataclass
 import math
 import random
+from dataclasses import dataclass
 from io import StringIO
 from typing import Any
 
@@ -23,11 +23,7 @@ class Fractionation:
         This keeps the same protein visually consistent across renders.
         """
         rnd = random.Random(seed)
-        return "#%02x%02x%02x" % (
-            rnd.randint(40, 220),
-            rnd.randint(40, 220),
-            rnd.randint(40, 220),
-        )
+        return f"#{rnd.randint(40, 220):02x}{rnd.randint(40, 220):02x}{rnd.randint(40, 220):02x}"
         
     @staticmethod
     def normalize_sequence(sequence: str) -> str:
@@ -94,7 +90,7 @@ class Fractionation:
         bin_size = math.ceil(total / n_fractions)
         
         # How many proteins spill into neighboring fractions
-        overlap_count = int(round(bin_size * overlap))
+        overlap_count = round(bin_size * overlap)
 
         fractions: list[list[Fractionation.ProteinEntry]] = []
         for i in range(n_fractions):
