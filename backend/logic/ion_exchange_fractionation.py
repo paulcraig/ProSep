@@ -1,132 +1,31 @@
 from __future__ import annotations
-from backend.utility.protein import Protein
 
-import math
-import random
 from dataclasses import dataclass
-from io import StringIO
-from typing import Any, Dict, List
+from typing import Any, ClassVar
 
-from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
+
+from backend.logic.fractionation.binding_strength_fractionation import (
+    BindingStrengthFractionation,
+)
+from backend.logic.fractionation.fractionation import Fractionation
 
 
 class IonExchangeFractionation:
     @dataclass
-    class ProteinEntry:
-        seq_id: str
-        description: str
-        sequence: str
+    class ProteinEntry(BindingStrengthFractionation.ProteinEntry):
         charge: float
-        molecular_weight: float
-        binding_strength: float = 0.0
 
-    MEDIA_TO_EXCHANGER = {
-        "Q": "anion",   # positively charged resin, binds negative proteins
+        def to_json(self):
+            return {
+                **super().to_json(),
+                "charge": round(self.charge, 2),
+            }
+
+    MEDIA_TO_EXCHANGER: ClassVar = {
+        "Q": "anion",  # positively charged resin, binds negative proteins
         "S": "cation",  # negatively charged resin, binds positive proteins
     }
-
-    NORMALIZATION_MAP = {
-        "X": "Q",
-        "B": "D",
-        "Z": "E",
-        "J": "L",
-        "U": "C",
-        "O": "K",
-        "*": "",
-    }
-
-    @staticmethod
-    def _stable_color(seed: str) -> str:
-        rnd = random.Random(seed)
-        return "#%02x%02x%02x" % (
-            rnd.randint(40, 220),
-            rnd.randint(40, 220),
-            rnd.randint(40, 220),
-        )
-
-    @staticmethod
-    def _get_hist_percent(protstring: str) -> float:
-        if not protstring:
-            return 0.0
-        hcount = 0
-        for aa in protstring:
-            if aa == "H":
-                hcount += 1
-        return hcount / len(protstring)
-
-    @staticmethod
-    def _find_hist_chains(protstring: str) -> Dict[str, int]:
-        chain_dict: Dict[str, int] = {}
-        chainlen = 1
-        last_aa = ""
-        for aa in protstring:
-            if aa == "H":
-                if last_aa == "H":
-                    chainlen += 1
-            elif chainlen > 1 and last_aa == "H":
-                key = str(chainlen)
-                if key in chain_dict:
-                    chain_dict[key] = chain_dict[key] + 1
-                else:
-                    chain_dict[key] = 1
-                chainlen = 1
-            last_aa = aa
-
-        if chainlen > 1:
-            key = str(chainlen)
-            if key in chain_dict:
-                chain_dict[key] = chain_dict[key] + 1
-            else:
-                chain_dict[key] = 1
-        return chain_dict
-
-    @staticmethod
-    def _normalize_sequence(sequence: str) -> str:
-        seq = sequence.strip().upper()
-        for bad, replacement in IonExchangeFractionation.NORMALIZATION_MAP.items():
-            seq = seq.replace(bad, replacement)
-        seq = "".join(ch for ch in seq if ch.isalpha())
-        return seq
-
-    @staticmethod
-    def _parse_fasta_text(fasta_content: str) -> List[Any]:
-        content = fasta_content.strip()
-        if not content:
-            return []
-
-        if ">" not in content:
-            content = f">uploaded_sequence\n{content}\n"
-
-        handle = StringIO(content)
-        return list(SeqIO.parse(handle, "fasta"))
-
-    @staticmethod
-    def _fractionate_with_overlap(
-        items: List[ProteinEntry],
-        n_fractions: int,
-        overlap: float,
-    ) -> List[List[ProteinEntry]]:
-        """
-        Split retained proteins into n_fractions with optional overlap.
-        Overlap is a fraction of nominal bin size.
-        """
-        if n_fractions <= 0:
-            return []
-        if not items:
-            return [[] for _ in range(n_fractions)]
-
-        total = len(items)
-        bin_size = math.ceil(total / n_fractions)
-        overlap_count = int(round(bin_size * overlap))
-
-        fractions: List[List[IonExchangeFractionation.ProteinEntry]] = []
-        for i in range(n_fractions):
-            start = max(i * bin_size - overlap_count, 0)
-            end = min((i + 1) * bin_size + overlap_count, total)
-            fractions.append(items[start:end])
-
-        return fractions
 
     @staticmethod
     def process(
@@ -139,7 +38,7 @@ class IonExchangeFractionation:
         noise: float = 0.10,
         deadband: float = 0.05,
         salt_alpha: float = 1.2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Main IEF simulation function.
 
@@ -164,46 +63,38 @@ class IonExchangeFractionation:
         if salt_start < 0 or salt_end < 0:
             raise ValueError("salt concentrations must be >= 0")
 
-        records = IonExchangeFractionation._parse_fasta_text(fasta_content)
         exchanger = IonExchangeFractionation.MEDIA_TO_EXCHANGER[media_type]
 
         # Salt competes with protein charge for the exchanger
         salt_factor = (salt_start + 1.0) ** float(-salt_alpha)
 
-        entries: List[IonExchangeFractionation.ProteinEntry] = []
-        skipped = 0
-
-        for record in records:
-            sequence = IonExchangeFractionation._normalize_sequence(str(record.seq))
-            if not sequence:
-                skipped += 1
-                continue
-
+        basic_entries, skipped = Fractionation.convert_fasta_to_protein_entries(fasta_content)
+        entries: list[IonExchangeFractionation.ProteinEntry] = []
+        for basic_entry in basic_entries:
             try:
-                analyzer = ProteinAnalysis(sequence)
+                analyzer = ProteinAnalysis(basic_entry.sequence)
                 charge = float(analyzer.charge_at_pH(ph))
-                molecular_weight = float(analyzer.molecular_weight())
 
                 is_electrically_attracted = (exchanger == "anion" and charge < 0) or (exchanger == "cation" and charge > 0)
 
                 binding_strength = float(abs(charge) * salt_factor) if is_electrically_attracted else 0.0
+
+                entries.append(
+                    IonExchangeFractionation.ProteinEntry(
+                        seq_id=basic_entry.seq_id,
+                        description=basic_entry.description,
+                        sequence=basic_entry.sequence,
+                        charge=charge,
+                        binding_strength=binding_strength,
+                    )
+                )
+
             except Exception:
                 skipped += 1
                 continue
 
-            entries.append(
-                IonExchangeFractionation.ProteinEntry(
-                    seq_id=record.id,
-                    description=record.description,
-                    sequence=sequence,
-                    charge=charge,
-                    molecular_weight=molecular_weight,
-                    binding_strength=binding_strength,
-                )
-            )
-
-        wash: List[IonExchangeFractionation.ProteinEntry] = []
-        retained: List[IonExchangeFractionation.ProteinEntry] = []
+        wash: list[IonExchangeFractionation.ProteinEntry] = []
+        retained: list[IonExchangeFractionation.ProteinEntry] = []
 
         for entry in entries:
             if entry.binding_strength < deadband:
@@ -215,25 +106,11 @@ class IonExchangeFractionation:
         # This defines elution order across fractions
         retained.sort(key=lambda item: item.binding_strength)
 
-        fraction_lists = IonExchangeFractionation._fractionate_with_overlap(
+        fraction_lists = Fractionation.fractionate_with_overlap(
             items=retained,
             n_fractions=fraction_count,
             overlap=noise,
         )
-
-        def pack(entry: IonExchangeFractionation.ProteinEntry) -> Dict[str, Any]:
-            name = " ".join(entry.description.split(" ")[1:]) if " " in entry.description else entry.description
-            return {
-                "name": name,
-                "id": entry.seq_id,
-                "description": entry.description,
-                "sequence": entry.sequence,
-                "molecularWeight": round(entry.molecular_weight, 2),
-                "charge": round(entry.charge, 2),
-                "bindingStrength": round(entry.binding_strength, 4),
-                "color": IonExchangeFractionation._stable_color(entry.seq_id),
-                "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
-            }
 
         return {
             "ok": True,
@@ -254,20 +131,6 @@ class IonExchangeFractionation:
                 "retained": len(retained),
                 "skipped": skipped,
             },
-            "wash": [pack(entry) for entry in wash],
-            "fractions": [
-                {
-                    "fractionIndex": index + 1,
-                    "proteinCount": len(fraction),
-                    "absorbanceScore": sum(Protein.calculate_absorbance(entry.sequence) for entry in fraction),
-                    "hitCount": len([
-                        entry for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
-                    ]),
-                    "hitProteinIds": [
-                        entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
-                    ],
-                    "proteins": [pack(entry) for entry in fraction],
-                }
-                for index, fraction in enumerate(fraction_lists)
-            ],
+            "wash": [entry.to_json() for entry in wash],
+            "fractions": Fractionation.process_fractions(fraction_lists),
         }
