@@ -97,23 +97,6 @@ class SizeExclusionFractionation:
           
            
             "wash": [entry.to_json() for entry in to_big],
-            "fractions": [
-                {
-                    "fractionIndex": index + 1,
-                    "proteinCount": len(fraction),
-                    "absorbanceScore": sum(Protein.calculate_absorbance(entry.sequence) for entry in fraction),
-                    "hitCount": len([
-                        entry for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
-                    ]),
-                    "hitProteinIds": [
-                        entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
-                    ],
-                    "proteins": [entry.to_json() for entry in fraction],
-                }
-                for index, fraction in enumerate(fraction_lists)
-            ],
+            "fractions": Fractionation.process_fractions(fraction_lists),
             "afterWash": [entry.to_json() for entry in to_small],
                 }
-               
-      
-
