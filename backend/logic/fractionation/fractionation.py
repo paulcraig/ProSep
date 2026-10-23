@@ -1,6 +1,7 @@
 
 import math
 import random
+from collections.abc import Sequence
 from dataclasses import dataclass
 from io import StringIO
 from typing import Any
@@ -70,11 +71,11 @@ class Fractionation:
         return list(SeqIO.parse(handle, "fasta"))
     
     @staticmethod
-    def fractionate_with_overlap(
-        items: list[ProteinEntry],
+    def fractionate_with_overlap[T: ProteinEntry](
+        items: Sequence[T],
         n_fractions: int,
         overlap: float,
-    ) -> list[list[ProteinEntry]]:
+    ) -> Sequence[Sequence[T]]:
         """
         Split retained proteins into fractions.
 
@@ -92,7 +93,7 @@ class Fractionation:
         # How many proteins spill into neighboring fractions
         overlap_count = round(bin_size * overlap)
 
-        fractions: list[list[Fractionation.ProteinEntry]] = []
+        fractions: Sequence[Sequence[T]] = []
         for i in range(n_fractions):
             start = max(i * bin_size - overlap_count, 0)
             end = min((i + 1) * bin_size + overlap_count, total)
