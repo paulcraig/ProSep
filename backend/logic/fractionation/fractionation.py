@@ -1,8 +1,9 @@
 
+from fractions import Fraction
 import math
 import random
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Sequence
+from dataclasses import Field, asdict, dataclass, field
 from io import StringIO
 from typing import Any
 
@@ -20,7 +21,10 @@ class Fractionation:
         sequence: str
         
         # Computed information
-        molecular_weight: float
+        molecular_weight: float = field(init=False)
+        
+        def __post_init__(self):
+            self.molecular_weight = Fractionation.mw_simple(self.sequence)
         
         def to_json(self):
             name = " ".join(self.description.split(" ")[1:]) if " " in self.description else self.description
@@ -150,3 +154,26 @@ class Fractionation:
             return 0.0
         return float(sum(aa_mass.get(a, 0.0) for a in sequence))
 
+    @staticmethod
+    def convert_fasta_to_protein_entries(fasta: str):
+        
+        records = Fractionation.parse_fasta_text(fasta)
+        entries: list[Fractionation.ProteinEntry] = []
+        skipped = 0
+        
+        for record in records:
+            sequence = Fractionation.normalize_sequence(str(record.seq))
+            
+            if not sequence:
+                skipped += 1
+                continue
+            
+            entries.append(
+                Fractionation.ProteinEntry(
+                    seq_id=record.id,
+                    description=record.description,
+                    sequence=sequence,
+                )
+            )
+            
+        return entries, skipped

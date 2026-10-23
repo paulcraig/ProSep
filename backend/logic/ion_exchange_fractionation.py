@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
+from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
 from backend.logic.fractionation.fractionation import Fractionation
 from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
 
@@ -66,43 +67,35 @@ class IonExchangeFractionation:
         if salt_start < 0 or salt_end < 0:
             raise ValueError("salt concentrations must be >= 0")
 
-        records = Fractionation.parse_fasta_text(fasta_content)
         exchanger = IonExchangeFractionation.MEDIA_TO_EXCHANGER[media_type]
 
         # Salt competes with protein charge for the exchanger
         salt_factor = (salt_start + 1.0) ** float(-salt_alpha)
 
-        entries: List[IonExchangeFractionation.ProteinEntry] = []
-        skipped = 0
-
-        for record in records:
-            sequence = Fractionation.normalize_sequence(str(record.seq))
-            if not sequence:
-                skipped += 1
-                continue
-
+        basic_entries, skipped = Fractionation.convert_fasta_to_protein_entries(fasta_content)
+        entries: list[IonExchangeFractionation.ProteinEntry] = []
+        for basic_entry in basic_entries:
             try:
-                analyzer = ProteinAnalysis(sequence)
+                analyzer = ProteinAnalysis(basic_entry.sequence)
                 charge = float(analyzer.charge_at_pH(ph))
-                molecular_weight = float(analyzer.molecular_weight())
 
                 is_electrically_attracted = (exchanger == "anion" and charge < 0) or (exchanger == "cation" and charge > 0)
 
                 binding_strength = float(abs(charge) * salt_factor) if is_electrically_attracted else 0.0
+                
+                entries.append(
+                    IonExchangeFractionation.ProteinEntry(
+                        seq_id=basic_entry.seq_id,
+                        description=basic_entry.description,
+                        sequence=basic_entry.sequence,  
+                        charge=charge,
+                        binding_strength=binding_strength,
+                    )
+                )
+            
             except Exception:
                 skipped += 1
                 continue
-
-            entries.append(
-                IonExchangeFractionation.ProteinEntry(
-                    seq_id=record.id,
-                    description=record.description,
-                    sequence=sequence,
-                    charge=charge,
-                    molecular_weight=molecular_weight,
-                    binding_strength=binding_strength,
-                )
-            )
 
         wash: List[IonExchangeFractionation.ProteinEntry] = []
         retained: List[IonExchangeFractionation.ProteinEntry] = []

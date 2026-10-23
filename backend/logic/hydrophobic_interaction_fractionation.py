@@ -3,14 +3,16 @@ from backend.utility.protein import Protein
 
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from io import StringIO
 from typing import Any, Dict, List
 
-
-
+from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
 from backend.logic.fractionation.fractionation import Fractionation
 from backend.logic.fractionation.binding_strength_fractionation import BindingStrengthFractionation
+
+
+
 
 class HydrophobicInteractionFractionation:
     """
@@ -27,8 +29,6 @@ class HydrophobicInteractionFractionation:
     @dataclass
     class ProteinEntry(BindingStrengthFractionation.ProteinEntry):
         # Computed physical / simulation properties
-        hydro_total: float
-        hydro_patch: float
         hydro_effective: float
         
         def to_json(self):
@@ -127,49 +127,33 @@ class HydrophobicInteractionFractionation:
         if salt_start < 0 or salt_end < 0:
             raise ValueError("salt concentrations must be >= 0")
         
-        # Parse all input FASTA records
-        records = Fractionation.parse_fasta_text(fasta_content)
-        
-        entries: List[HydrophobicInteractionFractionation.ProteinEntry] = []
-        skipped = 0
-        
         # Convert selected ligand into a numeric factor
         ligand_factor = HydrophobicInteractionFractionation.LIGAND_FACTORS[ligand_type]
         
         # Salt increase hydrophobic binding; this is a scaling factor
         salt_factor = (salt_start + 1e-9) ** float(salt_alpha)
         
-        # Process each protein record
-        for record in records:
-            sequence = Fractionation.normalize_sequence(str(record.seq))
-            if not sequence:
-                skipped += 1
-                continue
-            
+        basic_entries, skipped = Fractionation.convert_fasta_to_protein_entries(fasta_content)
+        entries: list[HydrophobicInteractionFractionation.ProteinEntry] = []
+        for basic_entry in basic_entries:
             try:
-                mw = HydrophobicInteractionFractionation._mw_simple(sequence)
-                h_total = HydrophobicInteractionFractionation._hydro_score(sequence)
-                h_patch = HydrophobicInteractionFractionation._max_patch_score(sequence, window=10)
-                h_eff = HydrophobicInteractionFractionation._effective_hydrophobicity(h_total=h_total, h_patch=h_patch, length=len(sequence))
+                hydro_total = HydrophobicInteractionFractionation._hydro_score(basic_entry.sequence)
+                hydro_patch = HydrophobicInteractionFractionation._max_patch_score(basic_entry.sequence, window=10)
+                hydro_effective = HydrophobicInteractionFractionation._effective_hydrophobicity(h_total=hydro_total, h_patch=hydro_patch, length=len(basic_entry.sequence))
                 
                 # Final binding score = protein hydrophobicity x ligand factor x salt factor
-                binding_strength = float(h_eff * ligand_factor * salt_factor)
+                binding_strength = float(hydro_effective * ligand_factor * salt_factor)
+                            
+                entries.append(HydrophobicInteractionFractionation.ProteinEntry(
+                    description=basic_entry.description,
+                    seq_id=basic_entry.seq_id,
+                    sequence=basic_entry.sequence,
+                    binding_strength=binding_strength,
+                    hydro_effective=hydro_effective
+                ))
+                
             except Exception:
                 skipped += 1
-                continue
-            
-            entries.append(
-                HydrophobicInteractionFractionation.ProteinEntry(
-                    seq_id=record.id,
-                    description=record.description,
-                    sequence=sequence,
-                    molecular_weight=mw,
-                    hydro_total=h_total,
-                    hydro_patch=h_patch,
-                    hydro_effective=h_eff,
-                    binding_strength=binding_strength,       
-                )
-            )
         
         # Split proteins into wash vs retained
         wash: List[HydrophobicInteractionFractionation.ProteinEntry] = []
