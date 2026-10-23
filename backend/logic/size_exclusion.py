@@ -6,11 +6,11 @@ from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
 from backend.utility.protein import Protein
 from backend.logic.fractionation.fractionation import Fractionation
 class SizeExclusionFractionation:
-  def _set_protien_list(fasta_content,proteins:List[IonExchangeFractionation.ProteinEntry]) -> Tuple[List[IonExchangeFractionation.ProteinEntry], int]:
+  def _set_protien_list(fasta_content,proteins:List[Fractionation.ProteinEntry]) -> Tuple[List[Fractionation.ProteinEntry], int]:
     records = Fractionation.parse_fasta_text(fasta_content)
     if len(proteins) > 0:
         return proteins, 0
-    entries: List[IonExchangeFractionation.ProteinEntry] = []
+    entries: List[Fractionation.ProteinEntry] = []
     skipped = 0
 
     for record in records:
@@ -27,11 +27,10 @@ class SizeExclusionFractionation:
             skipped += 1
             continue
         entries.append(
-                IonExchangeFractionation.ProteinEntry(
+                Fractionation.ProteinEntry(
                     seq_id=record.id,
                     description=record.description,
                     sequence=sequence,
-                    charge="n/a",
                     molecular_weight=molecular_weight,
                 ))
     return entries, skipped
@@ -43,7 +42,7 @@ class SizeExclusionFractionation:
          gel_name: str,
          min_size: int,
          max_size: int,
-         proteinList: List[IonExchangeFractionation.ProteinEntry],
+         proteinList: List[Fractionation.ProteinEntry],
          fraction_count: int,
     ) -> Dict[str, Any]:
         """
@@ -79,18 +78,6 @@ class SizeExclusionFractionation:
             overlap=0.0,
         )
 
-        def pack(entry: IonExchangeFractionation.ProteinEntry) -> Dict[str, Any]:
-            name = " ".join(entry.description.split(" ")[1:]) if " " in entry.description else entry.description
-            return {
-                "name": name,
-                "id": entry.seq_id,
-                "description": entry.description,
-                "sequence": entry.sequence,
-                "molecularWeight": round(entry.molecular_weight, 2),
-                "color": Fractionation.stable_color(entry.seq_id),
-                "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
-            }
-
         return {
             "ok": True,
             "params": {
@@ -109,7 +96,7 @@ class SizeExclusionFractionation:
             },
           
            
-            "wash": [pack(entry) for entry in to_big],
+            "wash": [entry.to_json() for entry in to_big],
             "fractions": [
                 {
                     "fractionIndex": index + 1,
@@ -121,11 +108,11 @@ class SizeExclusionFractionation:
                     "hitProteinIds": [
                         entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
                     ],
-                    "proteins": [pack(entry) for entry in fraction],
+                    "proteins": [entry.to_json() for entry in fraction],
                 }
                 for index, fraction in enumerate(fraction_lists)
             ],
-            "afterWash": [pack(entry) for entry in to_small],
+            "afterWash": [entry.to_json() for entry in to_small],
                 }
                
       

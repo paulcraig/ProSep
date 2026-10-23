@@ -24,13 +24,17 @@ class HydrophobicInteractionFractionation:
     """
     
     @dataclass
-    class ProteinEntry(Fractionation.ProteinEntry):
+    class ProteinEntry(Fractionation.BindingBasedProteinEntry):
         # Computed physical / simulation properties
-        molecular_weight: float
         hydro_total: float
         hydro_patch: float
         hydro_effective: float
-        binding_strength: float
+        
+        def to_json(self):
+            return {
+                **super().to_json(),
+                "hydrophobicity": round(self.hydro_effective, 4),
+            }
     
     # Relative ligand strengths for different HIC stationary phases
     # Stronger ligand -> stronger hydrophobic interaction
@@ -198,23 +202,6 @@ class HydrophobicInteractionFractionation:
         # Split retained proteins into output fractions
         fraction_lists = Fractionation.fractionate_with_overlap(items=retained, n_fractions=fraction_count, overlap=noise)
         
-        def pack(entry: HydrophobicInteractionFractionation.ProteinEntry) -> Dict[str, Any]:
-            """
-            Convert internal ProteinEntry object into JSON-safe frontend data.
-            """
-            name = " ".join(entry.description.split(" ")[1:]) if " " in entry.description else entry.description
-            return {
-                "name": name,
-                "id": entry.seq_id,
-                "description": entry.description,
-                "sequence": entry.sequence,
-                "molecularWeight": round(entry.molecular_weight, 2),
-                "hydrophobicity": round(entry.hydro_effective, 4),
-                "bindingStrength": round(entry.binding_strength, 4),
-                "color": Fractionation.stable_color(entry.seq_id),
-                "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
-            }
-        
         # Final response for the frontend
         return {
             "ok": True,
@@ -233,7 +220,7 @@ class HydrophobicInteractionFractionation:
                 "retained": len(retained),
                 "skipped": skipped,
             },
-            "wash": [pack(entry) for entry in wash],
+            "wash": [entry.to_json() for entry in wash],
             "fractions": [
                 {
                     "fractionIndex": index + 1,
@@ -245,7 +232,7 @@ class HydrophobicInteractionFractionation:
                     "hitProteinIds": [
                         entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
                     ],
-                    "proteins": [pack(entry) for entry in fraction],
+                    "proteins": [entry.to_json() for entry in fraction],
                 }
                 for index, fraction in enumerate(fraction_lists)
             ],
