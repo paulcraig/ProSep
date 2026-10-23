@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from io import StringIO
 from typing import Any, Dict, List
 
-from Bio import SeqIO
+
 
 from backend.logic.fractionation.fractionation import Fractionation
 
@@ -53,24 +53,6 @@ class HydrophobicInteractionFractionation:
         "M": 1.9,  "N": -3.5, "P": -1.6, "Q": -3.5, "R": -4.5,
         "S": -0.8, "T": -0.7, "V": 4.2,  "W": -0.9, "Y": -1.3,
     }
-    
-    @staticmethod
-    def _parse_fasta_text(fasta_content: str) -> List[Any]:
-        """
-        Parse uploaded FASTA text.
-
-        If the user provides only a raw sequence and no FASTA header,
-        wrap it in a synthetic FASTA record so BioPython can parse it.
-        """
-        content = fasta_content.strip()
-        if not content:
-            return []
-
-        if ">" not in content:
-            content = f">uploaded_sequence\n{content}\n"
-
-        handle = StringIO(content)
-        return list(SeqIO.parse(handle, "fasta"))
 
     @staticmethod
     def _fractionate_with_overlap(items: List[ProteinEntry], n_fractions: int, overlap: float) -> List[List[ProteinEntry]]:
@@ -188,7 +170,7 @@ class HydrophobicInteractionFractionation:
             raise ValueError("salt concentrations must be >= 0")
         
         # Parse all input FASTA records
-        records = HydrophobicInteractionFractionation._parse_fasta_text(fasta_content)
+        records = Fractionation.parse_fasta_text(fasta_content)
         
         entries: List[HydrophobicInteractionFractionation.ProteinEntry] = []
         skipped = 0
