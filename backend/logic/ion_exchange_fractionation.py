@@ -29,18 +29,6 @@ class IonExchangeFractionation:
     }
 
     @staticmethod
-    def _parse_fasta_text(fasta_content: str) -> List[Any]:
-        content = fasta_content.strip()
-        if not content:
-            return []
-
-        if ">" not in content:
-            content = f">uploaded_sequence\n{content}\n"
-
-        handle = StringIO(content)
-        return list(SeqIO.parse(handle, "fasta"))
-
-    @staticmethod
     def _fractionate_with_overlap(
         items: List[ProteinEntry],
         n_fractions: int,
@@ -103,7 +91,7 @@ class IonExchangeFractionation:
         if salt_start < 0 or salt_end < 0:
             raise ValueError("salt concentrations must be >= 0")
 
-        records = IonExchangeFractionation._parse_fasta_text(fasta_content)
+        records = Fractionation.parse_fasta_text(fasta_content)
         exchanger = IonExchangeFractionation.MEDIA_TO_EXCHANGER[media_type]
 
         # Salt competes with protein charge for the exchanger

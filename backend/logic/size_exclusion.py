@@ -7,7 +7,7 @@ from backend.utility.protein import Protein
 from backend.logic.fractionation.fractionation import Fractionation
 class SizeExclusionFractionation:
   def _set_protien_list(fasta_content,proteins:List[IonExchangeFractionation.ProteinEntry]) -> Tuple[List[IonExchangeFractionation.ProteinEntry], int]:
-    records = IonExchangeFractionation._parse_fasta_text(fasta_content)
+    records = Fractionation.parse_fasta_text(fasta_content)
     if len(proteins) > 0:
         return proteins, 0
     entries: List[IonExchangeFractionation.ProteinEntry] = []
