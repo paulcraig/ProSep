@@ -89,7 +89,7 @@ class HydrophobicInteractionFractionation:
             return HydrophobicInteractionFractionation._hydro_score(sequence)
 
         best = -1e9
-        for i in range(0, len(sequence) - window + 1):
+        for i in range(len(sequence) - window + 1):
             seg = sequence[i : i + window]
             seg_score = HydrophobicInteractionFractionation._hydro_score(seg)
             best = max(best, seg_score)
