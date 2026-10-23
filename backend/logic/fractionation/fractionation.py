@@ -8,6 +8,8 @@ from typing import Any
 
 from Bio import SeqIO
 
+from backend.utility.protein import Protein
+
 
 class Fractionation:
     @dataclass
@@ -126,3 +128,21 @@ class Fractionation:
             fractions.append(items[start:end])
 
         return fractions
+    
+    @staticmethod
+    def process_fractions[T: ProteinEntry](fraction_lists: Sequence[Sequence[T]]):
+        return [
+            {
+                "fractionIndex": index + 1,
+                "proteinCount": len(fraction),
+                "absorbanceScore": sum(Protein.calculate_absorbance(entry.sequence) for entry in fraction),
+                "hitCount": len([
+                    entry for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
+                ]),
+                "hitProteinIds": [
+                    entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
+                ],
+                "proteins": [entry.to_json() for entry in fraction],
+            }
+            for index, fraction in enumerate(fraction_lists)
+        ]
