@@ -15,10 +15,14 @@ from backend.logic.fractionation.fractionation import Fractionation
 
 class IonExchangeFractionation:
     @dataclass
-    class ProteinEntry(Fractionation.ProteinEntry):
+    class ProteinEntry(Fractionation.BindingBasedProteinEntry):
         charge: float
-        molecular_weight: float
-        binding_strength: float = 0.0
+        
+        def to_json(self):
+            return {
+                **super().to_json(),
+                "charge": round(self.charge, 2),
+            }
 
     MEDIA_TO_EXCHANGER = {
         "Q": "anion",   # positively charged resin, binds negative proteins
@@ -117,21 +121,7 @@ class IonExchangeFractionation:
             n_fractions=fraction_count,
             overlap=noise,
         )
-
-        def pack(entry: IonExchangeFractionation.ProteinEntry) -> Dict[str, Any]:
-            name = " ".join(entry.description.split(" ")[1:]) if " " in entry.description else entry.description
-            return {
-                "name": name,
-                "id": entry.seq_id,
-                "description": entry.description,
-                "sequence": entry.sequence,
-                "molecularWeight": round(entry.molecular_weight, 2),
-                "charge": round(entry.charge, 2),
-                "bindingStrength": round(entry.binding_strength, 4),
-                "color": Fractionation.stable_color(entry.seq_id),
-                "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
-            }
-
+        
         return {
             "ok": True,
             "params": {
@@ -151,7 +141,7 @@ class IonExchangeFractionation:
                 "retained": len(retained),
                 "skipped": skipped,
             },
-            "wash": [pack(entry) for entry in wash],
+            "wash": [entry.to_json() for entry in wash],
             "fractions": [
                 {
                     "fractionIndex": index + 1,
@@ -163,7 +153,7 @@ class IonExchangeFractionation:
                     "hitProteinIds": [
                         entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
                     ],
-                    "proteins": [pack(entry) for entry in fraction],
+                    "proteins": [entry.to_json() for entry in fraction],
                 }
                 for index, fraction in enumerate(fraction_lists)
             ],

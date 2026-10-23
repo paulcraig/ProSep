@@ -16,6 +16,32 @@ class Fractionation:
         seq_id: str
         description: str
         sequence: str
+        
+        # Computed information
+        molecular_weight: float
+        
+        def to_json(self):
+            name = " ".join(self.description.split(" ")[1:]) if " " in self.description else self.description
+            return {
+                "name": name,
+                "id": self.seq_id,
+                "description": self.description,
+                "sequence": self.sequence,
+                "molecularWeight": round(self.molecular_weight, 2),
+                "amount": 100/math.log(self.molecular_weight) if self.molecular_weight > 0 else 1,
+            }
+            
+    @dataclass
+    class BindingBasedProteinEntry(ProteinEntry):
+        # Computed information
+        binding_strength: float
+        
+        def to_json(self):
+            return {
+                **super().to_json(),
+                "color": Fractionation.stable_color(self.seq_id),
+                "bindingStrength": round(self.binding_strength, 4),
+            }
     
     @staticmethod
     def stable_color(seed: str) -> str:
