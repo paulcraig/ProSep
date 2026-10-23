@@ -121,7 +121,6 @@ const SizeExclusionPage: React.FC = () => {
                 body: JSON.stringify({
                     fasta_content: fastaText,
                     gel_name: selectedGel,
-                    proteinList: [],
                     fraction_count: fractionCount,
                 }),
             })

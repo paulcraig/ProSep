@@ -12,7 +12,6 @@ class SizeExclusionFractionation:
          gel_name: str,
          min_size: int,
          max_size: int,
-         proteinList: list[Fractionation.ProteinEntry],
          fraction_count: int,
     ) -> dict[str, Any]:
         """
