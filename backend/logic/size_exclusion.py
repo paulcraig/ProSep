@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Tuple
 from Bio.SeqUtils.ProtParam import ProteinAnalysis as PA
 from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
 from backend.utility.protein import Protein
+from fractionation.fractionation import Fractionation
 class SizeExclusionFractionation:
   def _set_protien_list(fasta_content,proteins:List[IonExchangeFractionation.ProteinEntry]) -> Tuple[List[IonExchangeFractionation.ProteinEntry], int]:
     records = IonExchangeFractionation._parse_fasta_text(fasta_content)
@@ -86,7 +87,7 @@ class SizeExclusionFractionation:
                 "description": entry.description,
                 "sequence": entry.sequence,
                 "molecularWeight": round(entry.molecular_weight, 2),
-                "color": IonExchangeFractionation._stable_color(entry.seq_id),
+                "color": Fractionation.stable_color(entry.seq_id),
                 "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
             }
 
