@@ -73,7 +73,7 @@ class SizeExclusionFractionation:
         # Largest elutes first
         elution_order = sorted(inside, key=lambda item: item.molecular_weight, reverse=True)
 
-        fraction_lists = IonExchangeFractionation._fractionate_with_overlap(
+        fraction_lists = Fractionation.fractionate_with_overlap(
             items=elution_order,
             n_fractions=fraction_count,
             overlap=0.0,

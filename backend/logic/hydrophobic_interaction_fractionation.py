@@ -24,12 +24,7 @@ class HydrophobicInteractionFractionation:
     """
     
     @dataclass
-    class ProteinEntry:
-        # Basic identifying information
-        seq_id: str
-        description: str
-        sequence: str
-        
+    class ProteinEntry(Fractionation.ProteinEntry):
         # Computed physical / simulation properties
         molecular_weight: float
         hydro_total: float
@@ -53,33 +48,6 @@ class HydrophobicInteractionFractionation:
         "M": 1.9,  "N": -3.5, "P": -1.6, "Q": -3.5, "R": -4.5,
         "S": -0.8, "T": -0.7, "V": 4.2,  "W": -0.9, "Y": -1.3,
     }
-
-    @staticmethod
-    def _fractionate_with_overlap(items: List[ProteinEntry], n_fractions: int, overlap: float) -> List[List[ProteinEntry]]:
-        """
-        Split retained proteins into fractions.
-
-        overlap controls how much neighboring fractions share proteins.
-        This simulates imperfect separation / band broadening.
-        """
-        if n_fractions <= 0:
-            return []
-        if not items:
-            return [[] for _ in range(n_fractions)]
-
-        total = len(items)
-        bin_size = math.ceil(total / n_fractions)
-        
-        # How many proteins spill into neighboring fractions
-        overlap_count = int(round(bin_size * overlap))
-
-        fractions: List[List[HydrophobicInteractionFractionation.ProteinEntry]] = []
-        for i in range(n_fractions):
-            start = max(i * bin_size - overlap_count, 0)
-            end = min((i + 1) * bin_size + overlap_count, total)
-            fractions.append(items[start:end])
-
-        return fractions
     
     @staticmethod
     def _mw_simple(sequence: str) -> float:
@@ -228,7 +196,7 @@ class HydrophobicInteractionFractionation:
         retained.sort(key=lambda item: item.binding_strength)
         
         # Split retained proteins into output fractions
-        fraction_lists = HydrophobicInteractionFractionation._fractionate_with_overlap(items=retained, n_fractions=fraction_count, overlap=noise)
+        fraction_lists = Fractionation.fractionate_with_overlap(items=retained, n_fractions=fraction_count, overlap=noise)
         
         def pack(entry: HydrophobicInteractionFractionation.ProteinEntry) -> Dict[str, Any]:
             """

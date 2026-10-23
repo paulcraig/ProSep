@@ -1,4 +1,6 @@
 
+from dataclasses import dataclass
+import math
 import random
 from io import StringIO
 from typing import Any
@@ -7,6 +9,13 @@ from Bio import SeqIO
 
 
 class Fractionation:
+    @dataclass
+    class ProteinEntry:
+        # Basic identifying information
+        seq_id: str
+        description: str
+        sequence: str
+    
     @staticmethod
     def stable_color(seed: str) -> str:
         """
@@ -63,3 +72,34 @@ class Fractionation:
 
         handle = StringIO(content)
         return list(SeqIO.parse(handle, "fasta"))
+    
+    @staticmethod
+    def fractionate_with_overlap(
+        items: list[ProteinEntry],
+        n_fractions: int,
+        overlap: float,
+    ) -> list[list[ProteinEntry]]:
+        """
+        Split retained proteins into fractions.
+
+        overlap controls how much neighboring fractions share proteins.
+        This simulates imperfect separation / band broadening.
+        """
+        if n_fractions <= 0:
+            return []
+        if not items:
+            return [[] for _ in range(n_fractions)]
+
+        total = len(items)
+        bin_size = math.ceil(total / n_fractions)
+        
+        # How many proteins spill into neighboring fractions
+        overlap_count = int(round(bin_size * overlap))
+
+        fractions: list[list[Fractionation.ProteinEntry]] = []
+        for i in range(n_fractions):
+            start = max(i * bin_size - overlap_count, 0)
+            end = min((i + 1) * bin_size + overlap_count, total)
+            fractions.append(items[start:end])
+
+        return fractions

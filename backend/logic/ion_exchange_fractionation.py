@@ -15,10 +15,7 @@ from backend.logic.fractionation.fractionation import Fractionation
 
 class IonExchangeFractionation:
     @dataclass
-    class ProteinEntry:
-        seq_id: str
-        description: str
-        sequence: str
+    class ProteinEntry(Fractionation.ProteinEntry):
         charge: float
         molecular_weight: float
         binding_strength: float = 0.0
@@ -27,33 +24,6 @@ class IonExchangeFractionation:
         "Q": "anion",   # positively charged resin, binds negative proteins
         "S": "cation",  # negatively charged resin, binds positive proteins
     }
-
-    @staticmethod
-    def _fractionate_with_overlap(
-        items: List[ProteinEntry],
-        n_fractions: int,
-        overlap: float,
-    ) -> List[List[ProteinEntry]]:
-        """
-        Split retained proteins into n_fractions with optional overlap.
-        Overlap is a fraction of nominal bin size.
-        """
-        if n_fractions <= 0:
-            return []
-        if not items:
-            return [[] for _ in range(n_fractions)]
-
-        total = len(items)
-        bin_size = math.ceil(total / n_fractions)
-        overlap_count = int(round(bin_size * overlap))
-
-        fractions: List[List[IonExchangeFractionation.ProteinEntry]] = []
-        for i in range(n_fractions):
-            start = max(i * bin_size - overlap_count, 0)
-            end = min((i + 1) * bin_size + overlap_count, total)
-            fractions.append(items[start:end])
-
-        return fractions
 
     @staticmethod
     def process(
@@ -142,7 +112,7 @@ class IonExchangeFractionation:
         # This defines elution order across fractions
         retained.sort(key=lambda item: item.binding_strength)
 
-        fraction_lists = IonExchangeFractionation._fractionate_with_overlap(
+        fraction_lists = Fractionation.fractionate_with_overlap(
             items=retained,
             n_fractions=fraction_count,
             overlap=noise,
