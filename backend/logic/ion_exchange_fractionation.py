@@ -10,6 +10,8 @@ from typing import Any, Dict, List
 from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
+from fractionation.fractionation import Fractionation
+
 
 class IonExchangeFractionation:
     @dataclass
@@ -35,15 +37,6 @@ class IonExchangeFractionation:
         "O": "K",
         "*": "",
     }
-
-    @staticmethod
-    def _stable_color(seed: str) -> str:
-        rnd = random.Random(seed)
-        return "#%02x%02x%02x" % (
-            rnd.randint(40, 220),
-            rnd.randint(40, 220),
-            rnd.randint(40, 220),
-        )
 
     @staticmethod
     def _normalize_sequence(sequence: str) -> str:
@@ -195,7 +188,7 @@ class IonExchangeFractionation:
                 "molecularWeight": round(entry.molecular_weight, 2),
                 "charge": round(entry.charge, 2),
                 "bindingStrength": round(entry.binding_strength, 4),
-                "color": IonExchangeFractionation._stable_color(entry.seq_id),
+                "color": Fractionation.stable_color(entry.seq_id),
                 "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
             }
 

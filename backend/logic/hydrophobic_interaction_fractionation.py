@@ -9,6 +9,8 @@ from typing import Any, Dict, List
 
 from Bio import SeqIO
 
+from fractionation.fractionation import Fractionation
+
 class HydrophobicInteractionFractionation:
     """
     Simulates hydrophobic interaction chromatography (HIC).
@@ -62,19 +64,6 @@ class HydrophobicInteractionFractionation:
         "M": 1.9,  "N": -3.5, "P": -1.6, "Q": -3.5, "R": -4.5,
         "S": -0.8, "T": -0.7, "V": 4.2,  "W": -0.9, "Y": -1.3,
     }
-    
-    @staticmethod
-    def _stable_color(seed: str) -> str:
-        """
-        Generate a deterministic color from a protein ID.
-        This keeps the same protein visually consistent across renders.
-        """
-        rnd = random.Random(seed)
-        return "#%02x%02x%02x" % (
-            rnd.randint(40, 220),
-            rnd.randint(40, 220),
-            rnd.randint(40, 220),
-        )
         
     @staticmethod
     def _normalize_sequence(sequence: str) -> str:
@@ -297,7 +286,7 @@ class HydrophobicInteractionFractionation:
                 "molecularWeight": round(entry.molecular_weight, 2),
                 "hydrophobicity": round(entry.hydro_effective, 4),
                 "bindingStrength": round(entry.binding_strength, 4),
-                "color": HydrophobicInteractionFractionation._stable_color(entry.seq_id),
+                "color": Fractionation.stable_color(entry.seq_id),
                 "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
             }
         
