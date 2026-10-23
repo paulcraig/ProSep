@@ -32,8 +32,6 @@ class SizeExclusionFractionation:
         inside:List[Fractionation.ProteinEntry] = []
 
         for entry in entries:
-            seq = entry.sequence.replace("X", "Q")
-            entry.molecular_weight = PA(seq).molecular_weight()
             if entry.molecular_weight < min_size:
                 to_small.append(entry)  # return ID or sequence
             elif entry.molecular_weight >max_size:
