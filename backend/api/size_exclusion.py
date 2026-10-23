@@ -27,9 +27,6 @@ gelDict = {
 class SizeExclusionRequest(BaseModel):
     fasta_content: str = Field(..., description="FASTA content as raw text")
     gel_name: str = Field(..., description="Gel name from gelDict")
-    proteinList: list[IonExchangeFractionation.ProteinEntry] = Field(
-        ..., description="List of protein entries"
-    )
     min_size: int | None = None  # Optional for backward compatibility
     max_size: int | None = None
     fraction_count: int = 100
@@ -41,7 +38,7 @@ async def process_ion_exchange(body: SizeExclusionRequest) -> Any:
         return {"error": f"Invalid gel name: {body.gel_name}"}
     min_size, max_size = gelDict[body.gel_name]
     try:
-        return SizeExclusionFractionation.process(body.fasta_content, body.gel_name, min_size, max_size, body.proteinList, body.fraction_count)
+        return SizeExclusionFractionation.process(body.fasta_content, body.gel_name, min_size, max_size, body.fraction_count)
     except ValueError as exc:
         return {"error": str(exc)}
     

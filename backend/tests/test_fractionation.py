@@ -37,7 +37,6 @@ class TestFractionation(unittest.TestCase):
             min_size=2500,
             max_size=40000,
             fraction_count=5,
-            proteinList=[],
         )
         with open(os.path.join(CURRENT_DIR, "baselines/size_exclusion.txt")) as file:
             assert file.read() == result.__str__()
