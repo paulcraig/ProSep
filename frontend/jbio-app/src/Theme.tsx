@@ -10,6 +10,7 @@ let darkThemeBase = createTheme({
         text: {
             primary: '#ffffff',
             secondary: '#ffffff',
+            disabled: '#999999'
         },
         primary: {
             main: '#8ea2ff',
@@ -35,6 +36,7 @@ let lightThemeBase = createTheme({
         text: {
             primary: '#000000',
             secondary: '#000000',
+            disabled: '#999999'
         },
         primary: {
             main: '#4f6edb',
