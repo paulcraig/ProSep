@@ -1,6 +1,6 @@
 from typing import Any, Dict, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel, conint, root_validator, validator
 
 from backend.logic.tandem_ms import TandemMS
@@ -61,4 +61,29 @@ async def plot_tandem_ms(body: TandemMSRequest) -> Dict[str, Any]:
     return {
         "peaks": grouped_peaks,
         "hits": result["mostHits"],
+    }
+
+
+@router.post("/by_peaks", response_model=Dict[str, Any])
+async def plot_sequence_peaks(sequence: str = Body(...)) -> Dict[str, Any]:
+    sequence = "".join(sequence.split()).upper()
+    if not sequence or any(residue not in PROTEIN_SEQUENCE_LETTERS for residue in sequence):
+        raise HTTPException(
+            status_code=422,
+            detail="sequence must contain only standard amino-acid letters",
+        )
+
+    result = TandemMS().sequence_peaks(sequence)
+    return {
+        "fragments": result["fragments"],
+        "gaps": [
+            {
+                "type": gap["type"],
+                "frommz": gap["fromMz"],
+                "tomz": gap["toMz"],
+                "difference": gap["difference"],
+                "letter": gap["letter"],
+            }
+            for gap in result["gaps"]
+        ],
     }

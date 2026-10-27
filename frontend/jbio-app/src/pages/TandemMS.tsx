@@ -37,6 +37,150 @@ type SpectrumPoint = ScatterDataPoint & {
 	sequences: string[]
 }
 
+type Fragment = {
+	type: string
+	mz: number
+}
+
+type FragmentGap = {
+	type: string
+	frommz: number
+	tomz: number
+	difference: number
+	letter: string
+}
+
+type ByPeaksResponse = {
+	fragments: Fragment[]
+	gaps: FragmentGap[]
+}
+
+type SpectrumAnnotation = {
+	x: number
+	label: string
+	type: string
+	width: number
+	lane: number
+}
+
+const ionColor = (type: string) => type.toLowerCase() === 'b' ? '#e34b4b' : '#4d8de0'
+
+const isByPeaksResponse = (value: unknown): value is ByPeaksResponse => {
+	if (typeof value !== 'object' || value === null || !('fragments' in value) || !('gaps' in value)) {
+		return false
+	}
+	const response = value as { fragments: unknown; gaps: unknown }
+	if (!Array.isArray(response.fragments) || !Array.isArray(response.gaps)) return false
+	const fragmentsAreValid = response.fragments.every((fragment) =>
+		typeof fragment === 'object' && fragment !== null &&
+		'type' in fragment && typeof fragment.type === 'string' &&
+		'mz' in fragment && typeof fragment.mz === 'number' && Number.isFinite(fragment.mz),
+	)
+	const gapsAreValid = response.gaps.every((gap) =>
+		typeof gap === 'object' && gap !== null &&
+		'type' in gap && typeof gap.type === 'string' &&
+		'frommz' in gap && typeof gap.frommz === 'number' && Number.isFinite(gap.frommz) &&
+		'tomz' in gap && typeof gap.tomz === 'number' && Number.isFinite(gap.tomz) &&
+		'difference' in gap && typeof gap.difference === 'number' && Number.isFinite(gap.difference) &&
+		'letter' in gap && typeof gap.letter === 'string',
+	)
+	return fragmentsAreValid && gapsAreValid
+}
+
+const FragmentSpectrum: React.FC<{ data: ByPeaksResponse }> = ({ data }) => {
+	const fragments = data.fragments
+		.filter((fragment) => Number.isFinite(fragment.mz))
+		.sort((left, right) => left.mz - right.mz)
+	const gaps = data.gaps
+		.filter((gap) => Number.isFinite(gap.frommz) && Number.isFinite(gap.tomz))
+		.sort((left, right) => Math.min(left.frommz, left.tomz) - Math.min(right.frommz, right.tomz))
+	const width = 1100
+	const left = 64
+	const right = width - 28
+	const plotWidth = right - left
+	const mzValues = [...fragments.map((fragment) => fragment.mz), ...gaps.flatMap((gap) => [gap.frommz, gap.tomz])]
+	const minMz = mzValues.length ? Math.min(...mzValues) : 0
+	const maxMz = mzValues.length ? Math.max(...mzValues) : 1
+	const mzRange = Math.max(maxMz - minMz, 1)
+	const xForMz = (mz: number) => left + ((mz - minMz) / mzRange) * plotWidth
+
+	let lastGapRightByLane: number[] = []
+	const gapAnnotations: SpectrumAnnotation[] = gaps.map((gap) => {
+		const x1 = xForMz(Math.min(gap.frommz, gap.tomz))
+		const x2 = xForMz(Math.max(gap.frommz, gap.tomz))
+		const center = (x1 + x2) / 2
+		const label = `${gap.letter} · ${gap.difference}`
+		const estimatedWidth = Math.max(48, label.length * 8)
+		let lane = lastGapRightByLane.findIndex((occupiedRight) => occupiedRight + 8 < center - estimatedWidth / 2)
+		if (lane < 0) lane = lastGapRightByLane.length
+		lastGapRightByLane[lane] = center + estimatedWidth / 2
+		return { x: center, label, type: gap.type, width: estimatedWidth, lane }
+	})
+
+	let lastPeakRightByLane: number[] = []
+	const peakAnnotations: SpectrumAnnotation[] = fragments.map((fragment) => {
+		const x = xForMz(fragment.mz)
+		const label = `${fragment.type} ${fragment.mz}`
+		const estimatedWidth = Math.max(44, label.length * 7)
+		let lane = lastPeakRightByLane.findIndex((occupiedRight) => occupiedRight + 6 < x - estimatedWidth / 2)
+		if (lane < 0) lane = lastPeakRightByLane.length
+		lastPeakRightByLane[lane] = x + estimatedWidth / 2
+		return { x, label, type: fragment.type, width: estimatedWidth, lane }
+	})
+
+	const gapLaneCount = lastGapRightByLane.length
+	const peakLaneCount = lastPeakRightByLane.length
+	const plotTop = 62 + gapLaneCount * 34 + peakLaneCount * 20
+	const baseline = plotTop + 190
+	const height = baseline + 56
+	const peakLabelY = (lane: number) => 43 + gapLaneCount * 34 + lane * 20
+	const gapLabelY = (lane: number) => 38 + lane * 34
+
+	return (
+		<Box sx={{ width: '100%', overflowX: 'auto' }}>
+			<svg viewBox={`0 0 ${width} ${height}`} role='img' aria-label='Fragment mass spectrum' style={{ display: 'block', width: '100%', minWidth: 720, height: 'auto' }}>
+				<line x1={left} y1={baseline} x2={right} y2={baseline} stroke='#9aa3ad' />
+				<line x1={left} y1={plotTop - 10} x2={left} y2={baseline} stroke='#9aa3ad' />
+				<text x={left - 12} y={plotTop - 20} textAnchor='end' fill='currentColor' fontSize='14'>I</text>
+				<text x={(left + right) / 2} y={height - 12} textAnchor='middle' fill='currentColor' fontSize='14'>m/e</text>
+				<text x={left} y={baseline + 20} textAnchor='middle' fill='currentColor' fontSize='11'>{minMz.toFixed(2)}</text>
+				<text x={right} y={baseline + 20} textAnchor='middle' fill='currentColor' fontSize='11'>{maxMz.toFixed(2)}</text>
+
+				{gaps.map((gap, index) => {
+					const annotation = gapAnnotations[index]
+					const x1 = xForMz(Math.min(gap.frommz, gap.tomz))
+					const x2 = xForMz(Math.max(gap.frommz, gap.tomz))
+					const y = gapLabelY(annotation.lane) + 7
+					const color = ionColor(gap.type)
+					return (
+						<g key={`gap-${index}`}>
+							<line x1={x1} y1={y} x2={x2} y2={y} stroke={color} strokeWidth='1.5' />
+							<line x1={x1} y1={y - 4} x2={x1} y2={y + 4} stroke={color} />
+							<line x1={x2} y1={y - 4} x2={x2} y2={y + 4} stroke={color} />
+							<text x={annotation.x} y={gapLabelY(annotation.lane)} textAnchor='middle' fill={color} fontSize='12' fontWeight='600'>{annotation.label}</text>
+						</g>
+					)
+				})}
+
+				{fragments.map((fragment, index) => {
+					const x = xForMz(fragment.mz)
+					const color = ionColor(fragment.type)
+					return (
+						<g key={`fragment-${index}`}>
+							<line x1={x} y1={baseline} x2={x} y2={plotTop} stroke={color} strokeWidth='2' />
+							<text x={peakAnnotations[index].x} y={peakLabelY(peakAnnotations[index].lane)} textAnchor='middle' fill={color} fontSize='12' fontWeight='600'>{peakAnnotations[index].label}</text>
+						</g>
+					)
+				})}
+			</svg>
+			<Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', pt: 1 }}>
+				<Typography variant='body2' sx={{ color: '#e34b4b', fontWeight: 600 }}>b ions</Typography>
+				<Typography variant='body2' sx={{ color: '#4d8de0', fontWeight: 600 }}>y ions</Typography>
+			</Box>
+		</Box>
+	)
+}
+
 const isTandemMSResponse = (value: unknown): value is TandemMSResponse => {
 	if (typeof value !== 'object' || value === null || !('peaks' in value) || !('hits' in value)) {
 		return false
@@ -66,6 +210,11 @@ const TandemMS: React.FC = () => {
 	const [error, setError] = useState<string>('')
 	const [requestBodyText, setRequestBodyText] = useState<string | null>(null)
 	const [responseData, setResponseData] = useState<TandemMSResponse | null>(null)
+	const [selectedPeak, setSelectedPeak] = useState<SpectrumPoint | null>(null)
+	const [selectedSequence, setSelectedSequence] = useState<string>('')
+	const [byPeaksLoading, setByPeaksLoading] = useState<boolean>(false)
+	const [byPeaksError, setByPeaksError] = useState<string>('')
+	const [byPeaksData, setByPeaksData] = useState<ByPeaksResponse | null>(null)
 
 	const sanitizedProteinString = proteinString.toUpperCase()
 	const proteinIsValid = /^[A-Z]+$/.test(sanitizedProteinString) || sanitizedProteinString.length === 0
@@ -92,6 +241,9 @@ const TandemMS: React.FC = () => {
 		setLoading(true)
 		setError('')
 		setResponseData(null)
+		setSelectedPeak(null)
+		setSelectedSequence('')
+		setByPeaksData(null)
 		const requestBody = {
 			protein_string: sanitizedProteinString,
 			protease,
@@ -125,6 +277,40 @@ const TandemMS: React.FC = () => {
 
 	const handleProteaseChange = (event: SelectChangeEvent<string>) => {
 		setProtease(event.target.value)
+	}
+
+	const handleSpectrumClick = (_event: unknown, elements: { index: number }[]) => {
+		const clickedPoint = elements.length > 0 ? spectrumPoints[elements[0].index] : undefined
+		if (!clickedPoint) return
+		setSelectedPeak(clickedPoint)
+		setSelectedSequence(clickedPoint.sequences.length === 1 ? clickedPoint.sequences[0] : '')
+		setByPeaksData(null)
+		setByPeaksError('')
+	}
+
+	const handlePlotFragments = async () => {
+		if (!selectedSequence) return
+		setByPeaksLoading(true)
+		setByPeaksError('')
+		try {
+			const response = await fetch(`${API_URL}/tandem_ms/by_peaks`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(selectedSequence),
+			})
+			if (!response.ok) {
+				throw new Error(`Request failed with status ${response.status}`)
+			}
+			const result: unknown = await response.json()
+			if (!isByPeaksResponse(result)) {
+				throw new Error('Backend returned an unexpected sequence fragment response.')
+			}
+			setByPeaksData(result as ByPeaksResponse)
+		} catch (err) {
+			setByPeaksError(err instanceof Error ? err.message : 'Unexpected error')
+		} finally {
+			setByPeaksLoading(false)
+		}
 	}
 
 	const spectrumPoints: SpectrumPoint[] = responseData
@@ -180,6 +366,7 @@ const TandemMS: React.FC = () => {
 		responsive: true,
 		maintainAspectRatio: false,
 		interaction: { mode: 'nearest', intersect: false, axis: 'x' },
+		onClick: handleSpectrumClick,
 		scales: {
 			x: {
 				type: 'linear',
@@ -302,6 +489,39 @@ const TandemMS: React.FC = () => {
 						<Box sx={{ height: 420, minWidth: 0 }}>
 							<Scatter data={chartData} options={chartOptions} plugins={[drawPeakStems]} />
 						</Box>
+						{selectedPeak && (
+							<Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, mt: 2 }}>
+								<Typography variant='body2'>Selected m/e: {selectedPeak.mzLabel}</Typography>
+								<FormControl size='small' sx={{ minWidth: 220 }}>
+									<InputLabel id='tandem-ms-sequence-label'>Sequence</InputLabel>
+									<Select
+										labelId='tandem-ms-sequence-label'
+										value={selectedSequence}
+										label='Sequence'
+										onChange={(event) => setSelectedSequence(event.target.value)}
+									>
+										{selectedPeak.sequences.map((sequence, index) => (
+											<MenuItem key={`${sequence}-${index}`} value={sequence}>{sequence}</MenuItem>
+										))}
+									</Select>
+								</FormControl>
+								<Button variant='contained' onClick={handlePlotFragments} disabled={!selectedSequence || byPeaksLoading}>
+									{byPeaksLoading ? 'Loading fragments...' : 'Plot selected sequence'}
+								</Button>
+							</Box>
+						)}
+						{byPeaksError && <Alert severity='error' sx={{ mt: 2 }}>{byPeaksError}</Alert>}
+					</CardContent>
+				</Card>
+			)}
+
+			{byPeaksData && (
+				<Card>
+					<CardHeader title={`Fragments for ${selectedSequence}`} />
+					<CardContent>
+						{byPeaksData.fragments.length > 0
+							? <FragmentSpectrum data={byPeaksData} />
+							: <Typography variant='body2'>No fragments returned for this sequence.</Typography>}
 					</CardContent>
 				</Card>
 			)}
