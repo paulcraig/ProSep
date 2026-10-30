@@ -154,13 +154,18 @@ const FragmentSpectrum: React.FC<{ data: ByPeaksResponse }> = ({ data }) => {
 	const yGapLaneCount = lastGapRightByLane.y.length
 	const gapBandSeparator = bGapLaneCount > 0 && yGapLaneCount > 0 ? 1 : 0
 	const gapLaneCount = bGapLaneCount + yGapLaneCount + gapBandSeparator
-	const plotTop = 62 + gapLaneCount * 34
+	const plotTop = 48 + gapLaneCount * 34
 	const baseline = plotTop + 190
 	const height = baseline + 56
+	const connectorY = (lane: 'b' | 'y') => {
+		const barHeight = baseline - plotTop
+		const heightFraction = lane === 'b' ? 0.15 : 0.4
+		return plotTop + barHeight * heightFraction
+	}
 	const gapLabelY = (type: string, lane: number) => {
 		const normalizedType = ionLane(type)
 		const laneOffset = normalizedType === 'b' ? 0 : bGapLaneCount + gapBandSeparator
-		return 38 + (laneOffset + lane) * 34
+		return 24 + (laneOffset + lane) * 34
 	}
 
 	return (
@@ -236,8 +241,8 @@ const FragmentSpectrum: React.FC<{ data: ByPeaksResponse }> = ({ data }) => {
 					const x2 = xForMz(Math.max(gap.frommz, gap.tomz))
 					const y = gapLabelY(annotation.type, annotation.lane) + 7
 					const color = ionColor(gap.type)
-					const connectorY = y + 150
 					const lane = ionLane(gap.type)
+					const gapConnectorY = connectorY(lane)
 					const isLeftOuterGap = outerGapIndexes[lane].left === index
 					const isRightOuterGap = outerGapIndexes[lane].right === index
 					return (
@@ -254,20 +259,18 @@ const FragmentSpectrum: React.FC<{ data: ByPeaksResponse }> = ({ data }) => {
 								],
 							})}
 						>
-							<line x1={x1} y1={connectorY} x2={x2} y2={connectorY} stroke='transparent' strokeWidth='10' />
+							<line x1={x1} y1={gapConnectorY} x2={x2} y2={gapConnectorY} stroke='transparent' strokeWidth='10' />
 							<line
 								x1={x1}
-								y1={connectorY}
+								y1={gapConnectorY}
 								x2={x2}
-								y2={connectorY}
+								y2={gapConnectorY}
 								stroke={color}
 								strokeWidth='1.5'
 								markerStart={`url(#fragment-arrow-${isLeftOuterGap ? 'start-out' : 'start'}-${lane})`}
 								markerEnd={`url(#fragment-arrow-${isRightOuterGap ? 'end-out' : 'end'}-${lane})`}
 							/>
-							<line x1={x1} y1={y - 154} x2={x1} y2={y - 146} stroke={color} />
-							<line x1={x2} y1={y - 154} x2={x2} y2={y - 146} stroke={color} />
-							<text x={annotation.x} y={gapLabelY(annotation.type, annotation.lane) + 150} textAnchor='middle' fill={color} fontSize='12' fontWeight='600'>
+							<text x={annotation.x} y={gapConnectorY - 8} textAnchor='middle' fill={color} fontSize='12' fontWeight='600'>
 								{annotation.label}
 							</text>
 						</g>
@@ -635,7 +638,7 @@ const TandemMS: React.FC = () => {
 			{byPeaksData && (
 				<Card>
 					<CardHeader title={`Fragments for ${selectedSequence}`} />
-					<CardContent>
+					<CardContent sx={{ pt: 1 }}>
 						{byPeaksData.fragments.length > 0
 							? <FragmentSpectrum data={byPeaksData} />
 							: <Typography variant='body2'>No fragments returned for this sequence.</Typography>}
