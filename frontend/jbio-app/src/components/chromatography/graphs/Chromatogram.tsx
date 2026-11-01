@@ -131,7 +131,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
         }
 
         return { datasets }
-    }, [proteinSeriesPoints, elutionPoints])
+    }, [proteinSeriesPoints, elutionPoints, elutionLabel, elutionAxisLabel, chartTheme.text, chartTheme.grid])
 
     const activeChart = showLineGraph ? lineChartRef.current : scatterChartRef.current
     const downloadChart = useDownloadChart()
