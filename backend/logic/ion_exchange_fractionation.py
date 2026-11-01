@@ -19,6 +19,7 @@ class IonExchangeFractionation:
         sequence: str
         charge: float
         molecular_weight: float
+        binding_strength: float = 0.0
 
     MEDIA_TO_EXCHANGER = {
         "Q": "anion",   # positively charged resin, binds negative proteins
@@ -132,10 +133,25 @@ class IonExchangeFractionation:
         fasta_content: str,
         ph: float = 7.0,
         media_type: str = "Q",
+        salt_start: float = 0.0,
+        salt_end: float = 1.5,
         fraction_count: int = 80,
         noise: float = 0.10,
         deadband: float = 0.05,
+        salt_alpha: float = 1.2,
     ) -> Dict[str, Any]:
+        """
+        Main IEF simulation function.
+
+        Parameters:
+        - ph: pH used to compute net charge
+        - media_type: resin media (Q anion / S cation)
+        - salt_start / salt_end: salt conditions
+        - fraction_count: number of output fractions
+        - noise: overlap between fractions
+        - deadband: minimum binding strength needed to retain a protein
+        - salt_alpha: how strongly salt weakens binding
+        """
         if media_type not in IonExchangeFractionation.MEDIA_TO_EXCHANGER:
             raise ValueError("media_type must be one of: Q, S")
 
@@ -145,9 +161,14 @@ class IonExchangeFractionation:
             raise ValueError("noise must be >= 0")
         if deadband < 0:
             raise ValueError("deadband must be >= 0")
+        if salt_start < 0 or salt_end < 0:
+            raise ValueError("salt concentrations must be >= 0")
 
         records = IonExchangeFractionation._parse_fasta_text(fasta_content)
         exchanger = IonExchangeFractionation.MEDIA_TO_EXCHANGER[media_type]
+
+        # Salt competes with protein charge for the exchanger
+        salt_factor = (salt_start + 1.0) ** float(-salt_alpha)
 
         entries: List[IonExchangeFractionation.ProteinEntry] = []
         skipped = 0
@@ -162,6 +183,10 @@ class IonExchangeFractionation:
                 analyzer = ProteinAnalysis(sequence)
                 charge = float(analyzer.charge_at_pH(ph))
                 molecular_weight = float(analyzer.molecular_weight())
+
+                is_electrically_attracted = (exchanger == "anion" and charge < 0) or (exchanger == "cation" and charge > 0)
+
+                binding_strength = float(abs(charge) * salt_factor) if is_electrically_attracted else 0.0
             except Exception:
                 skipped += 1
                 continue
@@ -173,6 +198,7 @@ class IonExchangeFractionation:
                     sequence=sequence,
                     charge=charge,
                     molecular_weight=molecular_weight,
+                    binding_strength=binding_strength,
                 )
             )
 
@@ -180,22 +206,14 @@ class IonExchangeFractionation:
         retained: List[IonExchangeFractionation.ProteinEntry] = []
 
         for entry in entries:
-            if abs(entry.charge) < deadband:
+            if entry.binding_strength < deadband:
                 wash.append(entry)
-                continue
-
-            if exchanger == "anion":
-                if entry.charge <= -deadband:
-                    retained.append(entry)
-                else:
-                    wash.append(entry)
             else:
-                if entry.charge >= deadband:
-                    retained.append(entry)
-                else:
-                    wash.append(entry)
+                retained.append(entry)
 
-        retained.sort(key=lambda item: abs(item.charge))
+        # Weakest binder first, strongest binder last
+        # This defines elution order across fractions
+        retained.sort(key=lambda item: item.binding_strength)
 
         fraction_lists = IonExchangeFractionation._fractionate_with_overlap(
             items=retained,
@@ -212,6 +230,7 @@ class IonExchangeFractionation:
                 "sequence": entry.sequence,
                 "molecularWeight": round(entry.molecular_weight, 2),
                 "charge": round(entry.charge, 2),
+                "bindingStrength": round(entry.binding_strength, 4),
                 "color": IonExchangeFractionation._stable_color(entry.seq_id),
                 "amount": 100/math.log(entry.molecular_weight) if entry.molecular_weight > 0 else 1,
             }
@@ -222,6 +241,9 @@ class IonExchangeFractionation:
                 "pH": ph,
                 "mediaType": media_type,
                 "exchanger": exchanger,
+                "saltStart": salt_start,
+                "saltEnd": salt_end,
+                "saltAlpha": salt_alpha,
                 "fractions": fraction_count,
                 "overlap": noise,
                 "deadband": deadband,
