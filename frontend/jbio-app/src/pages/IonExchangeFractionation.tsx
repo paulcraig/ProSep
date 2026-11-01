@@ -199,7 +199,7 @@ const IonExchangeFractionation: React.FC = () => {
                             <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
                             <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
 
-                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient }} />
+                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, elutionPoints: saltGradient }} />
                             <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
                             
                             <Box>

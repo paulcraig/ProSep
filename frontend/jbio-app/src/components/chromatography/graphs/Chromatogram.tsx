@@ -16,10 +16,12 @@ export type ChromatogramProps = {
     fractionRows: ChromatogramFractionDto[]
     data: FractionationResponse
     afterWash?: ProteinDto[]
-    saltGradient?: Array<{ x: number; y: number }>
+    elutionPoints?: Array<{ x: number; y: number }>
+    elutionLabel?: string,
+    elutionAxisLabel?: string
 }
 
-export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, afterWashLabel, fractionRows, data, afterWash, saltGradient }: ChromatogramProps) {
+export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, afterWashLabel, fractionRows, data, afterWash, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration"}: ChromatogramProps) {
     const lineChartRef = useRef<ChartJS<'line'> | null>(null)
     const scatterChartRef = useRef<ChartJS<'scatter'> | null>(null)
     const chartTheme = useChartTheme()
@@ -90,10 +92,10 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
             },
         ]
 
-        if (saltGradient && saltGradient.length > 0) {
+        if (elutionPoints && elutionPoints.length > 0) {
             datasets.push({
-                label: 'Salt Gradient',
-                data: saltGradient,
+                label: elutionLabel,
+                data: elutionPoints,
                 borderColor: 'rgba(255, 107, 107, 1)',
                 backgroundColor: 'rgba(255, 107, 107, 1)',
                 pointRadius: 0,
@@ -105,13 +107,13 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                 yAxisID: 'y1',
             })
 
-            const saltGradientScale = {
+            const elutionScale = {
                 y1: {
                     type: 'linear',
                     position: 'right',
                     title: {
                         display: true,
-                        text: 'Salt Concentration',
+                        text: elutionAxisLabel,
                         color: chartTheme.text,
                     },
                     ticks: {
@@ -124,11 +126,11 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                 },
             } as const
 
-            return { datasets, saltGradientScale }
+            return { datasets, elutionScale }
         }
 
         return { datasets }
-    }, [proteinSeriesPoints, saltGradient])
+    }, [proteinSeriesPoints, elutionPoints])
 
     const activeChart = showLineGraph ? lineChartRef.current : scatterChartRef.current
     const downloadChart = useDownloadChart()
@@ -186,7 +188,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                                             color: chartTheme.grid,
                                         },
                                     },
-                                    ...(lineData.saltGradientScale ?? {})
+                                    ...(lineData.elutionScale ?? {})
                                 },
                             }}
                         />
@@ -237,7 +239,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
                                             color: chartTheme.grid,
                                         },
                                     },
-                                    ...(lineData.saltGradientScale ?? {})
+                                    ...(lineData.elutionScale ?? {})
                                 },
                             }}
                         />

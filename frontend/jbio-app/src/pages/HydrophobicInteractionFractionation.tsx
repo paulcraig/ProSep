@@ -278,7 +278,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                                 <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
                             </Box>
 
-                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, saltGradient }} />
+                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, elutionPoints: saltGradient }} />
                             <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
                             <Box sx={{ my: 1 }}>
                                 <Typography variant='body2'>
