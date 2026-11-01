@@ -46,10 +46,11 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
         if (showAfterWash) {
             points.push({ x: lastFractionX + 1, y: afterWash.length })
         }
-        const maxY = Math.max(...points.map(p => p.y), 1)
-        for (const point of points) {
-            point.y = Math.round((point.y / maxY) * 100) / 100
-        }
+        // const maxY = Math.max(...points.map(p => p.y), 1)
+        // for (const point of points) {
+        //     point.y = Math.round((point.y / maxY) * 100) / 100
+        // }
+        for(const point of points) point.y += Math.random()
         return points
     }, [data, fractionRows, showWash, showAfterWash, afterWash, lastFractionX])
 
