@@ -1,6 +1,6 @@
 /*
- * Build the salt gradient overlay for the chromatogram.
- * It stays flat initially, then transitions toward saltEnd across later fractions.
+ * Create (x, y) points that correspond to the salt gradient at any given fraction.
+ * Typically fed into a graph
  */
 export function saltGradientPoints(data: {
     params: { saltStart: number; saltEnd: number }
@@ -9,7 +9,7 @@ export function saltGradientPoints(data: {
     const fractions = data.fractions ?? []
     const totalFractions = Math.max(1, fractions.length)
 
-    // Start the gradient after an initial loading/binding region.
+    // Start the gradient after an initial loading/binding region
     const gradientStartFraction = Math.max(2, Math.floor(totalFractions * 0.18))
 
     return fractions.map((f, index) => {

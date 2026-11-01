@@ -154,7 +154,7 @@ const ProteolyticDigestion: React.FC<ProteolyticDigestionProps> = ({ protein, on
             {fragments.length > 0 && (
               <Link
                 className="pd-export-btn"
-                to="/peptide-retention"
+                to="/rplc"
                 state={{ aminoAcids: fragments }}
               >
                 Export to Peptide Retention →

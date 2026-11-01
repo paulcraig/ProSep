@@ -1,7 +1,7 @@
-import { Suspense, useMemo, useRef } from 'react'
+import { Suspense, useMemo, useRef, useState } from 'react'
 import { ChartLoadingPlaceholder, LazyBar, useChartTheme, useDownloadChart } from './Common'
 import { Chart as ChartJS } from 'chart.js'
-import { Box, Button } from '@mui/material'
+import { Box, Button, FormControlLabel, Switch } from '@mui/material'
 import { Download } from '@mui/icons-material'
 import { FractionDto, FractionationResponse, ProteinDto } from '../types'
 
@@ -22,10 +22,12 @@ export type ChromatographyHitChartProps = {
     afterWash?: ProteinDto[]
 }
 
-export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, afterWashLabel, data, fractionRows, afterWash }: ChromatographyHitChartProps) {
+export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Wash', afterWashLabel = 'After Wash', data, fractionRows, afterWash = [] }: ChromatographyHitChartProps) {
     const stackedChartRef = useRef<ChartJS<'bar'> | null>(null)
     const showAfterWash = !!afterWash && afterWash.length > 0
     const chartTheme = useChartTheme()
+
+    const [showHitColors, setShowHitColors] = useState(true)
 
     const downloadChart = useDownloadChart()
     const exportStackedProteins = () => {
@@ -46,7 +48,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
         }
 
         if (showWash) {
-            labels.push(washLabel ?? 'Wash')
+            labels.push(washLabel)
             fractionAmountMaps.push(washAmountByProteinId)
             baseOtherData.push(washOtherTotal)
         }
@@ -86,7 +88,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
             for (const protein of afterWash) {
                 afterWashOtherTotal += protein.amount
             }
-            labels.push(afterWashLabel ?? 'After Wash')
+            labels.push(afterWashLabel)
             fractionAmountMaps.push(new Map())
             baseOtherData.push(afterWashOtherTotal)
         }
@@ -98,10 +100,12 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
         const keptProteinIds = sortedProteinIds.slice(0, MAX_STACKED_SERIES)
         const keptSet = new Set(keptProteinIds)
 
+        const gray = 'rgba(120, 120, 120, 0.85)'
+
         const datasets = keptProteinIds.map(proteinId => ({
             label: proteinId,
             data: fractionAmountMaps.map(fractionMap => fractionMap.get(proteinId) ?? 0),
-            backgroundColor: proteinColorById.get(proteinId) ?? 'rgba(107, 224, 57, 0.8)',
+            backgroundColor: showHitColors ? (proteinColorById.get(proteinId) ?? 'rgba(107, 224, 57, 0.8)') : gray,
             stack: 'hit-protein-amounts',
             borderWidth: 0,
             barPercentage: 1,
@@ -123,7 +127,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
             datasets.push({
                 label: showWash ? 'Other/Wash' : 'Other',
                 data: otherData,
-                backgroundColor: 'rgba(120, 120, 120, 0.85)',
+                backgroundColor: gray,
                 stack: 'hit-protein-amounts',
                 borderWidth: 0,
                 barPercentage: 1,
@@ -191,10 +195,11 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel, after
                     />
                 </Suspense>
             </div>
-            <Box sx={{ marginBottom: 4 }}>
+            <Box sx={{ marginBottom: 4, display: 'flex', gap: 3 }}>
                 <Button variant='contained' onClick={exportStackedProteins} startIcon={<Download />}>
                     Download
                 </Button>
+                <FormControlLabel control={<Switch checked={showHitColors} onChange={(_, checked) => setShowHitColors(checked)} />} label='Hit Colors'/>
             </Box>
         </div>
     )
