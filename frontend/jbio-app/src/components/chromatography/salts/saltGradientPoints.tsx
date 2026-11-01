@@ -9,7 +9,7 @@ export function saltGradientPoints(data: {
     const fractions = data.fractions ?? []
     const totalFractions = Math.max(1, fractions.length)
 
-    // Start the gradient after an initial loading/binding region.
+    // Start the gradient after an initial loading/binding region
     const gradientStartFraction = Math.max(2, Math.floor(totalFractions * 0.18))
 
     return fractions.map((f, index) => {
