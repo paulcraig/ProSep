@@ -53,6 +53,7 @@ import {
 } from "@mui/icons-material";
 import { ImageHoverPreview } from "../components/ImageHoverPreview";
 import { useLocation } from "react-router-dom";
+import { Stopwatch, useTimer } from "../components/Timer"
 
 ChartJS.register(
   CategoryScale,
@@ -103,7 +104,6 @@ const PeptideRetention: React.FC = () => {
   const [results, setResults] = useState<PredictionResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stopRequested, setStopRequested] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
   const [useCached, setUseCached] = useState(true);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -256,6 +256,7 @@ const PeptideRetention: React.FC = () => {
     }
   };
 
+  const timer = useTimer()
   const predictAll = async () => {
     if (!peptides.length) return;
 
@@ -263,14 +264,10 @@ const PeptideRetention: React.FC = () => {
     setStopRequested(false);
     setErrorMessage(null);
     setResults([]);
-    setElapsed(0);
+    timer.setTimeInSeconds(0)
+    timer.startTimer()
 
     abortRef.current = new AbortController();
-
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setElapsed((prev) => prev + 1);
-    }, 1000);
 
     try {
       const cache = getCache();
@@ -305,19 +302,8 @@ const PeptideRetention: React.FC = () => {
       if (err.name !== "AbortError") setErrorMessage(`Error: ${err.message}`);
     }
 
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    timer.stopTimer()
     setIsLoading(false);
-  };
-
-  const formatTime = (totalSec: number) => {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return secs > 0
-      ? `${mins}m ${secs.toString().padStart(2, "0")}s`
-      : `${secs}s`;
   };
 
   const exportCsv = () => {
@@ -372,33 +358,39 @@ const PeptideRetention: React.FC = () => {
     setResults([]);
   };
 
-  const generateChromatogramData = (textColor: string) => {
-    const scalingFactor = 6.5;
-    const numPoints = 1000;
-    const xVals = Array.from(
-      { length: numPoints },
-      (_, i) => (i / (numPoints - 1)) * 100,
-    );
-    const chromatogram = new Array(numPoints).fill(0);
-    const noise = Array.from({ length: numPoints }, () => Math.random());
-    const annotations: any = {};
-    let maxChrom = 0;
+  const generateChromatogramData = (textColor: string) => {    
+    // Roughly equivalent to previous sigma value, but in terms of minutes
+    const sigma = 0.054; 
 
-    const step = 100 / (numPoints - 1);
-    const sigma = 0.35;
+    // Roughly equivalent to previous step value, but in terms of minutes
+    const step = sigma / 4; 
+
+    const valid_results = results.filter((result): result is PredictionSuccess => !("error" in result));    
+    
+    let longest_tr = 0;
+    if (valid_results.length) {longest_tr = Math.max(...valid_results.map((result) => result.predicted_tr));}
+
+    // Max x value in mins, 10% larger than the maximum value in results (for a bit of padding)
+    // Min val of 10 minutes for x_max 
+    const x_max = Math.max(10, longest_tr * 1.10);
+
+    // Number of points on the grid
+    const numPoints = Math.ceil(x_max/step) + 1;
+
+    const chromatogram = new Array(numPoints).fill(0);
+    const annotations: any = {};
     const sigmaSq2 = 2 * sigma ** 2;
     const rangeDist = 5 * sigma;
     const rangeIdx = Math.ceil(rangeDist / step);
 
-    results.forEach((result, index) => {
-      if ("error" in result) return;
-
+    valid_results.forEach((result, index) => {
       const peptide = result.peptide.replace(/-NH2/g, "").replace(/Ac-/g, "");
-      const aaCount = peptide.length;
-      const rt = result.predicted_tr * scalingFactor;
-      const height = aaCount * 10;
+      
+      // x axis now properly scales to mins, so no scaling needed here for predicted_tr
+      const rt = result.predicted_tr; 
+      const height = peptide.length * 10;
 
-      const centerIdx = Math.round((rt / 100) * (numPoints - 1));
+      const centerIdx = Math.round((rt / step));
       const startIdx = Math.max(0, centerIdx - rangeIdx);
       const endIdx = Math.min(numPoints - 1, centerIdx + rangeIdx);
 
@@ -409,7 +401,7 @@ const PeptideRetention: React.FC = () => {
 
       annotations[`peak-label-${index}`] = {
         type: "label",
-        xValue: rt * 10 - 0.5,
+        xValue: rt,
         yValue: height + peptide.length + 10,
         content: peptide,
         font: { size: 13, weight: "bold", color: textColor },
@@ -424,7 +416,7 @@ const PeptideRetention: React.FC = () => {
 
       annotations[`peak-point-${index}`] = {
         type: "point",
-        xValue: rt * 10 - 0.5,
+        xValue: rt,
         yValue: height,
         radius: 6,
         backgroundColor: "#1976d2",
@@ -433,17 +425,24 @@ const PeptideRetention: React.FC = () => {
       };
     });
 
-    chromatogram.forEach((val, i) => {
-      chromatogram[i] = Math.max(0, val + noise[i]);
-      if (chromatogram[i] > maxChrom) maxChrom = chromatogram[i];
+    // chromatogram.forEach((val, i) => {
+    //   chromatogram[i] = Math.max(0, val + Math.random[i]);
+    //   if (chromatogram[i] > maxChrom) maxChrom = chromatogram[i];
+    // });
+
+    let maxChrom = 0;
+    const chromatogram_points = chromatogram.map((y, i) => {
+      const val = Math.max(0, y + Math.random()); // + some noise
+      if (val > maxChrom) maxChrom = val;
+      return {x: i * step, y: val};
     });
 
     return {
-      labels: xVals,
+      //labels: xVals,
       datasets: [
         {
           label: "Chromatogram",
-          data: chromatogram,
+          data: chromatogram_points,
           borderColor: results.length === 0 ? "transparent" : colors.line,
           borderWidth: 2,
           backgroundColor: colors.background,
@@ -451,6 +450,7 @@ const PeptideRetention: React.FC = () => {
         },
       ],
       max: maxChrom,
+      x_max,
       annotations,
     };
   };
@@ -622,20 +622,7 @@ const PeptideRetention: React.FC = () => {
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
               {(isLoading || results.length > 0) && (
                 <>
-                  <div /* Timer */
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      fontWeight: "bold",
-                      color: "var(--sub-text)",
-                    }}
-                  >
-                    <Timer
-                      fontSize="small"
-                      style={{ marginRight: "0.25rem", fill: "var(--text)" }}
-                    />
-                    {formatTime(elapsed)}
-                  </div>
+                  <Stopwatch {...timer} />
 
                   <div /* Progress */
                     style={{
@@ -673,7 +660,7 @@ const PeptideRetention: React.FC = () => {
               <TableHead>
                 <TableRow className="results-header">
                   <TableCell>Peptide</TableCell>
-                  <TableCell>Predicted tR (min)</TableCell>
+                  <TableCell>Predicted tᵣ (min)</TableCell>
                   <TableCell>SMILES</TableCell>
                   <TableCell>log SumAA</TableCell>
                   <TableCell>log VDW Vol</TableCell>
@@ -897,6 +884,7 @@ const PeptideRetention: React.FC = () => {
                             mode: "x",
                           },
                           pan: { enabled: true, mode: "x" },
+                          limits: { x: { min: 0, max: chromatogramData.x_max,minRange: 0.5 } },
                         },
                       },
                       elements: {
@@ -905,8 +893,9 @@ const PeptideRetention: React.FC = () => {
                       },
                       scales: {
                         x: {
+                          type: "linear",
                           min: 0,
-                          max: 100,
+                          max: chromatogramData.x_max,
                           title: {
                             display: true,
                             text: "Retention Time (min)",
@@ -915,7 +904,7 @@ const PeptideRetention: React.FC = () => {
                           ticks: {
                             maxTicksLimit: 7,
                             callback: (value) =>
-                              (Number(value) / 65).toFixed(1),
+                              (Number(value)).toFixed(1),
                             color: colors.text,
                           },
                         },

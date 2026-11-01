@@ -23,6 +23,7 @@ import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
 import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
 import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
 import type * as ChromatographyTypes from '../components/chromatography/types'
+import { Stopwatch, useTimer } from '../components/Timer'
 import { SaltSettings } from '../components/chromatography/salts/SaltSettings'
 import { saltGradientPoints } from '../components/chromatography/salts/saltGradientPoints'
 
@@ -87,6 +88,8 @@ const IonExchangeFractionation: React.FC = () => {
     const [useLogScale, setUseLogScale] = useState<boolean>(true)
     const [showWash, setShowWash] = useState<boolean>(false)
 
+    const timer = useTimer()
+
     const handleLoadFasta = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0]
         if (!file) {
@@ -101,6 +104,8 @@ const IonExchangeFractionation: React.FC = () => {
     const handleRunFractionation = async () => {
         setLoading(true)
         setError('')
+        timer.setTimeInSeconds(0)
+        timer.startTimer()
 
         try {
             const response = await fetch(`${API_URL}/ion_exchange_fractionation/process`, {
@@ -130,6 +135,7 @@ const IonExchangeFractionation: React.FC = () => {
             setError(err instanceof Error ? err.message : 'Unexpected error')
         } finally {
             setLoading(false)
+            timer.stopTimer()
         }
     }
 
@@ -180,6 +186,7 @@ const IonExchangeFractionation: React.FC = () => {
                         <Button variant='contained' disabled={loading || fastaText.trim().length === 0} onClick={handleRunFractionation}>
                             {loading ? 'Processing...' : 'Run Fractionation'}
                         </Button>
+                        <Stopwatch {...timer} />
                     </Box>
 
                     {error && (

@@ -21,7 +21,7 @@ export type ChromatogramProps = {
     elutionAxisLabel?: string
 }
 
-export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, afterWashLabel, fractionRows, data, afterWash, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration"}: ChromatogramProps) {
+export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel = 'Wash', afterWashLabel = 'After Wash', fractionRows, data, afterWash, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration"}: ChromatogramProps) {
     const lineChartRef = useRef<ChartJS<'line'> | null>(null)
     const scatterChartRef = useRef<ChartJS<'scatter'> | null>(null)
     const chartTheme = useChartTheme()
@@ -57,10 +57,10 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel, 
     const fractionTickLabel = (value: string | number) => {
         const tick = Number(value)
         if (tick === 0) {
-            return showWash ? (washLabel ?? 'Wash') : '0'
+            return showWash ? washLabel : '0'
         }
-        if (showAfterWash && tick === lastFractionX + 1) {
-            return afterWashLabel ?? String(tick)
+        if (tick === lastFractionX + 1) {
+            return showAfterWash ? afterWashLabel : value
         }
         return String(value)
     }

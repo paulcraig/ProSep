@@ -22,6 +22,7 @@ import { HitTable } from '../components/chromatography/tables/HitTable'
 import { ProteinTable } from '../components/chromatography/tables/ProteinTable'
 import { Chromatogram } from '../components/chromatography/graphs/Chromatogram'
 import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitGraph'
+import { Stopwatch, useTimer } from '../components/Timer'
 import { SaltSettings } from '../components/chromatography/salts/SaltSettings'
 import { saltGradientPoints } from '../components/chromatography/salts/saltGradientPoints'
 
@@ -147,12 +148,16 @@ const HydrophobicInteractionFractionation: React.FC = () => {
         event.target.value = ''
     }
 
+    const timer = useTimer()
+
     /*
      * Sends the current form values and FASTA content to the backend.
      * On success, stores the returned HIC result in `data`.
      */
     const handleRun = async () => {
         setLoading(true)
+        timer.setTimeInSeconds(0)
+        timer.startTimer()
         setError('')
 
         try {
@@ -182,7 +187,38 @@ const HydrophobicInteractionFractionation: React.FC = () => {
             setError(err instanceof Error ? err.message : 'Unexpected error')
         } finally {
             setLoading(false)
+            timer.stopTimer()
         }
+    }
+
+    // Keep salt start non-negative, but do not force any relationship to salt end
+    const handleSaltStartChange = (value: number | null) => {
+        if (value == null) {
+            setSaltStart(0)
+            return
+        }
+
+        setSaltStart(Math.max(0, value))
+    }
+
+    // Keep salt end non-negative, but do not force any relationship to salt start
+    const handleSaltEndChange = (value: number | null) => {
+        if (value == null) {
+            setSaltEnd(0)
+            return
+        }
+
+        setSaltEnd(Math.max(0, value))
+    }
+
+    // Keep salt alpha non-negative
+    const handleSaltAlphaChange = (value: number | null) => {
+        if (value == null) {
+            setSaltAlpha(0)
+            return
+        }
+
+        setSaltAlpha(Math.max(0, value))
     }
 
     // Keep fraction count at least 1
@@ -256,6 +292,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                         <Button variant='contained' onClick={handleRun} disabled={loading || !fastaText.trim()}>
                             {loading ? 'Running...' : 'Run Fractionation'}
                         </Button>
+                        <Stopwatch {...timer} />
                     </Box>
 
                     {/* Show backend or request errors */}
