@@ -82,15 +82,16 @@ class TestProtein(unittest.TestCase):
         notExpected = 0
         for key in proteins.keys():
             reorganized = [{"header": key}]
-            achual = Protein.find_links(reorganized)
-            self.assertNotEqual(notExpected, achual)
+            actual = Protein.find_links(reorganized)
+            self.assertNotEqual(notExpected, actual)
 
     def test_get_mw(self):
         file = "backend/tests/data/singleProtein.fasta"
         first_seq = next(iter(Protein.parse_protein(file).values()))[1]
+        water = 18.01528
         expected = sum(
             Protein.AMINO_ACIDS.get(aa, {"mass": 0.0})["mass"] for aa in str(first_seq)
-        )
+        ) - (len(first_seq) - 1) * water
         actual = Protein.get_mw(file)[0]
 
         acceptedError = 0.01
