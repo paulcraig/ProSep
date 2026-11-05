@@ -20,7 +20,7 @@ import { FractionDto, ProteinDto } from '../types'
 import { Search } from '@mui/icons-material'
 import { SortDirection } from './Common'
 
-type ProteinTableProteinDto = Pick<ProteinDto, "id" | "name" | "description" | "sequence" | "molecularWeight" | "color">
+export type ProteinTableProteinDto = Pick<ProteinDto, "id" | "name" | "description" | "sequence" | "molecularWeight" | "color">
 
 export type ProteinTableMetricDto<P> = {
     label: string
