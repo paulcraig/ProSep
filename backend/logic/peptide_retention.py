@@ -36,7 +36,8 @@ class PeptideRetentionPredictor:
             seq = correct_pdb_atoms(seq)
             mol = Molecule(seq).get_molecule(fmt='ROMol')
             return Chem.MolToSmiles(mol, isomericSmiles=True)
-        except Exception:
+        except (Exception, SystemExit):
+            # pyPept calls sys.exit() on unparsable sequences; SystemExit is not an Exception
             return None
 
     @staticmethod

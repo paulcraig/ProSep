@@ -16,6 +16,7 @@ import {
   Skeleton,
   Checkbox,
   FormControlLabel,
+  Switch,
   IconButton,
   Tooltip,
   styled,
@@ -105,6 +106,7 @@ const PeptideRetention: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stopRequested, setStopRequested] = useState(false);
   const [useCached, setUseCached] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -641,6 +643,17 @@ const PeptideRetention: React.FC = () => {
                 </>
               )}
 
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showDetails}
+                    onChange={(e) => setShowDetails(e.target.checked)}
+                  />
+                }
+                label="Show details"
+                sx={{ marginBottom: '0.25rem' }}
+              />
+
               <Button
                 variant="contained"
                 className="predict-button"
@@ -661,10 +674,14 @@ const PeptideRetention: React.FC = () => {
                 <TableRow className="results-header">
                   <TableCell>Peptide</TableCell>
                   <TableCell>Predicted tᵣ (min)</TableCell>
-                  <TableCell>SMILES</TableCell>
-                  <TableCell>log SumAA</TableCell>
-                  <TableCell>log VDW Vol</TableCell>
-                  <TableCell>clogP</TableCell>
+                  {showDetails && (
+                    <>
+                      <TableCell>SMILES</TableCell>
+                      <TableCell>log SumAA</TableCell>
+                      <TableCell>log VDW Vol</TableCell>
+                      <TableCell>clogP</TableCell>
+                    </>
+                  )}
                   <TableCell></TableCell>
                 </TableRow>
               </TableHead>
@@ -698,7 +715,7 @@ const PeptideRetention: React.FC = () => {
                     </TableCell>
                     {item.result ? (
                       "error" in item.result ? (
-                        <TableCell colSpan={6} style={{ color: "red" }}>
+                        <TableCell colSpan={showDetails ? 6 : 2} style={{ color: "red" }}>
                           {item.result.error}
                         </TableCell>
                       ) : (
@@ -706,14 +723,20 @@ const PeptideRetention: React.FC = () => {
                           <TableCell>
                             {item.result.predicted_tr.toFixed(2)}
                           </TableCell>
-                          <TableCell>{item.result.smiles}</TableCell>
-                          <TableCell>
-                            {item.result.log_sum_aa.toFixed(4)}
-                          </TableCell>
-                          <TableCell>
-                            {item.result.log_vdw_vol.toFixed(4)}
-                          </TableCell>
-                          <TableCell>{item.result.clog_p.toFixed(4)}</TableCell>
+                          {showDetails && (
+                            <>
+                              <TableCell>{item.result.smiles}</TableCell>
+                              <TableCell>
+                                {item.result.log_sum_aa.toFixed(4)}
+                              </TableCell>
+                              <TableCell>
+                                {item.result.log_vdw_vol.toFixed(4)}
+                              </TableCell>
+                              <TableCell>
+                                {item.result.clog_p.toFixed(4)}
+                              </TableCell>
+                            </>
+                          )}
                           <TableCell>
                             <BTooltip title="Copy Row" arrow placement="top">
                               <IconButton
@@ -742,18 +765,12 @@ const PeptideRetention: React.FC = () => {
                         <TableCell>
                           <Skeleton />
                         </TableCell>
-                        <TableCell>
-                          <Skeleton />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton />
-                        </TableCell>
+                        {showDetails &&
+                          [0, 1, 2, 3].map((i) => (
+                            <TableCell key={i}>
+                              <Skeleton />
+                            </TableCell>
+                          ))}
                         <TableCell></TableCell>
                       </>
                     )}
