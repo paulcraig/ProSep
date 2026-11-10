@@ -1,5 +1,4 @@
 import uvicorn
-import anyio.to_thread  # noqa: F401  starlette 0.27 needs this submodule loaded; anyio >= 4.x lazy-loads it
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
