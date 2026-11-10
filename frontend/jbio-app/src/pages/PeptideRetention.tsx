@@ -648,18 +648,10 @@ const PeptideRetention: React.FC = () => {
                   <Switch
                     checked={showDetails}
                     onChange={(e) => setShowDetails(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "var(--accent)",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                        backgroundColor: "var(--accent)",
-                      },
-                    }}
                   />
                 }
                 label="Show details"
-                sx={{ margin: 0 }}
+                sx={{ marginBottom: '0.25rem' }}
               />
 
               <Button
