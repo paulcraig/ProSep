@@ -199,8 +199,7 @@ const SizeExclusionPage: React.FC = () => {
                                     showLineGraph,
                                     showWash,
                                     useLogScale,
-                                    washLabel: 'Too Big',
-                                    afterWashLabel: 'Too Small',
+                                    isSizeExclusion: true
                                 }}
                             />
                             <ChromatographyHitGraph

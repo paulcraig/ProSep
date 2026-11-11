@@ -10,17 +10,16 @@ export type ChromatogramFractionDto = Pick<FractionDto, "fractionIndex" | "absor
 export type ChromatogramProps = {
     showLineGraph: boolean
     useLogScale: boolean
-    showWash: boolean
-    washLabel?: string
-    afterWashLabel?: string
+    showWash?: boolean
     fractionRows: ChromatogramFractionDto[]
     data: FractionationResponse
     elutionPoints?: Array<{ x: number; y: number }>
     elutionLabel?: string,
     elutionAxisLabel?: string
+    isSizeExclusion?: boolean
 }
 
-export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel = 'Wash', afterWashLabel = 'After Wash', fractionRows, data, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration"}: ChromatogramProps) {
+export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRows, data, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration", isSizeExclusion = false}: ChromatogramProps) {
     const lineChartRef = useRef<ChartJS<'line'> | null>(null)
     const scatterChartRef = useRef<ChartJS<'scatter'> | null>(null)
     const chartTheme = useChartTheme()
@@ -30,10 +29,6 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
     const proteinSeriesPoints = useMemo(() => {
         const points: Array<{ x: number; y: number }> = []
 
-        if (showWash) {
-            points.push({ x: 0, y: data?.wash?.length ?? 0 })
-        }
-
         for (const fraction of fractionRows) {
             points.push({
                 x: fraction.fractionIndex,
@@ -41,10 +36,13 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
             })
         }
 
-        const afterWash = data.afterWash
-        if (afterWash) {
-            points.push({ x: lastFractionX + 1, y: afterWash.length })
+        if (isSizeExclusion && showWash) {
+            points.splice(0, 0, { x: 0, y: data?.wash?.length ?? 0 })
+            points.push({ x: lastFractionX + 1, y: data?.afterWash?.length ?? 0 })
         }
+
+        // TODO: normal chromatographies no longer have a hide wash setting. Adding this requires the passing around of our magic 18% constant
+
         const maxY = Math.max(...points.map(p => p.y), 1)
         for (const point of points) {
             point.y = Math.round((point.y / maxY) * 100) / 100
@@ -54,12 +52,14 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
     }, [data, fractionRows, showWash, lastFractionX])
 
     const fractionTickLabel = (value: string | number) => {
+        if (!isSizeExclusion) return value
+        
         const tick = Number(value)
         if (tick === 0) {
-            return showWash ? washLabel : '0'
+            return showWash ? 'Too Big' : value
         }
         if (tick === lastFractionX + 1) {
-            return data.afterWash ? afterWashLabel : value
+            return showWash ? 'Too Small' : value
         }
         return String(value)
     }
