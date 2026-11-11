@@ -27,7 +27,6 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
 
     const lastFractionX = fractionRows.length > 0 ? Math.max(...fractionRows.map(f => f.fractionIndex)) : 0
     const afterWash = data.afterWash
-    const showAfterWash = !!afterWash
 
     const proteinSeriesPoints = useMemo(() => {
         const points: Array<{ x: number; y: number }> = []
@@ -43,7 +42,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
             })
         }
 
-        if (showAfterWash) {
+        if (afterWash) {
             points.push({ x: lastFractionX + 1, y: afterWash.length })
         }
         const maxY = Math.max(...points.map(p => p.y), 1)
@@ -52,7 +51,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
             if(point.y === 0) point.y = 0.001 
         }
         return points
-    }, [data, fractionRows, showWash, showAfterWash, afterWash, lastFractionX])
+    }, [data, fractionRows, showWash, afterWash, afterWash, lastFractionX])
 
     const fractionTickLabel = (value: string | number) => {
         const tick = Number(value)
@@ -60,7 +59,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
             return showWash ? washLabel : '0'
         }
         if (tick === lastFractionX + 1) {
-            return showAfterWash ? afterWashLabel : value
+            return afterWash ? afterWashLabel : value
         }
         return String(value)
     }
