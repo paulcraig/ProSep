@@ -95,7 +95,6 @@ type HICResponse = {
     ok: boolean
     params: ParamsDto
     counts: CountsDto
-    wash: ProteinDto[]
     fractions: FractionDto[]
     error?: string
 }

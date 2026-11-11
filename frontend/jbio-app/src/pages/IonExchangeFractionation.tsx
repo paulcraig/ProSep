@@ -63,7 +63,6 @@ export type IonExchangeResponse = {
     ok: boolean
     params: ParamsDto
     counts: CountsDto
-    wash: ProteinDto[]
     fractions: FractionDto[]
     error?: string
 }
