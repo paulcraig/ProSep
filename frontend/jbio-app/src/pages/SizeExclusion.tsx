@@ -209,7 +209,6 @@ const SizeExclusionPage: React.FC = () => {
                                     fractionRows,
                                     showWash,
                                     useLogScale,
-                                    afterWash: data.afterWash,
                                     washLabel: 'Too Big',
                                     afterWashLabel: 'Too Small',
                                 }}

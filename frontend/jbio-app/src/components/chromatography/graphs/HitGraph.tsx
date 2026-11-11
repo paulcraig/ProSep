@@ -19,12 +19,11 @@ export type ChromatographyHitChartProps = {
     afterWashLabel?: string
     fractionRows: HitGraphFractionDto[]
     data: FractionationResponse
-    afterWash?: ProteinDto[]
 }
 
-export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Wash', afterWashLabel = 'After Wash', data, fractionRows, afterWash = [] }: ChromatographyHitChartProps) {
+export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Wash', afterWashLabel = 'After Wash', data, fractionRows }: ChromatographyHitChartProps) {
     const stackedChartRef = useRef<ChartJS<'bar'> | null>(null)
-    const showAfterWash = !!afterWash && afterWash.length > 0
+    const afterWash = data.afterWash
     const chartTheme = useChartTheme()
 
     const [showHitColors, setShowHitColors] = useState(true)
@@ -83,7 +82,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
             baseOtherData.push(fractionOtherTotal)
         }
 
-        if (showAfterWash) {
+        if (afterWash) {
             let afterWashOtherTotal = 0
             for (const protein of afterWash) {
                 afterWashOtherTotal += protein.amount
@@ -140,7 +139,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
             datasets,
             hiddenProteinCount: Math.max(sortedProteinIds.length - MAX_STACKED_SERIES, 0),
         }
-    }, [data, fractionRows, showWash, washLabel, showAfterWash, afterWash, afterWashLabel])
+    }, [data, fractionRows, showWash, washLabel, afterWash, afterWash, afterWashLabel])
 
     return (
         <div>
