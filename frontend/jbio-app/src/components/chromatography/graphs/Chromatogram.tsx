@@ -27,7 +27,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
     const chartTheme = useChartTheme()
 
     const lastFractionX = fractionRows.length > 0 ? Math.max(...fractionRows.map(f => f.fractionIndex)) : 0
-    const showAfterWash = !!afterWash && afterWash.length > 0
+    const showAfterWash = !!afterWash
 
     const proteinSeriesPoints = useMemo(() => {
         const points: Array<{ x: number; y: number }> = []
