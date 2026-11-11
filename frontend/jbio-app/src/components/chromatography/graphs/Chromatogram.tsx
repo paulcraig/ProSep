@@ -174,6 +174,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                                         grid: {
                                             color: chartTheme.grid,
                                         },
+                                        min: showWash ? 0 : 1
                                     },
                                     y: {
                                         type: useLogScale ? 'logarithmic' : 'linear',
@@ -227,6 +228,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                                         grid: {
                                             color: chartTheme.grid,
                                         },
+                                        min: showWash ? 0 : 1
                                     },
                                     y: {
                                         type: useLogScale ? 'logarithmic' : 'linear',
