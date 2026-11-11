@@ -169,6 +169,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                                         ticks: {
                                             callback: fractionTickLabel,
                                             color: chartTheme.text,
+                                            stepSize: 1,
                                         },
                                         grid: {
                                             color: chartTheme.grid,
@@ -221,6 +222,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                                         ticks: {
                                             callback: fractionTickLabel,
                                             color: chartTheme.text,
+                                            stepSize: 1,
                                         },
                                         grid: {
                                             color: chartTheme.grid,
