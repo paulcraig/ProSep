@@ -15,18 +15,18 @@ export type ChromatogramProps = {
     afterWashLabel?: string
     fractionRows: ChromatogramFractionDto[]
     data: FractionationResponse
-    afterWash?: ProteinDto[]
     elutionPoints?: Array<{ x: number; y: number }>
     elutionLabel?: string,
     elutionAxisLabel?: string
 }
 
-export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel = 'Wash', afterWashLabel = 'After Wash', fractionRows, data, afterWash, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration"}: ChromatogramProps) {
+export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel = 'Wash', afterWashLabel = 'After Wash', fractionRows, data, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration"}: ChromatogramProps) {
     const lineChartRef = useRef<ChartJS<'line'> | null>(null)
     const scatterChartRef = useRef<ChartJS<'scatter'> | null>(null)
     const chartTheme = useChartTheme()
 
     const lastFractionX = fractionRows.length > 0 ? Math.max(...fractionRows.map(f => f.fractionIndex)) : 0
+    const afterWash = data.afterWash
     const showAfterWash = !!afterWash
 
     const proteinSeriesPoints = useMemo(() => {

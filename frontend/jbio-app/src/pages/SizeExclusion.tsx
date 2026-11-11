@@ -199,7 +199,6 @@ const SizeExclusionPage: React.FC = () => {
                                     showLineGraph,
                                     showWash,
                                     useLogScale,
-                                    afterWash: data.afterWash,
                                     washLabel: 'Too Big',
                                     afterWashLabel: 'Too Small',
                                 }}
