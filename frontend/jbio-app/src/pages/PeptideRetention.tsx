@@ -67,18 +67,33 @@ ChartJS.register(
 
 type PredictionSuccess = {
   peptide: string;
-  smiles: string;
-  log_sum_aa: number;
-  log_vdw_vol: number;
-  clog_p: number;
   predicted_tr: number;
-  volume_type: VolumeType;
-  num_confs: number;
+  method: Method;
   compute_time: number;
   fromCache: boolean;
+  smiles?: string;
+  log_sum_aa?: number;
+  log_vdw_vol?: number;
+  clog_p?: number;
+  volume_type?: VolumeType;
+  num_confs?: number;
 };
 
 type VolumeType = "2D" | "3D";
+type Method = "rdkit" | "deeplc";
+
+const methodLabel = (r: {
+  method?: Method;
+  volume_type?: VolumeType;
+  num_confs?: number;
+}) =>
+  r.method === "deeplc"
+    ? "DeepLC"
+    : r.volume_type === "3D"
+      ? `3D×${r.num_confs}`
+      : r.volume_type;
+
+const fmt4 = (v?: number) => v?.toFixed(4) ?? "";
 
 type CachedPrediction = Omit<PredictionSuccess, "fromCache">;
 
@@ -114,6 +129,9 @@ const PeptideRetention: React.FC = () => {
   // TEMP volume calc type and num confs for comparison
   const [volumeType, setVolumeType] = useState<VolumeType>("3D");
   const [numConfs, setNumConfs] = useState(1);
+  const [method, setMethod] = useState<Method>("rdkit");
+  const cacheKey = (peptide: string) =>
+    `${methodLabel({ method, volume_type: volumeType, num_confs: numConfs })}:${peptide}`;
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -241,7 +259,7 @@ const PeptideRetention: React.FC = () => {
       const res = await fetch(`${API_URL}/pr/predict-multiple`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ peptides: batch, volume_type: volumeType, num_confs: numConfs }), // TEMP volume type and num confs 
+        body: JSON.stringify({ peptides: batch, method, volume_type: volumeType, num_confs: numConfs }), // TEMP volume type and num confs
         signal: abortRef.current?.signal,
       });
 
@@ -257,7 +275,7 @@ const PeptideRetention: React.FC = () => {
         data.forEach((result: PredictionResult) => {
           if ("predicted_tr" in result) {
             const { fromCache, ...toCache } = result;
-            cache[result.peptide] = toCache;
+            cache[cacheKey(result.peptide)] = toCache;
           }
         });
         setCache(cache);
@@ -288,16 +306,20 @@ const PeptideRetention: React.FC = () => {
 
       if (useCached) {
         peptides.forEach((peptide) => {
-          if (cache[peptide]) {
-            cachedResults.push({ ...cache[peptide], fromCache: true });
+          const cached = cache[cacheKey(peptide)];
+          if (cached) {
+            cachedResults.push({ ...cached, fromCache: true });
           }
         });
-        peptidesToPredict = peptides.filter((p) => !cache[p]);
+        peptidesToPredict = peptides.filter((p) => !cache[cacheKey(p)]);
       }
 
       setResults(cachedResults);
 
-      if (peptidesToPredict.length > 0) {
+      if (method === "deeplc" && peptidesToPredict.length > 0) {
+        // One batched request: the buckets below exist for slow 3D embeddings.
+        await chunkPredict(peptidesToPredict, undefined, cache);
+      } else if (peptidesToPredict.length > 0) {
         const { trivial, normal, nightmare } =
           bucketPeptides(peptidesToPredict);
 
@@ -335,10 +357,10 @@ const PeptideRetention: React.FC = () => {
       if ("error" in result) return;
 
       csv += `${result.peptide},${result.predicted_tr.toFixed(2)},${
-        result.smiles
-      },${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(
-        4,
-      )},${result.clog_p.toFixed(4)}\n`;
+        result.smiles ?? ""
+      },${fmt4(result.log_sum_aa)},${fmt4(result.log_vdw_vol)},${fmt4(
+        result.clog_p,
+      )}\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -351,7 +373,7 @@ const PeptideRetention: React.FC = () => {
   };
 
   const copyRow = (result: PredictionSuccess) => {
-    const text = `${result.peptide},${result.predicted_tr.toFixed(2)},${result.smiles},${result.log_sum_aa.toFixed(4)},${result.log_vdw_vol.toFixed(4)},${result.clog_p.toFixed(4)}`;
+    const text = `${result.peptide},${result.predicted_tr.toFixed(2)},${result.smiles ?? ""},${fmt4(result.log_sum_aa)},${fmt4(result.log_vdw_vol)},${fmt4(result.clog_p)}`;
     navigator.clipboard.writeText(text);
   };
 
@@ -585,6 +607,14 @@ const PeptideRetention: React.FC = () => {
           variant="contained"
           className="predict-button"
           disabled={isLoading}
+          onClick={() => setMethod(method === "rdkit" ? "deeplc" : "rdkit")}
+        >
+          Model: {method === "deeplc" ? "DeepLC" : "RDKit"}
+        </Button>
+        <Button
+          variant="contained"
+          className="predict-button"
+          disabled={isLoading || method === "deeplc"}
           onClick={() => setVolumeType(volumeType === "3D" ? "2D" : "3D")}
         >
           Volume: {volumeType}
@@ -594,7 +624,7 @@ const PeptideRetention: React.FC = () => {
           type="number"
           size="small"
           value={numConfs}
-          disabled={isLoading || volumeType === "2D"}
+          disabled={isLoading || method === "deeplc" || volumeType === "2D"}
           onChange={(e) =>
             setNumConfs(Math.min(10, Math.max(1, Number(e.target.value) || 1)))
           }
@@ -750,18 +780,17 @@ const PeptideRetention: React.FC = () => {
                           <TableCell>
                             {item.result.predicted_tr.toFixed(2)}
                           </TableCell>
-                          <TableCell>{item.result.smiles}</TableCell>
+                          <TableCell>{item.result.smiles ?? "—"}</TableCell>
                           <TableCell>
-                            {item.result.log_sum_aa.toFixed(4)}
+                            {fmt4(item.result.log_sum_aa) || "—"}
                           </TableCell>
                           <TableCell>
-                            {item.result.log_vdw_vol.toFixed(4)}
+                            {fmt4(item.result.log_vdw_vol) || "—"}
                           </TableCell>
-                          <TableCell>{item.result.clog_p.toFixed(4)}</TableCell>
+                          <TableCell>{fmt4(item.result.clog_p) || "—"}</TableCell>
                           <TableCell>
                             {item.result.compute_time?.toFixed(1)} (
-                            {item.result.volume_type === "3D" ? `3D×${item.result.num_confs}` : item.result.volume_type}
-                            )
+                            {methodLabel(item.result)})
                           </TableCell>
                           <TableCell>
                             <BTooltip title="Copy Row" arrow placement="top">
@@ -774,15 +803,17 @@ const PeptideRetention: React.FC = () => {
                                 <ContentCopy />
                               </IconButton>
                             </BTooltip>
-                            <BTooltip
-                              title="View Peptide"
-                              arrow
-                              placement="top"
-                            >
-                              <ImageHoverPreview
-                                url={getPeptideImage(item.result.smiles)}
-                              />
-                            </BTooltip>
+                            {item.result.smiles && (
+                              <BTooltip
+                                title="View Peptide"
+                                arrow
+                                placement="top"
+                              >
+                                <ImageHoverPreview
+                                  url={getPeptideImage(item.result.smiles)}
+                                />
+                              </BTooltip>
+                            )}
                           </TableCell>
                         </>
                       )

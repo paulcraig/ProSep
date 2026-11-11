@@ -1,10 +1,14 @@
 from rdkit import Chem
 from rdkit.Chem import Descriptors, AllChem, rdMolDescriptors
+import logging
 import math
+import threading
 import time
 from pyPept.sequence import Sequence, correct_pdb_atoms
 from pyPept.molecule import Molecule
 from concurrent.futures import ThreadPoolExecutor
+
+logger = logging.getLogger(__name__)
 
 
 class PeptideRetentionPredictor:
@@ -122,7 +126,9 @@ class PeptideRetentionPredictor:
         return math.log10(vdw_vol), clog_p
 
     @staticmethod
-    def predict(peptide: str, volume_type: str = '3D', num_confs: int = 1) -> dict:
+    def predict(peptide: str, volume_type: str = '3D', num_confs: int = 1, method: str = 'rdkit') -> dict:
+        if method == 'deeplc':
+            return DeepLCPredictor.predict_multiple([peptide])[0]
         try:
             start = time.perf_counter()
             smiles = PeptideRetentionPredictor.peptide_to_smiles(peptide)
@@ -145,6 +151,7 @@ class PeptideRetentionPredictor:
                 "clog_p": clog_p,
                 "predicted_tr": tr_pred,
                 # Tracking for comparison
+                "method": "rdkit",
                 "volume_type": volume_type,
                 "num_confs": num_confs,
                 "compute_time": (time.perf_counter() - start) * 1000, 
@@ -154,7 +161,9 @@ class PeptideRetentionPredictor:
             return {"peptide": peptide, "error": str(e)}
 
     @staticmethod
-    def predict_multiple(peptides: list[str], volume_type: str = '3D', num_confs: int = 1) -> list[dict]:
+    def predict_multiple(peptides: list[str], volume_type: str = '3D', num_confs: int = 1, method: str = 'rdkit') -> list[dict]:
+        if method == 'deeplc':
+            return DeepLCPredictor.predict_multiple(peptides)
         results = []
         with ThreadPoolExecutor() as executor:
             results = list(
@@ -163,4 +172,107 @@ class PeptideRetentionPredictor:
                     peptides,
                 )
             )
+        return results
+
+
+class DeepLCPredictor:
+    RESIDUES = frozenset("ACDEFGHIKLMNPQRSTVWY")
+
+    _model = None
+    _device = None
+    _lock = threading.Lock()
+
+    @staticmethod
+    def to_proforma(peptide: str) -> str:
+        seq = peptide.strip()
+        acetyl = seq.startswith("Ac-")
+        amidated = seq.endswith("-NH2")
+        if acetyl:
+            seq = seq[3:]
+        if amidated:
+            seq = seq[:-4]
+        
+        n_residues = len(seq) 
+        if n_residues == 0: raise ValueError("Empty peptide sequence")
+
+        unsupported = set(seq) - DeepLCPredictor.RESIDUES
+        if unsupported:
+            raise ValueError(f"Unsupported residue(s) for DeepLC: {''.join(sorted(unsupported))}")
+
+        proforma = ("Q[Gln->pyro-Glu]") + seq
+        if amidated:
+            proforma += "[Amidated]"
+        if acetyl:
+            proforma = "[Acetyl]-" + proforma
+        return proforma
+
+    @classmethod
+    def get_model(cls):
+        if cls._model is None:
+            with cls._lock:
+                if cls._model is None:
+                    start = time.perf_counter()
+                    import torch
+                    import deeplc
+                    from deeplc._model_ops import load_model
+                    from deeplc.core import DEFAULT_MODEL
+
+                    device = "cuda" if torch.cuda.is_available() else "cpu"
+                    model = load_model(DEFAULT_MODEL, device=device)
+
+                    deeplc.predict(
+                        ["[Acetyl]-PEPTIDE", "Q[Gln->pyro-Glu]PEPTIDE[Amidated]"],
+                        model=model,
+                        predict_kwargs={"device": device, "show_progress": False},
+                    )
+
+                    cls._device = device
+                    cls._model = model
+                    logger.info(
+                        "Loaded DeepLC model on %s in %.1f s",
+                        device,
+                        time.perf_counter() - start,
+                    )
+        return cls._model
+
+    @classmethod
+    def predict_multiple(cls, peptides: list[str]) -> list[dict]:
+        results: list[dict | None] = [None] * len(peptides)
+        batch: list[tuple[int, str]] = []
+        for i, peptide in enumerate(peptides):
+            try:
+                batch.append((i, cls.to_proforma(peptide)))
+            except ValueError as e:
+                results[i] = {"peptide": peptide, "error": str(e)}
+
+        if batch:
+            try:
+                import deeplc
+
+                model = cls.get_model()
+                start = time.perf_counter()
+                predictions = deeplc.predict(
+                    [proforma for _, proforma in batch],
+                    model=model,
+                    predict_kwargs={"device": cls._device, "show_progress": False},
+                )
+
+                per_peptide_ms = (time.perf_counter() - start) * 1000 / len(batch)
+            except Exception as e:
+                logger.exception("DeepLC prediction failed")
+                for i, _ in batch:
+                    results[i] = {
+                        "peptide": peptides[i],
+                        "error": f"DeepLC prediction failed: {e}",
+                    }
+            else:
+                for (i, proforma), tr in zip(batch, predictions):
+                    results[i] = {
+                        "peptide": peptides[i],
+                        "proforma": proforma,
+                        "predicted_tr": float(tr),
+                        "method": "deeplc",
+                        "batch_size": len(batch),
+                        "compute_time": per_peptide_ms,
+                    }
         return results

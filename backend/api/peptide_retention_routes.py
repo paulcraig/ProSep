@@ -8,13 +8,17 @@ router = APIRouter(
     tags=["Peptide Retention Time Prediction"]
 )
 
+Method = Literal["rdkit", "deeplc"]
+
 class SinglePeptideRequest(BaseModel):
     peptide: str
+    method: Method = "rdkit"
     volume_type: Literal["2D", "3D"] = "3D"
     num_confs: int = Field(1, ge=1, le=10)
 
 class MultiplePeptidesRequest(BaseModel):
     peptides: List[str]
+    method: Method = "rdkit"
     volume_type: Literal["2D", "3D"] = "3D"
     num_confs: int = Field(1, ge=1, le=10)
 
@@ -27,7 +31,7 @@ async def predict_single(body: SinglePeptideRequest) -> Any:
         return {"error": "No valid peptide provided."}
 
     result = PeptideRetentionPredictor.predict(
-        peptide, body.volume_type, body.num_confs
+        peptide, body.volume_type, body.num_confs, body.method
     )
     return result
 
@@ -40,6 +44,6 @@ async def predict_multiple(body: MultiplePeptidesRequest) -> Any:
         return {"error": "No valid peptides provided."}
 
     results = PeptideRetentionPredictor.predict_multiple(
-        peptides, body.volume_type, body.num_confs
+        peptides, body.volume_type, body.num_confs, body.method
     )
     return results

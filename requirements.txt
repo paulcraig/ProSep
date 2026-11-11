@@ -1,6 +1,7 @@
-fastapi~=0.95.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+fastapi~=0.162.0
 typing~=3.7.4.3
-pydantic~=1.10.7
+pydantic~=2.14
 bio~=1.6.2
 uvicorn~=0.21.1
 python-multipart
@@ -11,6 +12,7 @@ scikit-learn
 rdkit
 matplotlib
 git+https://github.com/Boehringer-Ingelheim/pyPept.git
+deeplc~=4.5.0
 Pillow~=10.4.0
 PyMuPDF~=1.26.4
 passlib[bcrypt]==1.7.4
