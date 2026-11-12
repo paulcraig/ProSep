@@ -15,7 +15,7 @@ import {
     TextField,
     Typography,
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FractionDto, ProteinDto } from '../types'
 import { Search } from '@mui/icons-material'
 import { SortDirection } from './Common'
@@ -77,13 +77,13 @@ export function ProteinTable<P extends ProteinTableProteinDto>({ fractionRows, m
         })
     }, [retainedRows, proteinSearch])
 
-    const getSortValue = (row: P, key: string) => {
+    const getSortValue = useCallback((row: P, key: string) => {
         if (key === 'molecularWeight') {
             return row.molecularWeight
         }
         const metric = metrics.find(m => m.label === key)
         return metric ? metric.value(row) : 0
-    }
+    }, [metrics])
 
     const sortedRetainedRows = useMemo(() => {
         const rows = [...filteredRetainedRows]
@@ -94,7 +94,7 @@ export function ProteinTable<P extends ProteinTableProteinDto>({ fractionRows, m
         })
 
         return rows
-    }, [filteredRetainedRows, proteinSort, metrics])
+    }, [filteredRetainedRows, proteinSort, getSortValue])
 
     const pagedProteins = useMemo(() => {
         const start = proteinPage * proteinRowsPerPage
