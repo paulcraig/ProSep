@@ -24,10 +24,10 @@ class TestProtein(unittest.TestCase):
             )
         }
 
-        achual = Protein.parse_protein("backend/tests/data/singleProtein.fasta")
+        actual = Protein.parse_protein("backend/tests/data/singleProtein.fasta")
 
         self.assertEqual(
-            achual.keys(), expcted.keys()
+            actual.keys(), expcted.keys()
         )  # had trouble comparing entire dict when I know they would be the same
 
     def test_parse_multi_protein(self):
@@ -43,9 +43,9 @@ class TestProtein(unittest.TestCase):
                 753,
             ),
         }
-        achual = Protein.parse_protein("backend/tests/data/twoProteins.fasta")
+        actual = Protein.parse_protein("backend/tests/data/twoProteins.fasta")
         self.assertEqual(
-            achual.keys(), expected.keys()
+            actual.keys(), expected.keys()
         )  # had trouble comparing entire dict when I know they would be the same
 
     def test_parse_different_protein_file_extentions(self):
@@ -69,11 +69,11 @@ class TestProtein(unittest.TestCase):
             ),
         }
         for type in ACCEPTED_FILE_TYPES:
-            achual = Protein.parse_protein(
+            actual = Protein.parse_protein(
                 f"backend/tests/data/different_extensions/single.{type}"
             )
             self.assertEqual(
-                achual.keys(), expected.keys()
+                actual.keys(), expected.keys()
             )  # had trouble comparing entire dict when I know they would be the same
 
     def test_find_one_link(self):
@@ -127,8 +127,8 @@ class TestProtein(unittest.TestCase):
                 "Y": 0,
             }
         ]
-        achual = Protein.get_amino_acid_count("backend/tests/data/singleProtein.fasta")
-        self.assertEqual(expected, achual)
+        actual = Protein.get_amino_acid_count("backend/tests/data/singleProtein.fasta")
+        self.assertEqual(expected, actual)
 
     def test_get_many_amino_acid_count(self):
         expected = [
@@ -178,8 +178,8 @@ class TestProtein(unittest.TestCase):
             },
         ]
 
-        achual = Protein.get_amino_acid_count("backend/tests/data/twoProteins.fasta")
-        self.assertEqual(expected, achual)
+        actual = Protein.get_amino_acid_count("backend/tests/data/twoProteins.fasta")
+        self.assertEqual(expected, actual)
 
     # Using Trypsin-family serine proteases as an example
     def test_prosite_full_to_regex(self):

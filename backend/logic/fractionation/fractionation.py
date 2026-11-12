@@ -98,7 +98,7 @@ class Fractionation:
         items: Sequence[T],
         n_fractions: int,
         overlap: float,
-    ) -> Sequence[Sequence[T]]:
+    ) -> Sequence[Sequence[T]: ProteinEntry]:
         """
         Split retained proteins into fractions.
 
@@ -125,7 +125,7 @@ class Fractionation:
         return fractions
     
     @staticmethod
-    def process_fractions(fraction_lists: Sequence[Sequence[T]]):
+    def process_fractions(fraction_lists: Sequence[Sequence[T]: ProteinEntry]):
         return [
             {
                 "fractionIndex": index + 1,

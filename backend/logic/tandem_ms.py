@@ -1,14 +1,3 @@
-"""* This dict represents the 20 different basic types of Amino Acids a protein
-* can possess. The instance variables assume that the amino acid in question
-* is fully protenated. NHHCHRCOOH is the assumed state of each individual residue.
-*
-*  ** base masses of amino acids in daltons obtained from
-*     http://www.encorbio.com/protocols/Prot-MW.htm on 5/4/2011. Amino acids
-*     with an extra charge were given an extra 1.00774 Da for hydrogen
-*     presence.
-*  ** pKa's obtained from http://www.cem.msu.edu/~cem252/sp97/ch24/ch24aa.html on 5/3/2011
-*/"""
-
 from backend.logic.protease import (
     Chymotrypsin,
     Thermolysin,
