@@ -7,27 +7,38 @@ from Bio import SeqIO
 
 class Protein():
 
+    # Masses include water (18.....)
+    """This dict represents the 20 different basic types of Amino Acids a protein
+        * can possess. The instance variables assume that the amino acid in question
+        * is fully protenated. NHHCHRCOOH is the assumed state of each individual residue.
+        *
+        *  ** base masses of amino acids in daltons obtained from
+        *     http://www.encorbio.com/protocols/Prot-MW.htm on 5/4/2011. Amino acids
+        *     with an extra charge were given an extra 1.00774 Da for hydrogen
+        *     presence.
+        *  ** pKa's obtained from http://www.cem.msu.edu/~cem252/sp97/ch24/ch24aa.html on 5/3/2011
+    """
     AMINO_ACIDS = {
-        'A': {'mass': 71.07,  'pKa': 0,     'absorbance': 0},
-        'R': {'mass': 156.18, 'pKa': 12.48, 'absorbance': 0},
-        'N': {'mass': 114.08, 'pKa': 0,     'absorbance': 0},
-        'D': {'mass': 115.08, 'pKa': 3.65,  'absorbance': 0},
-        'C': {'mass': 103.14, 'pKa': 8.18,  'absorbance': 125},
-        'E': {'mass': 129.11, 'pKa': 4.25,  'absorbance': 0},
-        'Q': {'mass': 128.13, 'pKa': 0,     'absorbance': 0},
-        'G': {'mass': 57.05,  'pKa': 0,     'absorbance': 0},
-        'H': {'mass': 137.14, 'pKa': 6.00,  'absorbance': 0},
-        'I': {'mass': 113.16, 'pKa': 0,     'absorbance': 0},
-        'L': {'mass': 113.16, 'pKa': 0,     'absorbance': 0},
-        'K': {'mass': 128.17, 'pKa': 10.53, 'absorbance': 0},
-        'M': {'mass': 131.19, 'pKa': 0,     'absorbance': 0},
-        'F': {'mass': 147.17, 'pKa': 0,     'absorbance': 0},
-        'P': {'mass': 97.11,  'pKa': 0,     'absorbance': 0},
-        'S': {'mass': 87.07,  'pKa': 0,     'absorbance': 0},
-        'T': {'mass': 101.10, 'pKa': 0,     'absorbance': 0},
-        'W': {'mass': 186.21, 'pKa': 0,     'absorbance': 5500},
-        'Y': {'mass': 163.17, 'pKa': 10.07, 'absorbance': 1490},
-        'V': {'mass': 99.13,  'pKa': 0,     'absorbance': 0}
+        'A': {'mass': 89.09,     'pKa': 0,     'absorbance': 0},
+        'R': {'mass': 174.20206, 'pKa': 12.48, 'absorbance': 0},
+        'N': {'mass': 132.12,    'pKa': 0,     'absorbance': 0},
+        'D': {'mass': 133.09784, 'pKa': 3.65,  'absorbance': 0},
+        'C': {'mass': 121.16,    'pKa': 8.18,  'absorbance': 125},
+        'E': {'mass': 147.12784, 'pKa': 4.25,  'absorbance': 0},
+        'Q': {'mass': 146.14,    'pKa': 0,     'absorbance': 0},
+        'G': {'mass': 75.07,     'pKa': 0,     'absorbance': 0},
+        'H': {'mass': 155.15603, 'pKa': 6.00,  'absorbance': 0},
+        'I': {'mass': 131.17,    'pKa': 0,     'absorbance': 0},
+        'L': {'mass': 131.17,    'pKa': 0,     'absorbance': 0},
+        'K': {'mass': 146.19206, 'pKa': 10.53, 'absorbance': 0},
+        'M': {'mass': 147.21,    'pKa': 0,     'absorbance': 0},
+        'F': {'mass': 165.19,    'pKa': 0,     'absorbance': 0},
+        'P': {'mass': 115.13,    'pKa': 0,     'absorbance': 0},
+        'S': {'mass': 105.09,    'pKa': 0,     'absorbance': 0},
+        'T': {'mass': 119.12,    'pKa': 0,     'absorbance': 0},
+        'W': {'mass': 204.23,    'pKa': 0,     'absorbance': 5500},
+        'Y': {'mass': 181.19,    'pKa': 10.07, 'absorbance': 1490},
+        'V': {'mass': 117.15,    'pKa': 0,     'absorbance': 0}
     }
     
     # Utilizes Biopython SeqIO library to parse through a fasta file given by the user and collect
