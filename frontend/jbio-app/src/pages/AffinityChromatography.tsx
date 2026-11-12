@@ -146,6 +146,14 @@ const methods = {
         elute_concentrations: [0, 10, 50],
         elute_concentration_unit: "mM"
     },
+    AVITAG_BIOTIN: {
+        name: "Biotinylated AviTag",
+        prosite_strong: "G-L-N-D-I-F-E-A-Q-K-I-E-W-H-E",
+        prosite_weak: "G-L-N-D-I-F-E-A-Q-K",
+        elute: "Biotin",
+        elute_concentrations: [0, 1, 10],
+        elute_concentration_unit: "mM"
+    },
 } as const satisfies { [index: string]: MethodData }
 
 const AffinityChromatography: React.FC = () => {
