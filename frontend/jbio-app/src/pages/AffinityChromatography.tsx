@@ -337,7 +337,6 @@ const AffinityChromatography: React.FC = () => {
                                 <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
                             </Box>
 
-                            {/* TODO: salt gradient name needs to be extracted so we can use our own elute name */}
                             <Chromatogram {...{ data, fractionRows, showLineGraph, showWash:false, useLogScale, elutionPoints: elutionGradient, elutionLabel:methodLastRan.elute, elutionAxisLabel:methodLastRan.elute_concentration_unit }} />
                             <ChromatographyHitGraph {...{ data, fractionRows, showWash:false, useLogScale }} />
                             <Box sx={{ my: 1 }}>
