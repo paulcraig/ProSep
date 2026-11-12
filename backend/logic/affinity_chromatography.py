@@ -51,9 +51,11 @@ class AffinityChromatography:
         weak_fractions = (fraction_count - wash_fractions) // 2
         strong_fractions = fraction_count - (wash_fractions + weak_fractions)
 
-        fractions = list(Fractionation.fractionate_with_overlap(unbound, wash_fractions, noise))
-        fractions.extend(Fractionation.fractionate_with_overlap(weakly_bound, weak_fractions, noise))
-        fractions.extend(Fractionation.fractionate_with_overlap(strongly_bound, strong_fractions, noise))
+        offset = 0.025 # offset fraction distributions by 1/40th of the fractions
+
+        fractions = list(Fractionation.fractionate_with_inverse_gaussian(unbound, wash_fractions, offset=offset*2))
+        fractions.extend(Fractionation.fractionate_with_inverse_gaussian(weakly_bound, weak_fractions, offset=offset*4))
+        fractions.extend(Fractionation.fractionate_with_spike(strongly_bound, strong_fractions, offset=offset*4))
 
         return {
             "ok": True,
