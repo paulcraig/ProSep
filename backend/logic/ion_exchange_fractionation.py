@@ -131,6 +131,5 @@ class IonExchangeFractionation:
                 "retained": len(retained),
                 "skipped": skipped,
             },
-            "wash": [entry.to_json() for entry in wash],
-            "fractions": Fractionation.process_fractions(fraction_lists),
+            "fractions": Fractionation.process_fractions([wash, *fraction_lists]),
         }
