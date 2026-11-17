@@ -224,7 +224,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
     const saltGradient = useMemo(() => (data ? saltGradientPoints(data) : []), [data])
 
     const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
-    const [useLogScale, setUseLogScale] = useState<boolean>(true)
+    const [useLogScale, setUseLogScale] = useState<boolean>(false)
 
     return (
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>

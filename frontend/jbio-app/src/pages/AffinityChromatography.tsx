@@ -278,7 +278,7 @@ const AffinityChromatography: React.FC = () => {
     const elutionGradient = useMemo(() => (data && methodLastRan ? elutionConcentrationPoints(data, methodLastRan.elute_concentrations) : []), [data, methodLastRan])
 
     const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
-    const [useLogScale, setUseLogScale] = useState<boolean>(true)
+    const [useLogScale, setUseLogScale] = useState<boolean>(false)
 
     return (
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>

@@ -87,7 +87,7 @@ const IonExchangeFractionation: React.FC = () => {
     const [data, setData] = useState<IonExchangeResponse | null>(null)
 
     const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
-    const [useLogScale, setUseLogScale] = useState<boolean>(true)
+    const [useLogScale, setUseLogScale] = useState<boolean>(false)
 
     const timer = useTimer()
 
