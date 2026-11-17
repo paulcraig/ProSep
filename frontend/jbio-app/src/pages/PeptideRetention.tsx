@@ -738,25 +738,27 @@ const PeptideRetention: React.FC = () => {
                             </>
                           )}
                           <TableCell>
-                            <BTooltip title="Copy Row" arrow placement="top">
-                              <IconButton
-                                onClick={() =>
-                                  copyRow(item.result as PredictionSuccess)
-                                }
-                                sx={{ color: "var(--text)" }}
+                            <div className="icons-container" style={{ display: "flex", justifyContent: "end" }}>
+                              <BTooltip title="Copy Row" arrow placement="top">
+                                <IconButton
+                                  onClick={() =>
+                                    copyRow(item.result as PredictionSuccess)
+                                  }
+                                  sx={{ color: "var(--text)" }}
+                                >
+                                  <ContentCopy />
+                                </IconButton>
+                              </BTooltip>
+                              <BTooltip
+                                title="View Peptide"
+                                arrow
+                                placement="top"
                               >
-                                <ContentCopy />
-                              </IconButton>
-                            </BTooltip>
-                            <BTooltip
-                              title="View Peptide"
-                              arrow
-                              placement="top"
-                            >
-                              <ImageHoverPreview
-                                url={getPeptideImage(item.result.smiles)}
-                              />
-                            </BTooltip>
+                                <ImageHoverPreview
+                                  url={getPeptideImage(item.result.smiles)}
+                                />
+                              </BTooltip>
+                            </div>
                           </TableCell>
                         </>
                       )
