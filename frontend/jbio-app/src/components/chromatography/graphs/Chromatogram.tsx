@@ -180,7 +180,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                                         type: useLogScale ? 'logarithmic' : 'linear',
                                         title: {
                                             display: true,
-                                            text: showWash ? 'Retained+Wash' : 'Retained',
+                                            text: 'Relative Absorbance',
                                             color: chartTheme.text,
                                         },
                                         beginAtZero: !useLogScale,
@@ -234,7 +234,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                                         type: useLogScale ? 'logarithmic' : 'linear',
                                         title: {
                                             display: true,
-                                            text: showWash ? 'Retained+Wash' : 'Retained',
+                                            text: 'Relative Absorbance',
                                             color: chartTheme.text,
                                         },
                                         beginAtZero: !useLogScale,

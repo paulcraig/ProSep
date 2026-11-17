@@ -174,7 +174,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
                                     type: useLogScale ? 'logarithmic' : 'linear',
                                     title: {
                                         display: true,
-                                        text: showWash ? 'Retained+Wash Amount' : 'Retained Amount',
+                                        text: 'Retained Amount',
                                         color: chartTheme.text,
                                     },
                                     ticks: {
