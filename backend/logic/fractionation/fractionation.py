@@ -4,15 +4,12 @@ import random
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any, TypeVar
+from typing import Any
 
 from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
 from backend.utility.protein import Protein
-
-
-T = TypeVar("T")
 
 
 class Fractionation:
@@ -94,11 +91,11 @@ class Fractionation:
         return list(SeqIO.parse(handle, "fasta"))
     
     @staticmethod
-    def fractionate_with_overlap(
+    def fractionate_with_overlap[T: ProteinEntry](
         items: Sequence[T],
         n_fractions: int,
         overlap: float,
-    ) -> Sequence[Sequence[T]: ProteinEntry]:
+    ) -> Sequence[Sequence[T]]:
         """
         Split retained proteins into fractions.
 
@@ -125,7 +122,7 @@ class Fractionation:
         return fractions
     
     @staticmethod
-    def process_fractions(fraction_lists: Sequence[Sequence[T]: ProteinEntry]):
+    def process_fractions[T: ProteinEntry](fraction_lists: Sequence[Sequence[T]]):
         return [
             {
                 "fractionIndex": index + 1,
