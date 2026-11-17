@@ -38,6 +38,8 @@ async def process_ion_exchange(body: IonExchangeRequest) -> Any:
             noise=body.noise,
             deadband=body.deadband,
             salt_alpha=body.salt_alpha,
+            salt_elbow_location=body.salt_elbow_location,
+            max_salt_delta=body.max_salt_delta
         )
     except ValueError as exc:
         return {"error": str(exc)}

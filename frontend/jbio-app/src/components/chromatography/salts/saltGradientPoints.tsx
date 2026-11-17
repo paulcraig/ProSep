@@ -1,16 +1,18 @@
+import { MAX_SALT_DELTA } from "./consts"
+
 /*
  * Create (x, y) points that correspond to the salt gradient at any given fraction.
  * Typically fed into a graph
  */
 export function saltGradientPoints(data: {
-    params: { saltStart: number; saltEnd: number }
+    params: { saltStart: number; saltEnd: number, saltElbowLocation: number }
     fractions: Array<{ fractionIndex: number }>
 }): Array<{ x: number; y: number }> {
     const fractions = data.fractions ?? []
     const totalFractions = Math.max(1, fractions.length)
 
     // Start the gradient after an initial loading/binding region
-    const gradientStartFraction = Math.max(2, Math.floor(totalFractions * 0.18))
+    const gradientStartFraction = Math.max(MAX_SALT_DELTA, Math.floor(totalFractions * data.params.saltElbowLocation))
 
     return fractions.map((f, index) => {
         let y = data.params.saltStart

@@ -1,4 +1,5 @@
 import NumberField from '../../ui/NumberField'
+import { MAX_SALT_DELTA } from './consts'
 
 export function SaltSettings({
     saltStart,
@@ -29,8 +30,8 @@ export function SaltSettings({
     }
 
     return (<>
-        <NumberField label='Salt Start' value={saltStart} min={0} max={2} onValueCommitted={setStart} />
-        <NumberField label='Salt End' value={saltEnd} min={0} max={2} onValueCommitted={setEnd} />
-        <NumberField label='Salt Alpha' value={saltAlpha} min={0} max={2} onValueCommitted={setAlpha} />
+        <NumberField label='Salt Start' value={saltStart} min={0} step={0.1} max={MAX_SALT_DELTA} onValueCommitted={setStart} />
+        <NumberField label='Salt End' value={saltEnd} min={0} step={0.1} max={MAX_SALT_DELTA} onValueCommitted={setEnd} />
+        <NumberField label='Salt Alpha' value={saltAlpha} min={0} step={0.1} max={MAX_SALT_DELTA} onValueCommitted={setAlpha} />
     </>)
 }

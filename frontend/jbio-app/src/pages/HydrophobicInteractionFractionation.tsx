@@ -25,6 +25,7 @@ import { ChromatographyHitGraph } from '../components/chromatography/graphs/HitG
 import { Stopwatch, useTimer } from '../components/Timer'
 import { SaltSettings } from '../components/chromatography/salts/SaltSettings'
 import { saltGradientPoints } from '../components/chromatography/salts/saltGradientPoints'
+import { MAX_SALT_DELTA, SALT_ELBOW_LOCATION } from '../components/chromatography/salts/consts'
 
 /*
  * Register the chart components we need for Chart.js.
@@ -73,6 +74,8 @@ type ParamsDto = {
     saltStart: number
     saltEnd: number
     saltAlpha: number
+    saltElbowLocation: number
+    maxSaltDelta: number
     fractions: number
     overlap: number
     deadband: number
@@ -169,6 +172,8 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                     salt_start: saltStart,
                     salt_end: saltEnd,
                     salt_alpha: saltAlpha,
+                    salt_elbow_location: SALT_ELBOW_LOCATION,
+                    max_salt_delta: MAX_SALT_DELTA,
                     fraction_count: fractionCount,
                     noise,
                     deadband,

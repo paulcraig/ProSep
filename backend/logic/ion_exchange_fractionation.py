@@ -30,6 +30,8 @@ class IonExchangeFractionation:
     @staticmethod
     def process(
         fasta_content: str,
+        salt_elbow_location: float,
+        max_salt_delta: float,
         ph: float = 7.0,
         media_type: str = "Q",
         salt_start: float = 0.0,
@@ -62,11 +64,10 @@ class IonExchangeFractionation:
             raise ValueError("deadband must be >= 0")
         if salt_start < 0 or salt_end < 0:
             raise ValueError("salt concentrations must be >= 0")
+        if salt_elbow_location < 0 or salt_elbow_location > 1:
+            raise ValueError("salt elbow location must be between 0 and 1")
 
         exchanger = IonExchangeFractionation.MEDIA_TO_EXCHANGER[media_type]
-
-        # Salt competes with protein charge for the exchanger
-        salt_factor = (salt_start + 1.0) ** float(-salt_alpha)
 
         basic_entries, skipped = Fractionation.convert_fasta_to_protein_entries(fasta_content)
         entries: list[IonExchangeFractionation.ProteinEntry] = []
@@ -77,7 +78,7 @@ class IonExchangeFractionation:
 
                 is_electrically_attracted = (exchanger == "anion" and charge < 0) or (exchanger == "cation" and charge > 0)
 
-                binding_strength = float(abs(charge) * salt_factor) if is_electrically_attracted else 0.0
+                binding_strength = float(abs(charge)) if is_electrically_attracted else 0.0
 
                 entries.append(
                     IonExchangeFractionation.ProteinEntry(
@@ -92,24 +93,18 @@ class IonExchangeFractionation:
             except Exception:
                 skipped += 1
                 continue
-
-        wash: list[IonExchangeFractionation.ProteinEntry] = []
-        retained: list[IonExchangeFractionation.ProteinEntry] = []
-
-        for entry in entries:
-            if entry.binding_strength < deadband:
-                wash.append(entry)
-            else:
-                retained.append(entry)
-
-        # Weakest binder first, strongest binder last
-        # This defines elution order across fractions
-        retained.sort(key=lambda item: item.binding_strength)
-
-        fraction_lists = Fractionation.fractionate_with_overlap(
-            items=retained,
-            n_fractions=fraction_count,
-            overlap=noise,
+            
+        def is_protein_kicked_by_salt(protein: IonExchangeFractionation.ProteinEntry, salt_at_fraction: float) -> bool:
+            return protein.binding_strength < salt_at_fraction
+        fractions, wash_count, non_wash_count = BindingStrengthFractionation.distribute(
+            entries,
+            fraction_count,
+            is_protein_kicked_by_salt,
+            salt_start,
+            salt_end,
+            salt_elbow_location,
+            salt_alpha,
+            max_salt_delta
         )
 
         return {
@@ -121,15 +116,17 @@ class IonExchangeFractionation:
                 "saltStart": salt_start,
                 "saltEnd": salt_end,
                 "saltAlpha": salt_alpha,
+                "saltElbowLocation": salt_elbow_location,
+                "maxSaltDelta": max_salt_delta,
                 "fractions": fraction_count,
                 "overlap": noise,
                 "deadband": deadband,
             },
             "counts": {
-                "total": len(entries),
-                "wash": len(wash),
-                "retained": len(retained),
+                "total": wash_count + non_wash_count,
+                "wash": wash_count,
+                "retained": non_wash_count,
                 "skipped": skipped,
             },
-            "fractions": Fractionation.process_fractions([wash, *fraction_lists]),
+            "fractions": Fractionation.process_fractions(fractions),
         }

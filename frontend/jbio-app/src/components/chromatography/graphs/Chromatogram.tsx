@@ -4,6 +4,7 @@ import { Chart as ChartJS, ChartDataset } from 'chart.js'
 import { FractionDto, FractionationResponse, ProteinDto } from '../types'
 import { Box, Button } from '@mui/material'
 import { Download } from '@mui/icons-material'
+import { MAX_SALT_DELTA } from '../salts/consts'
 
 export type ChromatogramFractionDto = Pick<FractionDto, "fractionIndex" | "absorbanceScore">
 
@@ -123,6 +124,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                         color: chartTheme.grid,
                         drawOnChartArea: false,
                     },
+                    max: MAX_SALT_DELTA
                 },
             } as const
 
