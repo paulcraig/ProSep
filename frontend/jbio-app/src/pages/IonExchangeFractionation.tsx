@@ -85,7 +85,6 @@ const IonExchangeFractionation: React.FC = () => {
 
     const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
     const [useLogScale, setUseLogScale] = useState<boolean>(true)
-    // const [showWash, setShowWash] = useState<boolean>(false)
 
     const timer = useTimer()
 
@@ -203,7 +202,6 @@ const IonExchangeFractionation: React.FC = () => {
                         <CardContent>
                             <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
                             <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
-                            {/* <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} /> */}
 
                             <Chromatogram {...{ data, fractionRows, showLineGraph, showWash:false, useLogScale, elutionPoints: saltGradient }} />
                             <ChromatographyHitGraph {...{ data, fractionRows, showWash:false, useLogScale }} />
