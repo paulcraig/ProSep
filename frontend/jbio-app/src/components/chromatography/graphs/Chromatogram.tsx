@@ -164,8 +164,6 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                                             text: 'Fractions',
                                             color: chartTheme.text,
                                         },
-                                        // TODO: this always shows zeroth (wash) fraction, either change how wash works or conditionally remove
-                                        beginAtZero: true,
                                         ticks: {
                                             callback: fractionTickLabel,
                                             color: chartTheme.text,
