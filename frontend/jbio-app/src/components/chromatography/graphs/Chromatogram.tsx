@@ -42,8 +42,6 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
             points.push({ x: lastFractionX + 1, y: data?.afterWash?.length ?? 0 })
         }
 
-        // TODO: normal chromatographies no longer have a hide wash setting. Adding this requires the passing around of our magic 18% constant
-
         const maxY = Math.max(...points.map(p => p.y), 1)
         for (const point of points) {
             point.y = Math.round((point.y / maxY) * 100) / 100
