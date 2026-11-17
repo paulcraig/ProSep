@@ -159,7 +159,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
                                     stacked: true,
                                     title: {
                                         display: true,
-                                        text: showWash ? 'Wash / Fractions' : 'Fractions',
+                                        text: 'Fractions',
                                         color: chartTheme.text,
                                     },
                                     ticks: {
