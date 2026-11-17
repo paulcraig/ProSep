@@ -287,7 +287,7 @@ const HydrophobicInteractionFractionation: React.FC = () => {
                                 <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
                             </Box>
 
-                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash: false, useLogScale, elutionPoints: saltGradient }} />
+                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash: false, useLogScale, elutionPoints: saltGradient, elutionMax: MAX_SALT_DELTA }} />
                             <ChromatographyHitGraph {...{ data, fractionRows, showWash: false, useLogScale }} />
                             <Box sx={{ my: 1 }}>
                                 <Typography variant='body2'>

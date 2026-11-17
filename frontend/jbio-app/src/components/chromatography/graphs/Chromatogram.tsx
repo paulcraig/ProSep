@@ -18,9 +18,10 @@ export type ChromatogramProps = {
     elutionLabel?: string,
     elutionAxisLabel?: string
     isSizeExclusion?: boolean
+    elutionMax?: number
 }
 
-export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRows, data, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration", isSizeExclusion = false}: ChromatogramProps) {
+export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRows, data, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration", isSizeExclusion = false, elutionMax}: ChromatogramProps) {
     const lineChartRef = useRef<ChartJS<'line'> | null>(null)
     const scatterChartRef = useRef<ChartJS<'scatter'> | null>(null)
     const chartTheme = useChartTheme()
@@ -122,7 +123,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
                         color: chartTheme.grid,
                         drawOnChartArea: false,
                     },
-                    max: MAX_SALT_DELTA
+                    max: elutionMax ?? undefined 
                 },
             } as const
 
