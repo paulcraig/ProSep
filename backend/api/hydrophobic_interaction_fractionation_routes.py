@@ -1,8 +1,9 @@
 from typing import Any, Literal
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from backend.logic.fractionation.binding_strength_fractionation import RequestWithSalt
 from backend.logic.hydrophobic_interaction_fractionation import (
     HydrophobicInteractionFractionation,
 )
@@ -13,7 +14,7 @@ router = APIRouter(
 )
 
 
-class HydrophobicInteractionRequest(BaseModel):
+class HydrophobicInteractionRequest(RequestWithSalt):
     """
     Request body schema for running HIC.
     """
@@ -23,15 +24,10 @@ class HydrophobicInteractionRequest(BaseModel):
     # Selected starting ligand
     ligand_type: Literal["butyl", "octyl", "phenyl"] = Field("butyl", description="Hydrophobic ligand on the resin")
 
-    # Starting and ending salt concentrations
-    salt_start: float = Field(1.5, ge=0.0, le=10.0, description="Starting salt concentration")
-    salt_end: float = Field(0.0, ge=0.0, le=10.0, description="Ending salt concentration")
-
     # Fractionation and simulation controls
     fraction_count: int = Field(80, ge=1, le=500)
     noise: float = Field(0.10, ge=0.0, le=1.0, description="Overlap between fractions")
     deadband: float = Field(0.15, ge=0.0, le=1.0, description="Minimum bindingStrength to retain")
-    salt_alpha: float = Field(1.2, ge=0.0, le=5.0, description="Salt-strength exponent")
 
 
 @router.post("/process", response_model=dict[str, Any])
