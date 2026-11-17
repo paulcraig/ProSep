@@ -15,6 +15,63 @@ import UploadIcon from '@mui/icons-material/Upload';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import CloseIcon from '@mui/icons-material/Close'
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
+
+
+const startTour = () => driver({
+  showProgress: true,
+  steps: [
+    {
+      element: '#tour-well-controls',
+      popover: {
+        title: 'Add / Remove Wells',
+        description: 'Use the + and − buttons to add or remove wells from the gel.',
+      },
+    },
+    {
+      element: '#tour-upload-well',
+      popover: {
+        title: 'Upload a Sample',
+        description:
+          'Click a well\'s upload button to load a .fasta or .txt file into it.<br/><br/>' +
+          '• <b>Click and drag</b> a loaded well to swap it with another.<br/>' +
+          '• <b>Hover</b> over a well to see which file is loaded.<br/>' +
+          '• <b>Double-click</b> a well to remove its file.',
+      },
+    },
+    {
+      element: '#tour-standards',
+      popover: {
+        title: 'Standard Proteins',
+        description: 'Click a protein to select or deselect it as a standard in well one.',
+      },
+    },
+    {
+      element: '#tour-voltage',
+      popover: {
+        title: 'Voltage',
+        description: 'Choose the voltage. Higher voltage makes proteins migrate faster.',
+      },
+    },
+    {
+      element: '#tour-acrylamide',
+      popover: {
+        title: 'Acrylamide Concentration',
+        description: 'Choose the gel percentage. Higher concentrations separate smaller proteins better.',
+      },
+    },
+    {
+      element: '#tour-start',
+      popover: {
+        title: 'Start',
+        description: 'Press Start to run the simulation.',
+      },
+    },
+  ],
+}).drive();
 
 
 const standards = [
@@ -899,17 +956,20 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
       >
         {[
             {
+              id: 'tour-start',
               label: isRunning ? 'Pause' : hasStarted ? 'Resume' : 'Start',
               icon: isRunning ? <StopIcon /> : <PlayArrowIcon />,
               onClick: onToggleRun
             },
             { label: 'Plot',  icon: <InsertChartIcon />, onClick: onPlot },
             { label: 'Reset', icon: <RestartAltIcon />,  onClick: onReset },
-            { label: 'Clear', icon: <ClearAllIcon />,    onClick: onClear }
+            { label: 'Clear', icon: <ClearAllIcon />,    onClick: onClear },
+            { label: 'Guide', icon: <HelpOutlineIcon />, onClick: startTour }
           ]
-          .map(btn => (
+          .map((btn: { id?: string; label: string; icon: React.ReactNode; onClick: () => void }) => (
             <Button
               key={btn.label}
+              id={btn.id}
               onClick={btn.onClick}
               variant='contained'
               startIcon={btn.icon}
@@ -1000,6 +1060,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
               strokeWidth='0.75rem'
             />
             <foreignObject
+              id='tour-voltage'
               x={slabW + wireW + wireO - 24} y={totalH / 2 - 16}
               width={200} height={32}
             >
@@ -1041,7 +1102,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             strokeWidth='0.25rem'
           />
 
-          <foreignObject x={0} y={anodeT + wellH - 16} width={200} height={32}>
+          <foreignObject id='tour-acrylamide' x={0} y={anodeT + wellH - 16} width={200} height={32}>
             <Select
               variant='standard'
               disableUnderline
@@ -1072,6 +1133,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             <path d={pathTop} className='gel-border' />
           </g>
 
+          <g id='tour-well-controls'>
           <g className='well-btn' style={{cursor:'pointer'}} transform={`translate(${wellW/2},${wellH*1.5})`} onClick={onRemoveWell}>
             <circle r={12} />
             <line x1={-4} y1={0} x2={4} y2={0} strokeLinecap='round' stroke='var(--text)' strokeWidth={2} />
@@ -1083,6 +1145,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
             <line x1={-4} y1={0} x2={4} y2={0} strokeLinecap='round' stroke='var(--text)' strokeWidth={2} />
             <line x1={0} y1={-4} x2={0} y2={4} strokeLinecap='round' stroke='var(--text)' strokeWidth={2} />
             <title>Add well</title>
+          </g>
           </g>
 
           <g
@@ -1264,6 +1327,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
                     style={{ overflow: 'visible' }}
                   >
                     <label
+                      id={wi === 1 ? 'tour-upload-well' : undefined}
                       htmlFor={`file-upload-${wi}`}
                       style={{
                         display: 'flex',
@@ -1319,6 +1383,7 @@ const OneDESim: React.FC<ElectrophoresisProps> = ({
           Standards in Well One:
         </div>
         <div
+          id='tour-standards'
           ref={chipsRef}
           style={{
             display: 'flex',
