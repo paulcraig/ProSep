@@ -16,10 +16,12 @@ export type ChromatogramProps = {
     fractionRows: ChromatogramFractionDto[]
     data: FractionationResponse
     afterWash?: ProteinDto[]
-    saltGradient?: Array<{ x: number; y: number }>
+    elutionPoints?: Array<{ x: number; y: number }>
+    elutionLabel?: string,
+    elutionAxisLabel?: string
 }
 
-export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel = 'Wash', afterWashLabel = 'After Wash', fractionRows, data, afterWash, saltGradient }: ChromatogramProps) {
+export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel = 'Wash', afterWashLabel = 'After Wash', fractionRows, data, afterWash, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration"}: ChromatogramProps) {
     const lineChartRef = useRef<ChartJS<'line'> | null>(null)
     const scatterChartRef = useRef<ChartJS<'scatter'> | null>(null)
     const chartTheme = useChartTheme()
@@ -47,6 +49,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
         const maxY = Math.max(...points.map(p => p.y), 1)
         for (const point of points) {
             point.y = Math.round((point.y / maxY) * 100) / 100
+            if(point.y === 0) point.y = 0.001 
         }
         return points
     }, [data, fractionRows, showWash, showAfterWash, afterWash, lastFractionX])
@@ -90,10 +93,10 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
             },
         ]
 
-        if (saltGradient && saltGradient.length > 0) {
+        if (elutionPoints && elutionPoints.length > 0) {
             datasets.push({
-                label: 'Salt Gradient',
-                data: saltGradient,
+                label: elutionLabel,
+                data: elutionPoints,
                 borderColor: 'rgba(255, 107, 107, 1)',
                 backgroundColor: 'rgba(255, 107, 107, 1)',
                 pointRadius: 0,
@@ -105,13 +108,13 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                 yAxisID: 'y1',
             })
 
-            const saltGradientScale = {
+            const elutionScale = {
                 y1: {
                     type: 'linear',
                     position: 'right',
                     title: {
                         display: true,
-                        text: 'Salt Concentration',
+                        text: elutionAxisLabel,
                         color: chartTheme.text,
                     },
                     ticks: {
@@ -124,11 +127,11 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                 },
             } as const
 
-            return { datasets, saltGradientScale }
+            return { datasets, elutionScale }
         }
 
         return { datasets }
-    }, [proteinSeriesPoints, saltGradient])
+    }, [proteinSeriesPoints, elutionPoints, elutionLabel, elutionAxisLabel, chartTheme.text, chartTheme.grid])
 
     const activeChart = showLineGraph ? lineChartRef.current : scatterChartRef.current
     const downloadChart = useDownloadChart()
@@ -162,6 +165,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                                             text: 'Fractions',
                                             color: chartTheme.text,
                                         },
+                                        // TODO: this always shows zeroth (wash) fraction, either change how wash works or conditionally remove
                                         beginAtZero: true,
                                         ticks: {
                                             callback: fractionTickLabel,
@@ -186,7 +190,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                                             color: chartTheme.grid,
                                         },
                                     },
-                                    ...(lineData.saltGradientScale ?? {})
+                                    ...(lineData.elutionScale ?? {})
                                 },
                             }}
                         />
@@ -213,6 +217,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                                             text: 'Fractions',
                                             color: chartTheme.text,
                                         },
+                                        // TODO: this always shows zeroth (wash) fraction, either change how wash works or conditionally remove
                                         beginAtZero: true,
                                         ticks: {
                                             callback: fractionTickLabel,
@@ -237,7 +242,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                                             color: chartTheme.grid,
                                         },
                                     },
-                                    ...(lineData.saltGradientScale ?? {})
+                                    ...(lineData.elutionScale ?? {})
                                 },
                             }}
                         />

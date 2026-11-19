@@ -11,7 +11,6 @@ from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
 from backend.utility.protein import Protein
 
-
 class Fractionation:
     @dataclass
     class ProteinEntry:
@@ -118,6 +117,96 @@ class Fractionation:
             start = max(i * bin_size - overlap_count, 0)
             end = min((i + 1) * bin_size + overlap_count, total)
             fractions.append(items[start:end])
+
+        return fractions
+
+    @staticmethod
+    def fractionate_with_inverse_gaussian[T: ProteinEntry](
+        items: Sequence[T],
+        n_fractions: int,
+        mean: float = 0.3,
+        shape: float = 0.4,
+        x_range: float = 3,
+        offset: float = 0.025,
+        random: float = 0.003
+    ) -> Sequence[Sequence[T]]:
+        """
+        Split retained proteins into fractions following an inverse gaussian distribution
+        Here's a cool desmos graph showing how it works https://www.desmos.com/calculator/n8c4ucn4bv
+
+        Args:
+            items: proteins to fractionate 
+            n_fractions: number of fractions, n_fractions > 0
+            mean: mean to use in formula, mean > 0
+            steepness: shape parameter to use in formula, steepness > 0
+            x_range: the range of x values to scale to our fraction range, x_range > 0
+            offset: the offset for the start of the distribution, 0 <= offset <= 1
+            random: the randomness to apply to the weights, 0 <= random, but i recommend random <= 0.01
+        """
+
+        if n_fractions <= 0:
+            return []
+        if not items:
+            return [[] for _ in range(n_fractions)]
+
+        # create n_fractions points along an inverse gaussian distribution
+        weights = []
+        for index in range(n_fractions):
+            x_percent = (index + 0.5) / n_fractions - offset
+            x_percent = max(x_percent, 0.001)
+            x = x_percent * x_range
+            # formula from https://en.wikipedia.org/wiki/Inverse_Gaussian_distribution
+            y = (math.sqrt(shape / (2 * math.pi * x**3)) * 
+                 math.exp(-(shape * (x - mean) ** 2) / (2 * mean**2 * x))) + random
+            weights.append(y)
+
+        # build a list of fraction_sizes based on the % of point over whole
+        weight_total = sum(weights)
+        expected_sizes = [len(items) * weight / weight_total for weight in weights]
+        fraction_sizes = [math.floor(size) for size in expected_sizes]
+
+        # add remainders into fractions in order of descending remainder
+        # e.g. expected_sizes = [2.4, 5.7, 1.9]
+        # fraction_sizes = [2, 5, 1], fraction_remainders = [0.4, 0.7, 0.9]
+        # we need to distribute 2 remaining, so put them into 0.9 and then 0.7 for final counts of 2, 6, 2
+        remaining = len(items) - sum(fraction_sizes)
+        fraction_remainders = []
+        for index, expected_size in enumerate(expected_sizes):
+            remainder = expected_size - math.floor(expected_size)
+            fraction_remainders.append((remainder, index))
+
+        fraction_remainders.sort(reverse=True)
+        
+        for remainder, fraction_index in fraction_remainders[:remaining]:
+            fraction_sizes[fraction_index] += 1
+
+        # finally, now that we have our counts, build the result array!
+        fractions = []
+        start = 0
+        for size in fraction_sizes:
+            fractions.append(items[start:start + size])
+            start += size
+
+        return fractions
+
+    @staticmethod
+    def fractionate_with_spike[T: ProteinEntry](
+        items: Sequence[T],
+        n_fractions: int,
+        offset: float = 0.025
+    ) -> Sequence[Sequence[T]]:
+        """
+        literally puts all proteins in items into a spike at offset% of the fractions
+        """
+        if n_fractions <= 0:
+            return []
+        if not items:
+            return [[] for _ in range(n_fractions)]
+
+        spike_index = math.floor(offset*n_fractions)
+        fractions: list[Sequence[T]] = [[] for _ in range(0, spike_index)]
+        fractions.append(items)
+        fractions.extend([] for _ in range(spike_index+1, n_fractions))
 
         return fractions
     

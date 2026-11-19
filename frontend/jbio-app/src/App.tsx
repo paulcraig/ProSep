@@ -24,6 +24,7 @@ import HydrophobicInteractionFractionation from "./pages/HydrophobicInteractionF
 import SizeExclusionPage from "./pages/SizeExclusion";
 import TandemMS from "./pages/TandemMS";
 import ScienceIcon from "@mui/icons-material/Science";
+import AffinityChromatography from './pages/AffinityChromatography';
 
 function App() {
   const pages = [
@@ -93,6 +94,12 @@ function App() {
     },
     {
       id: 8,
+      icon: <SwapVertIcon />,
+      component: <AffinityChromatography />,
+      label: "Affinity Chromatography",
+    },
+    {
+      id: 9,
       icon: <GitHubIcon />,
       link: "https://github.com/paulcraig/ProSep",
       label: "GitHub Repository",

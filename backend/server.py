@@ -13,6 +13,7 @@ import backend.api.ion_exchange_fractionation_routes as ion_exchange_fractionati
 import backend.api.size_exclusion as size_exclusion_routes
 import backend.api.hydrophobic_interaction_fractionation_routes as hydrophobic_interaction_fractionation_routes
 import backend.api.tandem_ms_routes as tandem_ms_routes
+import backend.api.affinity_chromatography_routes as affinity_chromatography_routes
 
 """
 HOW TO START UP API SERVER:
@@ -68,6 +69,7 @@ app.include_router(ion_exchange_fractionation_routes.router)
 app.include_router(size_exclusion_routes.router)
 app.include_router(hydrophobic_interaction_fractionation_routes.router)
 app.include_router(tandem_ms_routes.router)
+app.include_router(affinity_chromatography_routes.router)
 
 """
 NOTE FOR FUTURE DEVELOPERS:
