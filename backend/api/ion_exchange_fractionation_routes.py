@@ -1,8 +1,9 @@
 from typing import Any, Literal
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from backend.logic.fractionation.binding_strength_fractionation import RequestWithSalt
 from backend.logic.ion_exchange_fractionation import IonExchangeFractionation
 
 router = APIRouter(
@@ -11,19 +12,14 @@ router = APIRouter(
 )
 
 
-class IonExchangeRequest(BaseModel):
+class IonExchangeRequest(RequestWithSalt):
     fasta_content: str = Field(..., description="FASTA content as raw text")
     ph: float = Field(7.0, ge=0.0, le=14.0)
     media_type: Literal["Q", "S"] = Field("Q", description="Q (anion exchange) or S (cation exchange)")
-
-    # Starting and ending salt concentrations
-    salt_start: float = Field(0.0, ge=0.0, le=10.0, description="Starting salt concentration")
-    salt_end: float = Field(1.5, ge=0.0, le=10.0, description="Ending salt concentration")
-
+    
     fraction_count: int = Field(80, ge=1, le=500)
     noise: float = Field(0.10, ge=0.0, le=1.0)
     deadband: float = Field(0.05, ge=0.0, le=2.0)
-    salt_alpha: float = Field(1.2, ge=0.0, le=5.0, description="Salt-strength exponent")
 
 
 @router.post("/process", response_model=dict[str, Any])
@@ -42,6 +38,8 @@ async def process_ion_exchange(body: IonExchangeRequest) -> Any:
             noise=body.noise,
             deadband=body.deadband,
             salt_alpha=body.salt_alpha,
+            salt_elbow_location=body.salt_elbow_location,
+            max_salt_delta=body.max_salt_delta
         )
     except ValueError as exc:
         return {"error": str(exc)}

@@ -26,6 +26,7 @@ import type * as ChromatographyTypes from '../components/chromatography/types'
 import { Stopwatch, useTimer } from '../components/Timer'
 import { SaltSettings } from '../components/chromatography/salts/SaltSettings'
 import { saltGradientPoints } from '../components/chromatography/salts/saltGradientPoints'
+import { MAX_SALT_DELTA, SALT_ELBOW_LOCATION } from '../components/chromatography/salts/consts'
 
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, BarElement, LineElement, PointElement, Tooltip, Legend)
 
@@ -47,6 +48,8 @@ type ParamsDto = {
     saltStart: number
     saltEnd: number
     saltAlpha: number
+    saltElbowLocation: number
+    maxSaltDelta: number
     fractions: number
     overlap: number
     deadband: number
@@ -63,7 +66,6 @@ export type IonExchangeResponse = {
     ok: boolean
     params: ParamsDto
     counts: CountsDto
-    wash: ProteinDto[]
     fractions: FractionDto[]
     error?: string
 }
@@ -85,8 +87,7 @@ const IonExchangeFractionation: React.FC = () => {
     const [data, setData] = useState<IonExchangeResponse | null>(null)
 
     const [showLineGraph, setShowLineGraph] = useState<boolean>(true)
-    const [useLogScale, setUseLogScale] = useState<boolean>(true)
-    const [showWash, setShowWash] = useState<boolean>(false)
+    const [useLogScale, setUseLogScale] = useState<boolean>(false)
 
     const timer = useTimer()
 
@@ -118,6 +119,8 @@ const IonExchangeFractionation: React.FC = () => {
                     salt_start: saltStart,
                     salt_end: saltEnd,
                     salt_alpha: saltAlpha,
+                    salt_elbow_location: SALT_ELBOW_LOCATION,
+                    max_salt_delta: MAX_SALT_DELTA,
                     fraction_count: fractionCount,
                     noise,
                     deadband,
@@ -204,10 +207,9 @@ const IonExchangeFractionation: React.FC = () => {
                         <CardContent>
                             <FormControlLabel control={<Switch checked={showLineGraph} onChange={(_, checked) => setShowLineGraph(checked)} />} label='Line' sx={{ marginBottom: '0.25rem' }} />
                             <FormControlLabel control={<Switch checked={useLogScale} onChange={(_, checked) => setUseLogScale(checked)} />} label='Log Scale' sx={{ marginBottom: '0.25rem' }} />
-                            <FormControlLabel control={<Switch checked={showWash} onChange={(_, checked) => setShowWash(checked)} />} label='Show Wash' sx={{ marginBottom: '0.25rem' }} />
 
-                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash, useLogScale, elutionPoints: saltGradient }} />
-                            <ChromatographyHitGraph {...{ data, fractionRows, showWash, useLogScale }} />
+                            <Chromatogram {...{ data, fractionRows, showLineGraph, showWash:false, useLogScale, elutionPoints: saltGradient, elutionMax: MAX_SALT_DELTA }} />
+                            <ChromatographyHitGraph {...{ data, fractionRows, showWash:false, useLogScale }} />
                             
                             <Box>
                                 <Typography variant='body2'>

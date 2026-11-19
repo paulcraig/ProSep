@@ -4,37 +4,32 @@ import { Chart as ChartJS, ChartDataset } from 'chart.js'
 import { FractionDto, FractionationResponse, ProteinDto } from '../types'
 import { Box, Button } from '@mui/material'
 import { Download } from '@mui/icons-material'
+import { MAX_SALT_DELTA } from '../salts/consts'
 
 export type ChromatogramFractionDto = Pick<FractionDto, "fractionIndex" | "absorbanceScore">
 
 export type ChromatogramProps = {
     showLineGraph: boolean
     useLogScale: boolean
-    showWash: boolean
-    washLabel?: string
-    afterWashLabel?: string
+    showWash?: boolean
     fractionRows: ChromatogramFractionDto[]
     data: FractionationResponse
-    afterWash?: ProteinDto[]
     elutionPoints?: Array<{ x: number; y: number }>
     elutionLabel?: string,
     elutionAxisLabel?: string
+    isSizeExclusion?: boolean
+    elutionMax?: number
 }
 
-export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel = 'Wash', afterWashLabel = 'After Wash', fractionRows, data, afterWash, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration"}: ChromatogramProps) {
+export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRows, data, elutionPoints, elutionLabel = "Salt Gradient", elutionAxisLabel = "Salt Concentration", isSizeExclusion = false, elutionMax}: ChromatogramProps) {
     const lineChartRef = useRef<ChartJS<'line'> | null>(null)
     const scatterChartRef = useRef<ChartJS<'scatter'> | null>(null)
     const chartTheme = useChartTheme()
 
     const lastFractionX = fractionRows.length > 0 ? Math.max(...fractionRows.map(f => f.fractionIndex)) : 0
-    const showAfterWash = !!afterWash && afterWash.length > 0
 
     const proteinSeriesPoints = useMemo(() => {
         const points: Array<{ x: number; y: number }> = []
-
-        if (showWash) {
-            points.push({ x: 0, y: data?.wash?.length ?? 0 })
-        }
 
         for (const fraction of fractionRows) {
             points.push({
@@ -43,24 +38,28 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
             })
         }
 
-        if (showAfterWash) {
-            points.push({ x: lastFractionX + 1, y: afterWash.length })
+        if (isSizeExclusion && showWash) {
+            points.splice(0, 0, { x: 0, y: data?.wash?.length ?? 0 })
+            points.push({ x: lastFractionX + 1, y: data?.afterWash?.length ?? 0 })
         }
+
         const maxY = Math.max(...points.map(p => p.y), 1)
         for (const point of points) {
             point.y = Math.round((point.y / maxY) * 100) / 100
             if(point.y === 0) point.y = 0.001 
         }
         return points
-    }, [data, fractionRows, showWash, showAfterWash, afterWash, lastFractionX])
+    }, [data, fractionRows, showWash, lastFractionX])
 
     const fractionTickLabel = (value: string | number) => {
+        if (!isSizeExclusion) return value
+        
         const tick = Number(value)
         if (tick === 0) {
-            return showWash ? washLabel : '0'
+            return showWash ? 'Too Big' : value
         }
         if (tick === lastFractionX + 1) {
-            return showAfterWash ? afterWashLabel : value
+            return showWash ? 'Too Small' : value
         }
         return String(value)
     }
@@ -124,6 +123,7 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                         color: chartTheme.grid,
                         drawOnChartArea: false,
                     },
+                    max: elutionMax ?? undefined 
                 },
             } as const
 
@@ -165,21 +165,21 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                                             text: 'Fractions',
                                             color: chartTheme.text,
                                         },
-                                        // TODO: this always shows zeroth (wash) fraction, either change how wash works or conditionally remove
-                                        beginAtZero: true,
                                         ticks: {
                                             callback: fractionTickLabel,
                                             color: chartTheme.text,
+                                            stepSize: 1,
                                         },
                                         grid: {
                                             color: chartTheme.grid,
                                         },
+                                        min: showWash ? 0 : 1
                                     },
                                     y: {
                                         type: useLogScale ? 'logarithmic' : 'linear',
                                         title: {
                                             display: true,
-                                            text: showWash ? 'Retained+Wash' : 'Retained',
+                                            text: 'Relative Absorbance',
                                             color: chartTheme.text,
                                         },
                                         beginAtZero: !useLogScale,
@@ -222,16 +222,18 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, washLabel =
                                         ticks: {
                                             callback: fractionTickLabel,
                                             color: chartTheme.text,
+                                            stepSize: 1,
                                         },
                                         grid: {
                                             color: chartTheme.grid,
                                         },
+                                        min: showWash ? 0 : 1
                                     },
                                     y: {
                                         type: useLogScale ? 'logarithmic' : 'linear',
                                         title: {
                                             display: true,
-                                            text: showWash ? 'Retained+Wash' : 'Retained',
+                                            text: 'Relative Absorbance',
                                             color: chartTheme.text,
                                         },
                                         beginAtZero: !useLogScale,

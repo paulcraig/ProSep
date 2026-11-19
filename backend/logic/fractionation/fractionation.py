@@ -211,6 +211,33 @@ class Fractionation:
         return fractions
     
     @staticmethod
+    def get_salt_level(gradient_location: float, salt_start: float, salt_end: float, salt_elbow_location: float, salt_alpha: float):
+        """
+        The salt start, salt end, and elution elbow point defines a curve like that one we see on the chromatograms.
+        (The one that is flat at start and then at some point starts steadily increasing to salt end)
+        
+        This finds the value of that gradient at gradient location
+        
+        Args:
+            gradient_location: value from 0 to 1 representing what part of the salt gradient you want to find the salt level of. 0 is start 1 is end
+            salt_start: starting salt value
+            salt_end: ending salt value
+            salt_elbow_location: at which location does the gradient begin transitioning from salt start to salt end. 0 is start, 1 is end.
+            salt_alpha: scales the salt gradient
+        """
+        salt = 0
+        
+        if gradient_location < salt_elbow_location: salt = salt_start
+        else:
+            elbow_to_end = 1 - salt_elbow_location
+            location_to_elbow = gradient_location - salt_elbow_location
+            progress_along_increasing_gradient = location_to_elbow / elbow_to_end # (division by 1 is implied because the total length is 1)
+            salt_delta = salt_end - salt_start
+            salt = salt_start + salt_delta * progress_along_increasing_gradient
+        
+        return (salt + 1e-9) ** float(salt_alpha)
+    
+    @staticmethod
     def process_fractions[T: ProteinEntry](fraction_lists: Sequence[Sequence[T]]):
         return [
             {
