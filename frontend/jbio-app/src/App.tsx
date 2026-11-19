@@ -87,16 +87,16 @@ function App() {
       label: "Hydrophobic Interaction Fractionation",
     },
     {
-      id: 9,
-      icon: <ScienceIcon />,
-      component: <TandemMS />,
-      label: "Tandem MS",
-    },
-    {
       id: 8,
       icon: <SwapVertIcon />,
       component: <AffinityChromatography />,
       label: "Affinity Chromatography",
+    },
+    {
+      id: 9,
+      icon: <ScienceIcon />,
+      component: <TandemMS />,
+      label: "Tandem MS",
     },
     {
       id: 9,
