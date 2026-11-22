@@ -21,8 +21,8 @@ export type FractionationResponse = {
     ok: boolean
     params: Record<string, unknown>
     counts: Record<string, number>
-    wash: ProteinDto[]
-    afterWash?: ProteinDto[]
+    wash?: FractionDto
+    afterWash?: FractionDto
     fractions: FractionDto[]
     error?: string
 }

@@ -114,6 +114,8 @@ class HydrophobicInteractionFractionation:
     @staticmethod
     def process(
         fasta_content: str,
+        salt_elbow_location: float,
+        max_salt_delta: float,
         ligand_type: str = "butyl",
         salt_start: float = 1.5,
         salt_end: float = 0.0,
@@ -145,12 +147,11 @@ class HydrophobicInteractionFractionation:
             raise ValueError("deadband must be >= 0")
         if salt_start < 0 or salt_end < 0:
             raise ValueError("salt concentrations must be >= 0")
+        if salt_elbow_location < 0 or salt_elbow_location > 1:
+            raise ValueError("salt elbow location must be between 0 and 1")
 
         # Convert selected ligand into a numeric factor
         ligand_factor = HydrophobicInteractionFractionation.LIGAND_FACTORS[ligand_type]
-
-        # Salt increase hydrophobic binding; this is a scaling factor
-        salt_factor = (salt_start + 1e-9) ** float(salt_alpha)
 
         basic_entries, skipped = Fractionation.convert_fasta_to_protein_entries(fasta_content)
         entries: list[HydrophobicInteractionFractionation.ProteinEntry] = []
@@ -164,8 +165,7 @@ class HydrophobicInteractionFractionation:
                     length=len(basic_entry.sequence),
                 )
 
-                # Final binding score = protein hydrophobicity x ligand factor x salt factor
-                binding_strength = float(hydro_effective * ligand_factor * salt_factor)
+                binding_strength = float(hydro_effective * ligand_factor)
 
                 entries.append(
                     HydrophobicInteractionFractionation.ProteinEntry(
@@ -180,22 +180,18 @@ class HydrophobicInteractionFractionation:
             except Exception:
                 skipped += 1
 
-        # Split proteins into wash vs retained
-        wash: list[HydrophobicInteractionFractionation.ProteinEntry] = []
-        retained: list[HydrophobicInteractionFractionation.ProteinEntry] = []
-
-        for entry in entries:
-            if entry.binding_strength < deadband:
-                wash.append(entry)
-            else:
-                retained.append(entry)
-
-        # Weakest binder first, strongest binder last
-        # This defines elution order across fractions
-        retained.sort(key=lambda item: item.binding_strength)
-
-        # Split retained proteins into output fractions
-        fraction_lists = Fractionation.fractionate_with_overlap(items=retained, n_fractions=fraction_count, overlap=noise)
+        def is_protein_kicked_by_salt(protein: HydrophobicInteractionFractionation.ProteinEntry, salt_at_fraction: float) -> bool:
+            return protein.binding_strength > salt_at_fraction
+        fractions, wash_count, non_wash_count = BindingStrengthFractionation.distribute(
+            entries,
+            fraction_count,
+            is_protein_kicked_by_salt,
+            salt_start,
+            salt_end,
+            salt_elbow_location,
+            salt_alpha,
+            max_salt_delta
+        )
 
         # Final response for the frontend
         return {
@@ -205,16 +201,17 @@ class HydrophobicInteractionFractionation:
                 "saltStart": salt_start,
                 "saltEnd": salt_end,
                 "saltAlpha": salt_alpha,
+                "saltElbowLocation": salt_elbow_location,
+                "maxSaltDelta": max_salt_delta,
                 "fractions": fraction_count,
                 "overlap": noise,
                 "deadband": deadband,
             },
             "counts": {
-                "total": len(entries),
-                "wash": len(wash),
-                "retained": len(retained),
+                "total": wash_count + non_wash_count,
+                "wash": wash_count,
+                "retained": non_wash_count,
                 "skipped": skipped,
             },
-            "wash": [entry.to_json() for entry in wash],
-            "fractions": Fractionation.process_fractions(fraction_lists),
+            "fractions": Fractionation.process_fractions(fractions),
         }

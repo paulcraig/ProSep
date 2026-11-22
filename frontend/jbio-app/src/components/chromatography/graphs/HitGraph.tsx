@@ -19,12 +19,10 @@ export type ChromatographyHitChartProps = {
     afterWashLabel?: string
     fractionRows: HitGraphFractionDto[]
     data: FractionationResponse
-    afterWash?: ProteinDto[]
 }
 
-export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Wash', afterWashLabel = 'After Wash', data, fractionRows, afterWash = [] }: ChromatographyHitChartProps) {
+export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Wash', afterWashLabel = 'After Wash', data, fractionRows }: ChromatographyHitChartProps) {
     const stackedChartRef = useRef<ChartJS<'bar'> | null>(null)
-    const showAfterWash = !!afterWash && afterWash.length > 0
     const chartTheme = useChartTheme()
 
     const [showHitColors, setShowHitColors] = useState(true)
@@ -43,7 +41,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
 
         const washAmountByProteinId = new Map<string, number>()
         let washOtherTotal = 0
-        for (const protein of data?.wash ?? []) {
+        for (const protein of data?.wash?.proteins ?? []) {
             washOtherTotal += protein.amount
         }
 
@@ -83,7 +81,8 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
             baseOtherData.push(fractionOtherTotal)
         }
 
-        if (showAfterWash) {
+        const afterWash = data.afterWash?.proteins
+        if (afterWash && showWash) {
             let afterWashOtherTotal = 0
             for (const protein of afterWash) {
                 afterWashOtherTotal += protein.amount
@@ -140,7 +139,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
             datasets,
             hiddenProteinCount: Math.max(sortedProteinIds.length - MAX_STACKED_SERIES, 0),
         }
-    }, [data, fractionRows, showWash, washLabel, showAfterWash, afterWash, afterWashLabel])
+    }, [data, fractionRows, showWash, washLabel, afterWashLabel])
 
     return (
         <div>
@@ -160,7 +159,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
                                     stacked: true,
                                     title: {
                                         display: true,
-                                        text: showWash ? 'Wash / Fractions' : 'Fractions',
+                                        text: 'Fractions',
                                         color: chartTheme.text,
                                     },
                                     ticks: {
@@ -175,7 +174,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
                                     type: useLogScale ? 'logarithmic' : 'linear',
                                     title: {
                                         display: true,
-                                        text: showWash ? 'Retained+Wash Amount' : 'Retained Amount',
+                                        text: 'Retained Amount',
                                         color: chartTheme.text,
                                     },
                                     ticks: {

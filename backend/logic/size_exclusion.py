@@ -1,3 +1,4 @@
+import math
 from typing import Any
 
 from backend.logic.fractionation.fractionation import Fractionation
@@ -24,7 +25,9 @@ class SizeExclusionFractionation:
 
         to_big: list[Fractionation.ProteinEntry] = []
         to_small: list[Fractionation.ProteinEntry] = []
-        inside: list[Fractionation.ProteinEntry] = []
+        
+        insides: list[list[Fractionation.ProteinEntry]] = [[] for _ in range(fraction_count)]
+        size_delta = max_size - min_size
 
         for entry in entries:
             if entry.molecular_weight < min_size:
@@ -32,16 +35,9 @@ class SizeExclusionFractionation:
             elif entry.molecular_weight > max_size:
                 to_big.append(entry)
             else:
-                inside.append(entry)
-
-        # Largest elutes first
-        elution_order = sorted(inside, key=lambda item: item.molecular_weight, reverse=True)
-
-        fraction_lists = Fractionation.fractionate_with_overlap(
-            items=elution_order,
-            n_fractions=fraction_count,
-            overlap=0.0,
-        )
+                extra_size = entry.molecular_weight - min_size # how much bigger the protein is than the minimal size
+                location = 1 - (extra_size / size_delta) # [0, 1] if you imagine that theres a "size gradient" from min to max size, then this is how far along that gradient the protein's size matches
+                insides[math.floor(location * fraction_count)].append(entry)
 
         return {
             "ok": True,
@@ -55,10 +51,10 @@ class SizeExclusionFractionation:
                 "total": len(entries),
                 "to_small": len(to_small),
                 "to_big": len(to_big),
-                "inside": len(inside),
+                "inside": len(insides),
                 "skipped": skipped,
             },
-            "wash": [entry.to_json() for entry in to_big],
-            "fractions": Fractionation.process_fractions(fraction_lists),
-            "afterWash": [entry.to_json() for entry in to_small],
+            "wash": Fractionation.process_fraction(to_big, -1), # -1 since its "before" the fractions
+            "fractions": Fractionation.process_fractions(insides),
+            "afterWash": Fractionation.process_fraction(to_small, len(insides)),
         }
