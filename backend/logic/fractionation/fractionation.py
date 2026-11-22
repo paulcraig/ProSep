@@ -11,6 +11,7 @@ from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
 from backend.utility.protein import Protein
 
+
 class Fractionation:
     @dataclass
     class ProteinEntry:
@@ -227,7 +228,8 @@ class Fractionation:
         """
         salt = 0
         
-        if gradient_location < salt_elbow_location: salt = salt_start
+        if gradient_location < salt_elbow_location:
+            salt = salt_start
         else:
             elbow_to_end = 1 - salt_elbow_location
             location_to_elbow = gradient_location - salt_elbow_location
