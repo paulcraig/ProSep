@@ -76,9 +76,9 @@ type SizeExclusionResponse = {
         inside: number
         skipped: number
     }
-    wash: ProteinDto[]
+    wash: FractionDto
     fractions: FractionDto[]
-    afterWash: ProteinDto[]
+    afterWash: FractionDto
     error?: string
 }
 

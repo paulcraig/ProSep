@@ -54,7 +54,7 @@ class SizeExclusionFractionation:
                 "inside": len(insides),
                 "skipped": skipped,
             },
-            "wash": [entry.to_json() for entry in to_big],
-            "afterWash": [entry.to_json() for entry in to_small],
+            "wash": Fractionation.process_fraction(to_big, -1), # -1 since its "before" the fractions
             "fractions": Fractionation.process_fractions(insides),
+            "afterWash": Fractionation.process_fraction(to_small, len(insides)),
         }

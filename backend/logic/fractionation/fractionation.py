@@ -240,20 +240,24 @@ class Fractionation:
     @staticmethod
     def process_fractions[T: ProteinEntry](fraction_lists: Sequence[Sequence[T]]):
         return [
-            {
-                "fractionIndex": index + 1,
-                "proteinCount": len(fraction),
-                "absorbanceScore": sum(Protein.calculate_absorbance(entry.sequence) for entry in fraction),
-                "hitCount": len([
-                    entry for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
-                ]),
-                "hitProteinIds": [
-                    entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
-                ],
-                "proteins": [entry.to_json() for entry in fraction],
-            }
+            Fractionation.process_fraction(fraction, index)
             for index, fraction in enumerate(fraction_lists)
         ]
+        
+    @staticmethod
+    def process_fraction[T: ProteinEntry](fraction: Sequence[T], index: int):
+        return {
+            "fractionIndex": index + 1,
+            "proteinCount": len(fraction),
+            "absorbanceScore": sum(Protein.calculate_absorbance(entry.sequence) for entry in fraction),
+            "hitCount": len([
+                entry for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
+            ]),
+            "hitProteinIds": [
+                entry.seq_id for entry in fraction if Protein.matches_prosite(entry.sequence, "H-H-H-H-H-H")
+            ],
+            "proteins": [entry.to_json() for entry in fraction],
+        }
 
     @staticmethod
     def convert_fasta_to_protein_entries(fasta: str):

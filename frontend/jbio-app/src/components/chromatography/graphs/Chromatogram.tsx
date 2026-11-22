@@ -39,8 +39,8 @@ export function Chromatogram({ showLineGraph, useLogScale, showWash, fractionRow
         }
 
         if (isSizeExclusion && showWash) {
-            points.splice(0, 0, { x: 0, y: data?.wash?.length ?? 0 })
-            points.push({ x: lastFractionX + 1, y: data?.afterWash?.length ?? 0 })
+            points.splice(0, 0, { x: 0, y: data?.wash?.absorbanceScore ?? 0 })
+            points.push({ x: lastFractionX + 1, y: data?.afterWash?.absorbanceScore ?? 0 })
         }
 
         const maxY = Math.max(...points.map(p => p.y), 1)

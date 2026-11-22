@@ -41,7 +41,7 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
 
         const washAmountByProteinId = new Map<string, number>()
         let washOtherTotal = 0
-        for (const protein of data?.wash ?? []) {
+        for (const protein of data?.wash?.proteins ?? []) {
             washOtherTotal += protein.amount
         }
 
@@ -81,8 +81,8 @@ export function ChromatographyHitGraph({ showWash, useLogScale, washLabel = 'Was
             baseOtherData.push(fractionOtherTotal)
         }
 
-        const afterWash = data.afterWash
-        if (afterWash) {
+        const afterWash = data.afterWash?.proteins
+        if (afterWash && showWash) {
             let afterWashOtherTotal = 0
             for (const protein of afterWash) {
                 afterWashOtherTotal += protein.amount
