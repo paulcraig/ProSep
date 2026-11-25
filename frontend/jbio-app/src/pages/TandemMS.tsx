@@ -910,7 +910,7 @@ const TandemMS: React.FC = () => {
                 label="Lower bound m/z"
                 value={lowerBound}
                 min={0}
-                max={3000}
+                max={100}
                 step={1}
                 onValueChange={setLowerBound}
               />
