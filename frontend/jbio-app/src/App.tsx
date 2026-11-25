@@ -63,7 +63,7 @@ function App() {
       id: 4,
       icon: <InsightsIcon />,
       component: <PeptideRetention />,
-      label: "Peptide Retention",
+      label: "RPLC",
       artifactGroup: "peptide_retention",
     },
     {
